@@ -5,17 +5,17 @@ EOL uses markdown-based files with embedded code to specify AI application featu
 
 ## File Types
 
-### 1. Feature Files (.eol)
-Main feature specifications that define functionality, requirements, and implementation.
+### 1. Feature Files (.eol.md)
+Main feature specifications that define functionality, requirements, and implementation. Uses `.eol.md` extension for native GitHub/IDE markdown preview support.
 
-### 2. Test Files (.test.eol)
-Test specifications using natural language and/or Python code for validation.
+### 2. Test Files (.test.eol.md)
+Test specifications using natural language and/or Python code for validation. Uses `.test.eol.md` extension for native markdown rendering.
 
-## Feature File Format (.eol)
+## Feature File Format (.eol.md)
 
 ### Structure
 ```yaml
-# feature-name.eol
+# feature-name.eol.md
 
 ---
 # YAML Frontmatter (required)
@@ -23,7 +23,7 @@ name: feature-identifier
 version: 1.0.0
 phase: prototyping | implementation | hybrid
 tags: [tag1, tag2, tag3]
-tests: feature-name.test.eol  # Optional link to test file
+tests: feature-name.test.eol.md  # Optional link to test file
 dependencies:
   - redis-mcp
   - another-feature
@@ -139,16 +139,16 @@ assert result["status"] == "success"
 ```
 ```
 
-## Test File Format (.test.eol)
+## Test File Format (.test.eol.md)
 
 ### Structure
 ```yaml
-# feature-name.test.eol
+# feature-name.test.eol.md
 
 ---
 # YAML Frontmatter (required)
 name: feature-name-tests
-feature: feature-name  # Reference to feature file
+feature: feature-name  # Reference to feature file (without extension)
 version: 1.0.0
 phase: prototyping | implementation | hybrid
 type: test
@@ -339,17 +339,22 @@ def assert_valid_session(session_data):
 
 ## File Format Features
 
-### 1. Frontmatter Metadata
+### 1. File Extensions
+- **`.eol.md`**: Feature specification files
+- **`.test.eol.md`**: Test specification files
+- **Benefits**: Native GitHub/IDE markdown preview, syntax highlighting, better tooling support
+
+### 2. Frontmatter Metadata
 - **Required fields**: name, version, phase
 - **Optional fields**: tags, dependencies, tests
 - **Extensible**: Add custom fields as needed
 
-### 2. Phase Support
+### 3. Phase Support
 - **prototyping**: Natural language only, executed via LLM
 - **implementation**: Deterministic code only
 - **hybrid**: Mix of both, operations specify which to use
 
-### 3. Code Block Languages
+### 4. Code Block Languages
 ```
 ```natural    - Natural language specifications
 ```gherkin    - BDD test specifications (Given/When/Then)
@@ -360,13 +365,13 @@ def assert_valid_session(session_data):
 ```sql        - Database queries
 ```
 
-### 4. Reference Syntax
+### 5. Reference Syntax
 - `@context/` - Reference context documentation
 - `@examples/` - Reference example implementations
 - `@knowledge/` - Reference domain knowledge
 - `@features/` - Reference other features
 
-### 5. Variable Substitution
+### 6. Variable Substitution
 - `${VAR_NAME}` - Environment variable
 - `${VAR_NAME:-default}` - With default value
 
@@ -393,7 +398,18 @@ class EOLFeature:
     tests: Optional[str]
     
 class EOLParser:
-    def parse(self, content: str) -> EOLFeature:
+    def parse(self, file_path: str) -> EOLFeature:
+        """Parse .eol.md file"""
+        # Validate file extension
+        if not file_path.endswith('.eol.md'):
+            raise ValueError(f"Invalid file extension. Expected .eol.md, got {file_path}")
+        
+        with open(file_path, 'r') as f:
+            content = f.read()
+        
+        return self.parse_content(content)
+    
+    def parse_content(self, content: str) -> EOLFeature:
         # Split frontmatter and content
         parts = content.split('---')
         frontmatter = yaml.safe_load(parts[1])
@@ -456,7 +472,18 @@ class EOLTest:
     implementation: Optional[str]  # Python code
     
 class EOLTestParser:
-    def parse_test_file(self, content: str) -> List[EOLTest]:
+    def parse_test_file(self, file_path: str) -> List[EOLTest]:
+        """Parse .test.eol.md file"""
+        # Validate file extension
+        if not file_path.endswith('.test.eol.md'):
+            raise ValueError(f"Invalid file extension. Expected .test.eol.md, got {file_path}")
+        
+        with open(file_path, 'r') as f:
+            content = f.read()
+        
+        return self.parse_test_content(content)
+    
+    def parse_test_content(self, content: str) -> List[EOLTest]:
         # Parse frontmatter
         # Extract test cases
         # Parse natural language tests
@@ -511,13 +538,13 @@ class EOLTestParser:
 ### Creating a Feature
 ```bash
 # Create feature file
-cat > payment-processor.eol << EOF
+cat > payment-processor.eol.md << EOF
 ---
 name: payment-processor
 version: 1.0.0
 phase: hybrid
 tags: [payments, stripe]
-tests: payment-processor.test.eol
+tests: payment-processor.test.eol.md
 ---
 
 # Payment Processor
@@ -540,22 +567,22 @@ EOF
 ### Running Tests
 ```bash
 # Run natural language tests
-eol test payment-processor.test.eol --phase prototyping
+eol test payment-processor.test.eol.md --phase prototyping
 
 # Run implemented tests
-eol test payment-processor.test.eol --phase implementation
+eol test payment-processor.test.eol.md --phase implementation
 
 # Generate test implementations from natural language
-eol generate-tests payment-processor.test.eol
+eol generate-tests payment-processor.test.eol.md
 ```
 
 ### Phase Switching
 ```bash
 # Switch feature to implementation phase
-eol switch payment-processor.eol --to implementation
+eol switch payment-processor.eol.md --to implementation
 
 # Run in hybrid mode
-eol run payment-processor.eol --phase hybrid
+eol run payment-processor.eol.md --phase hybrid
 ```
 
 ## Best Practices

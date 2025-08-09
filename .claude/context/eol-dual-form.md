@@ -46,7 +46,7 @@ generator = CodeGenerator()
 
 @cli.command()
 def run(
-    feature: str = typer.Argument(..., help="Path to .eol file"),
+    feature: str = typer.Argument(..., help="Path to .eol.md file"),
     phase: Optional[str] = typer.Option(None, "--phase", "-p"),
     watch: bool = typer.Option(False, "--watch", "-w")
 ):
@@ -56,7 +56,7 @@ def run(
 
 @cli.command()
 def test(
-    test_file: str = typer.Argument(..., help="Path to .test.eol file"),
+    test_file: str = typer.Argument(..., help="Path to .test.eol.md.md file"),
     coverage: bool = typer.Option(False, "--coverage", "-c")
 ):
     """Run EOL tests"""
@@ -91,7 +91,7 @@ async def execute_feature(
     """Execute an .eol feature file
     
     Args:
-        feature_path: Path to the .eol file
+        feature_path: Path to the .eol.md file
         phase: Execution phase (prototyping|implementation|hybrid)
         context: Additional execution context
         
@@ -112,10 +112,10 @@ async def run_tests(
     coverage: bool = False,
     pattern: Optional[str] = None
 ) -> dict:
-    """Execute .test.eol test specifications
+    """Execute .test.eol.md test specifications
     
     Args:
-        test_path: Path to .test.eol file
+        test_path: Path to .test.eol.md.md file
         coverage: Generate coverage report
         pattern: Test name pattern to match
         
@@ -173,7 +173,7 @@ async def create_feature(
     template = generator.create_feature_template(
         name, description, requirements, tags
     )
-    path = f"features/{name}.eol"
+    path = f"features/{name}.eol.md"
     await save_file(path, template)
     return path
 
@@ -336,7 +336,7 @@ async def prompt_tdd() -> str:
     """Guide for test-driven EOL development"""
     return """Test-Driven Development with EOL:
     
-    1. Write Test Specifications (.test.eol):
+    1. Write Test Specifications (.test.eol.md):
        - Gherkin scenarios
        - Expected behaviors
        - Edge cases
@@ -468,7 +468,7 @@ services:
       - ./features:/features
       - ./data:/data
       - ./.claude/context:/.claude/context
-    command: ["run", "features/example.eol", "--watch"]
+    command: ["run", "features/example.eol.md", "--watch"]
   
   # EOL as MCP HTTP server
   eol-mcp-http:
@@ -503,19 +503,19 @@ services:
 ### CLI Mode Examples
 ```bash
 # Run a feature
-eol run user-auth.eol --phase prototyping
+eol run user-auth.eol.md --phase prototyping
 
 # Run tests
-eol test user-auth.test.eol --coverage
+eol test user-auth.test.eol.md --coverage
 
 # Generate implementation
-eol generate user-auth.eol --output src/
+eol generate user-auth.eol.md --output src/
 
 # Start MCP HTTP server
 eol serve --port 8000
 
 # Watch mode for development
-eol run user-auth.eol --watch
+eol run user-auth.eol.md --watch
 ```
 
 ### MCP Mode Examples

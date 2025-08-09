@@ -14,7 +14,7 @@ EOL is an AI framework for building modern LLM applications with a two-phase dev
 ┌────────────────▼────────────────────────────────────────────┐
 │                    EOL Core Engine                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ .eol Parser  │  │Phase Manager │  │Context Manager│     │
+│  │ .eol.md Parser  │  │Phase Manager │  │Context Manager│     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 └────────────────┬────────────────────────────────────────────┘
                  │
@@ -58,16 +58,16 @@ EOL is an AI framework for building modern LLM applications with a two-phase dev
 
 ```python
 # CLI command structure
-eol run <feature.eol> [--phase prototyping|implementation|hybrid]
-eol test <feature.test.eol> [--coverage]
-eol generate <feature.eol> --output src/
-eol switch <feature.eol> --to implementation
+eol run <feature.eol.md> [--phase prototyping|implementation|hybrid]
+eol test <feature.test.eol.md> [--coverage]
+eol generate <feature.eol.md> --output src/
+eol switch <feature.eol.md> --to implementation
 ```
 
 ### 2. Core Engine
 
-#### .eol Parser
-- **Purpose**: Parse and validate .eol files
+#### .eol.md Parser
+- **Purpose**: Parse and validate .eol.md files
 - **Technologies**: Python, YAML, Markdown
 - **Responsibilities**:
   - Frontmatter extraction
@@ -277,7 +277,7 @@ volumes:
 
 ### Prototyping Phase Flow
 ```
-1. User writes .eol file with natural language
+1. User writes .eol.md file with natural language
 2. CLI parses file and extracts specifications
 3. Phase Manager routes to Prototyping Engine
 4. Context Manager retrieves relevant context
@@ -288,7 +288,7 @@ volumes:
 
 ### Implementation Phase Flow
 ```
-1. User writes/generates Python code in .eol
+1. User writes/generates Python code in .eol.md
 2. CLI parses and validates code
 3. Phase Manager routes to Implementation Engine
 4. Code executed in sandboxed environment
@@ -317,7 +317,7 @@ eol/
 ├── packages/                     # Core packages (uv workspace)
 │   ├── eol-core/                # Core engine
 │   │   ├── src/
-│   │   │   ├── parser/          # .eol file parser
+│   │   │   ├── parser/          # .eol.md file parser
 │   │   │   ├── phase/           # Phase management
 │   │   │   └── context/         # Context management
 │   │   ├── tests/
@@ -363,7 +363,7 @@ eol/
 │   ├── api/                     # REST API
 │   └── worker/                  # Background workers
 │
-├── features/                     # .eol specifications
+├── features/                     # .eol.md specifications
 │   ├── examples/
 │   ├── prototypes/
 │   └── implementations/
@@ -528,8 +528,8 @@ logger.info(
 ## Development Workflow
 
 ### Feature Development
-1. Write `.eol` specification
-2. Write `.test.eol` tests
+1. Write `.eol.md` specification
+2. Write `.test.eol.md` tests
 3. Run in prototyping mode
 4. Validate with tests
 5. Generate implementation
@@ -578,7 +578,7 @@ uv run pytest --cov=packages --cov-report=html
 2. **Distributed Execution**: Cross-node orchestration
 3. **Advanced RAG**: GraphRAG integration
 4. **Real-time Collaboration**: Multi-user editing
-5. **Visual Designer**: GUI for .eol files
+5. **Visual Designer**: GUI for .eol.md files
 
 ### Research Areas
 1. **Autonomous Agents**: Self-improving features

@@ -10,15 +10,16 @@ Rapid AI application prototyping using natural language specifications and LLM-d
 
 ### Key Components
 
-#### .eol Files
-- **Format**: Markdown-based, LLM-friendly DSL
+#### .eol.md Files
+- **Format**: Markdown-based, LLM-friendly DSL with native preview support
 - **Content**: Feature specifications in natural language
 - **Execution**: Interpreted by LLMs at runtime
 - **Flexibility**: Changes applied immediately without compilation
+- **Tooling**: Native GitHub/IDE markdown preview and syntax highlighting
 
 #### Redis MCP Integration
 ```yaml
-# feature.eol
+# feature.eol.md.md
 name: user-session-manager
 description: Manage user sessions with context awareness
 
@@ -51,7 +52,7 @@ Convert validated prototypes into deterministic, production-ready code.
 
 #### Code Generation
 ```python
-# Generated from feature.eol
+# Generated from feature.eol.md
 class UserSessionManager:
     def __init__(self, redis_client):
         self.redis = redis_client
@@ -71,7 +72,7 @@ class UserSessionManager:
 
 #### Embedded Scripts in .eol
 ```yaml
-# feature.eol with implementation
+# feature.eol.md.md with implementation
 name: user-session-manager
 
 implementation:
@@ -126,7 +127,7 @@ features:
 
 #### Annotation-Based
 ```yaml
-# feature.eol
+# feature.eol.md.md
 name: hybrid-feature
 
 sections:
@@ -203,16 +204,16 @@ implementation:
 ### EOL CLI
 ```bash
 # Run in prototype mode
-eol run feature.eol --phase prototype
+eol run feature.eol.md --phase prototype
 
 # Generate implementation
-eol generate feature.eol --output src/
+eol generate feature.eol.md --output src/
 
 # Switch phase
-eol switch feature.eol --to implementation
+eol switch feature.eol.md --to implementation
 
 # Mixed execution
-eol run feature.eol --hybrid
+eol run feature.eol.md --hybrid
 ```
 
 ### Phase Analyzer

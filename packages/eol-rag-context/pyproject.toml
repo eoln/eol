@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eol-rag-context"
+version = "0.1.0"
+description = "Intelligent RAG-based context management MCP server for EOL Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0"
+authors = [
+    { name = "eoln", email = "github@eoln.io" }
+]
+dependencies = [
+    "fastmcp>=0.3.0",
+    "redis>=5.0.0",
+    "redis-vl>=0.2.0",
+    "numpy>=1.24.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "aiofiles>=23.0.0",
+    "tiktoken>=0.5.0",
+    "pypdf>=4.0.0",
+    "python-docx>=1.0.0",
+    "python-magic>=0.4.0",
+    "tree-sitter>=0.20.0",
+    "tree-sitter-python>=0.20.0",
+    "tree-sitter-javascript>=0.20.0",
+    "tree-sitter-typescript>=0.20.0",
+    "tree-sitter-rust>=0.20.0",
+    "tree-sitter-go>=0.20.0",
+    "tree-sitter-java>=0.20.0",
+    "markdown>=3.5.0",
+    "beautifulsoup4>=4.12.0",
+    "sentence-transformers>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-redis>=4.0.0",
+]
+
+[project.scripts]
+eol-rag-context = "eol.rag_context.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eol"]

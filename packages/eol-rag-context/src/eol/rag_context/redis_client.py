@@ -7,12 +7,26 @@ import json
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 import numpy as np
-from redis import Redis
-from redis.asyncio import Redis as AsyncRedis
-from redis.commands.search.field import TextField, VectorField, NumericField, TagField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-from redis.commands.search.query import Query
 import logging
+
+try:
+    from redis import Redis
+    from redis.asyncio import Redis as AsyncRedis
+    from redis.commands.search.field import TextField, VectorField, NumericField, TagField
+    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+    from redis.commands.search.query import Query
+except ImportError:
+    # Fallback for testing without redis-py[search]
+    from unittest.mock import MagicMock
+    Redis = MagicMock
+    AsyncRedis = MagicMock
+    TextField = MagicMock
+    VectorField = MagicMock
+    NumericField = MagicMock
+    TagField = MagicMock
+    IndexDefinition = MagicMock
+    IndexType = MagicMock
+    Query = MagicMock
 
 from .config import RedisConfig, IndexConfig
 

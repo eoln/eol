@@ -13,7 +13,7 @@ try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
     from redis.commands.search.field import TextField, VectorField, NumericField, TagField
-    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+    from redis.commands.search.index_definition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
 except ImportError:
     # Fallback for testing without redis-py[search]
@@ -56,16 +56,24 @@ class RedisVectorStore:
         
     def connect(self) -> None:
         """Establish Redis connection."""
-        self.redis = Redis(
-            host=self.redis_config.host,
-            port=self.redis_config.port,
-            db=self.redis_config.db,
-            password=self.redis_config.password,
-            decode_responses=self.redis_config.decode_responses,
-            max_connections=self.redis_config.max_connections,
-            socket_keepalive=self.redis_config.socket_keepalive,
-            socket_keepalive_options=self.redis_config.socket_keepalive_options,
-        )
+        # Build connection kwargs
+        kwargs = {
+            'host': self.redis_config.host,
+            'port': self.redis_config.port,
+            'db': self.redis_config.db,
+            'password': self.redis_config.password,
+            'decode_responses': self.redis_config.decode_responses,
+            'max_connections': self.redis_config.max_connections
+        }
+        
+        # Skip socket options on macOS
+        import platform
+        if platform.system() != 'Darwin':
+            if self.redis_config.socket_keepalive:
+                kwargs['socket_keepalive'] = True
+                kwargs['socket_keepalive_options'] = self.redis_config.socket_keepalive_options
+        
+        self.redis = Redis(**kwargs)
         
         # Test connection
         try:
@@ -77,16 +85,25 @@ class RedisVectorStore:
     
     async def connect_async(self) -> None:
         """Establish async Redis connection."""
-        self.async_redis = await AsyncRedis(
-            host=self.redis_config.host,
-            port=self.redis_config.port,
-            db=self.redis_config.db,
-            password=self.redis_config.password,
-            decode_responses=self.redis_config.decode_responses,
-            max_connections=self.redis_config.max_connections,
-            socket_keepalive=self.redis_config.socket_keepalive,
-            socket_keepalive_options=self.redis_config.socket_keepalive_options,
-        )
+        # Build connection kwargs
+        kwargs = {
+            'host': self.redis_config.host,
+            'port': self.redis_config.port,
+            'db': self.redis_config.db,
+            'password': self.redis_config.password,
+            'decode_responses': self.redis_config.decode_responses,
+            'max_connections': self.redis_config.max_connections
+        }
+        
+        # Only add socket options if they're not causing issues
+        if self.redis_config.socket_keepalive:
+            kwargs['socket_keepalive'] = True
+            # Skip socket_keepalive_options on macOS as they can cause issues
+            import platform
+            if platform.system() != 'Darwin':
+                kwargs['socket_keepalive_options'] = self.redis_config.socket_keepalive_options
+        
+        self.async_redis = await AsyncRedis(**kwargs)
         
         # Test connection
         try:

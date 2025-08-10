@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY pyproject.toml ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout && \
+    uv pip install --system redis aioredis aiofiles numpy pydantic pydantic-settings && \
+    uv pip install --system sentence-transformers pypdf python-docx python-magic-bin && \
+    uv pip install --system beautifulsoup4 markdown pyyaml networkx watchdog gitignore-parser && \
+    uv pip install --system fastmcp typer rich
+
+# Copy source code
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Set Python path
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+
+# Default command
+CMD ["python", "-m", "pytest", "tests/integration/", "-xvs", "--cov=eol.rag_context", "--cov-report=term"]

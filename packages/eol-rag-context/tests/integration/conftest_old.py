@@ -1,6 +1,5 @@
 """
 Integration test configuration and fixtures.
-This version doesn't mock Redis since we need real Redis for integration tests.
 """
 
 import pytest
@@ -9,10 +8,12 @@ import os
 import tempfile
 from pathlib import Path
 import time
+
+# Only mock what's absolutely necessary for missing packages
 import sys
 from unittest.mock import MagicMock
 
-# Mock only non-Redis dependencies for integration tests
+# Mock all external dependencies that aren't installed
 mock_modules = [
     'fastmcp', 'fastmcp.server', 
     'tree_sitter', 'tree_sitter_python', 'tree_sitter_javascript',
@@ -23,13 +24,10 @@ mock_modules = [
     'typer', 'rich', 'rich.console', 'rich.table',
     'gitignore_parser'
 ]
-
-# Don't mock Redis for integration tests!
 for module in mock_modules:
     if module not in sys.modules:
         sys.modules[module] = MagicMock()
 
-# Now import our modules - Redis will use real implementation
 from eol.rag_context import config
 from eol.rag_context import redis_client
 from eol.rag_context import embeddings
@@ -63,29 +61,32 @@ async def redis_config():
 
 @pytest.fixture(scope="session")
 async def redis_store(redis_config):
-    """Create a Redis store for testing with real Redis."""
+    """Create a Redis store for testing."""
     store = redis_client.RedisVectorStore(
         redis_config,
         config.IndexConfig()
     )
     
-    # Connect to real Redis
-    await store.connect_async()
-    store.connect()
+    # Connect to Redis
+    max_retries = 10
+    for i in range(max_retries):
+        try:
+            await store.connect_async()
+            store.connect()  # Also establish sync connection
+            break
+        except Exception as e:
+            if i == max_retries - 1:
+                raise
+            print(f"Waiting for Redis... attempt {i+1}/{max_retries}")
+            await asyncio.sleep(2)
     
     # Create indexes
-    try:
-        store.create_hierarchical_indexes(embedding_dim=768)
-    except Exception as e:
-        print(f"Warning: Could not create indexes: {e}")
+    store.create_hierarchical_indexes(embedding_dim=768)
     
     yield store
     
     # Cleanup
-    try:
-        await store.close()
-    except:
-        pass
+    await store.close()
 
 
 @pytest.fixture
@@ -122,11 +123,12 @@ async def indexer_instance(redis_store, document_processor_instance, embedding_m
 @pytest.fixture
 async def semantic_cache_instance(redis_store, embedding_manager):
     """Create a semantic cache for testing."""
-    cache_config = config.CacheConfig(
+    cache_config = config.SemanticCacheConfig(
         enabled=True,
         similarity_threshold=0.9,
         max_cache_size=100,
-        ttl_seconds=3600
+        ttl_seconds=3600,
+        target_hit_rate=0.31
     )
     return semantic_cache.SemanticCache(
         cache_config,
@@ -138,7 +140,7 @@ async def semantic_cache_instance(redis_store, embedding_manager):
 @pytest.fixture
 async def knowledge_graph_instance(redis_store):
     """Create a knowledge graph builder for testing."""
-    kg_config = config.GraphConfig(
+    kg_config = config.KnowledgeGraphConfig(
         enabled=True,
         max_depth=3,
         similarity_threshold=0.8
@@ -149,7 +151,7 @@ async def knowledge_graph_instance(redis_store):
 @pytest.fixture
 async def file_watcher_instance(indexer_instance):
     """Create a file watcher for testing."""
-    watcher_config = config.WatcherConfig(
+    watcher_config = config.FileWatcherConfig(
         enabled=True,
         watch_interval=1,
         debounce_seconds=0.5
@@ -219,3 +221,15 @@ def process_data(data):
 """)
         
         yield test_dir
+
+
+@pytest.fixture
+def mock_fastmcp():
+    """Mock FastMCP for server tests."""
+    from unittest.mock import MagicMock, AsyncMock
+    
+    mock_mcp = MagicMock()
+    mock_mcp.tool = MagicMock()
+    mock_mcp.run = AsyncMock()
+    
+    return mock_mcp

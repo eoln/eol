@@ -179,17 +179,19 @@ $PYTHON_CMD -m pytest \
 # Calculate coverage percentage
 COVERAGE=$($PYTHON_CMD -c "
 import subprocess
+import sys
+import re
 result = subprocess.run(
-    ['python', '-m', 'pytest', 'tests/', '--cov=eol.rag_context', '--cov-report=', '--quiet'],
-    capture_output=True, text=True
+    [sys.executable, '-m', 'pytest', 'tests/', '--cov=eol.rag_context', '--cov-report=', '--quiet'],
+    capture_output=True, text=True, cwd='$(pwd)'
 )
 for line in result.stdout.split('\n'):
     if 'TOTAL' in line:
-        parts = line.split()
-        for i, part in enumerate(parts):
-            if '%' in part:
-                print(part.replace('%', ''))
-                break
+        # Extract percentage using regex
+        match = re.search(r'(\d+)%', line)
+        if match:
+            print(match.group(1))
+            break
 " 2>/dev/null || echo "0")
 
 echo ""

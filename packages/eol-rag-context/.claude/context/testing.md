@@ -196,6 +196,43 @@ pytest -m integration  # Integration tests only
 pytest -m "not slow"  # Skip slow tests
 ```
 
+## Important Testing Principles
+
+### Integration Tests Must Use Real Dependencies
+
+**CRITICAL**: Integration tests should NEVER mock the interfaces they are testing. This is a common mistake that defeats the purpose of integration testing.
+
+#### ❌ Wrong Approach:
+```python
+# DON'T DO THIS in integration tests!
+sys.modules['redis'] = MagicMock()  # This breaks integration testing
+```
+
+#### ✅ Correct Approach:
+```python
+# Integration tests use REAL Redis
+from redis import Redis  # Real Redis client
+await store.connect_async()  # Connects to actual Redis instance
+```
+
+#### Why This Matters:
+1. **Integration tests verify real interactions** between components
+2. **Mocking Redis in integration tests** means you're not testing Redis integration at all
+3. **Only mock external dependencies** that aren't part of the test scope (e.g., external APIs)
+
+#### What to Mock vs What Not to Mock:
+
+**In Unit Tests - Mock Everything External:**
+- ✅ Mock Redis, databases, file systems
+- ✅ Mock external APIs and services
+- ✅ Mock dependencies to isolate the unit
+
+**In Integration Tests - Use Real Components:**
+- ❌ DON'T mock Redis when testing Redis integration
+- ❌ DON'T mock the database when testing database operations
+- ❌ DON'T mock file systems when testing file operations
+- ✅ DO mock unrelated external services (e.g., third-party APIs not under test)
+
 ## Writing New Tests
 
 ### Unit Test Template

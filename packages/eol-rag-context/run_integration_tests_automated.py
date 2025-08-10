@@ -12,6 +12,24 @@ import signal
 import atexit
 from pathlib import Path
 
+# Check if we're in a virtual environment
+def in_virtualenv():
+    return hasattr(sys, 'real_prefix') or (
+        hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
+    )
+
+# Activate virtual environment if it exists and we're not in one
+venv_path = Path(__file__).parent / '.venv'
+if venv_path.exists() and not in_virtualenv():
+    activate_script = venv_path / 'bin' / 'activate_this.py'
+    if activate_script.exists():
+        exec(open(activate_script).read(), {'__file__': str(activate_script)})
+    else:
+        # Use the venv's Python directly
+        venv_python = venv_path / 'bin' / 'python'
+        if venv_python.exists():
+            os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
 class IntegrationTestRunner:
     def __init__(self):
         self.redis_process = None

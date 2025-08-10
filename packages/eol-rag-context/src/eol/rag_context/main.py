@@ -36,16 +36,16 @@ def main():
     # Load configuration
     config_path = Path(sys.argv[1]) if len(sys.argv) > 1 else None
     
-    try:
-        if config_path:
+    if config_path:
+        try:
             config = RAGConfig.from_file(config_path)
             logging.info(f"Loaded configuration from {config_path}")
-        else:
-            config = RAGConfig()
-            logging.info("Using default configuration")
-    except Exception as e:
-        logging.error(f"Failed to load configuration: {e}")
-        sys.exit(1)
+        except Exception as e:
+            logging.error(f"Failed to load configuration: {e}")
+            sys.exit(1)
+    else:
+        config = RAGConfig()
+        logging.info("Using default configuration")
     
     # Create and run server
     server = EOLRAGContextServer(config)

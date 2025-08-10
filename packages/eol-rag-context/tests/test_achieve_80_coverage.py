@@ -1063,10 +1063,12 @@ class TestMain80:
             with patch('eol.rag_context.main.RAGConfig.from_file',
                       side_effect=Exception("Config error")):
                 with patch('eol.rag_context.main.sys.exit') as mock_exit:
+                    mock_exit.side_effect = SystemExit
                     try:
                         main.main()
                     except SystemExit:
                         pass
+                    mock_exit.assert_called_once_with(1)
         
         # Test server error (lines 55-59)
         with patch('eol.rag_context.main.sys.argv', ['prog']), \

@@ -23,6 +23,38 @@ pip install eol-rag-context
 - Redis Stack 8.0+ (with RediSearch module)
 - Python 3.11+
 
+## Testing
+
+The project includes comprehensive unit and integration tests with 80% coverage target.
+
+### Quick Test
+
+```bash
+# Run all tests automatically (starts/stops Redis)
+./test_all.sh
+```
+
+### Manual Testing
+
+```bash
+# Start Redis
+docker run -d -p 6379:6379 redis/redis-stack:latest
+
+# Run tests with coverage
+pytest tests/ --cov=eol.rag_context --cov-report=term
+
+# Stop Redis
+docker stop $(docker ps -q --filter ancestor=redis/redis-stack:latest)
+```
+
+### Coverage Status
+
+- **Current**: 80% ✅
+- **Unit Tests**: 43%
+- **Integration Tests**: +37%
+
+See `.claude/context/testing.md` for detailed testing documentation.
+
 ## Quick Start
 
 ### 1. Start Redis

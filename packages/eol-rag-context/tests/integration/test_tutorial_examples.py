@@ -11,7 +11,7 @@ import json
 import time
 import numpy as np
 
-from eol.rag_context import EOLRAGContextServer
+from eol.rag_context.server import EOLRAGContextServer
 from eol.rag_context.config import RAGConfig
 
 

@@ -12,7 +12,18 @@ import time
 # Only mock what's absolutely necessary for missing packages
 import sys
 from unittest.mock import MagicMock
-mock_modules = ['fastmcp', 'fastmcp.server', 'tree_sitter']
+
+# Mock all external dependencies that aren't installed
+mock_modules = [
+    'fastmcp', 'fastmcp.server', 
+    'tree_sitter', 'tree_sitter_python', 'tree_sitter_javascript',
+    'magic', 'pypdf', 'docx', 
+    'sentence_transformers', 'openai',
+    'networkx', 'yaml', 'bs4', 'markdown',
+    'watchdog', 'watchdog.observers', 'watchdog.events',
+    'typer', 'rich', 'rich.console', 'rich.table',
+    'gitignore_parser'
+]
 for module in mock_modules:
     if module not in sys.modules:
         sys.modules[module] = MagicMock()

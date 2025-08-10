@@ -25,8 +25,34 @@ phase: prototyping | implementation | hybrid
 tags: [tag1, tag2, tag3]
 tests: feature-name.test.eol.md  # Optional link to test file
 dependencies:
-  - redis-mcp
-  - another-feature
+  features:
+    - authentication.eol.md
+    - rate-limiting.eol.md
+  mcp_servers:
+    - name: redis-mcp
+      version: ">=1.0.0"
+    - name: postgres-mcp
+      version: "2.x"
+  services:
+    - name: stripe-api
+      url: https://api.stripe.com
+      version: "2024-01-01"
+  packages:
+    - redis[vector]>=5.0.0
+    - fastapi>=0.100.0
+  containers:
+    - redis/redis-stack:latest
+    - postgres:15-alpine
+  models:
+    - name: claude-3-opus
+      provider: anthropic
+      purpose: complex-reasoning
+    - name: gpt-4-turbo
+      provider: openai
+      purpose: code-generation
+    - name: llama-3.1-70b
+      provider: local
+      purpose: fast-inference
 ---
 
 # Feature Name (H1 required)
@@ -77,6 +103,102 @@ async def feature_function(param1: str, param2: List[str]) -> Dict:
 function featureFunction(param1, param2) {
     // JavaScript implementation
 }
+```
+
+## Dependencies (optional)
+```yaml
+# Comprehensive dependency specification
+dependencies:
+  # Feature dependencies - other .eol.md files
+  features:
+    - path: auth/authentication.eol.md
+      version: "^2.0.0"
+      phase: implementation  # Use this feature in implementation phase
+    - path: core/rate-limiting.eol.md
+      version: "~1.5.0"
+      phase: all  # Use in all phases
+  
+  # MCP server dependencies for prototyping
+  mcp_servers:
+    - name: redis-mcp
+      version: ">=1.0.0"
+      config:
+        url: ${REDIS_URL:-redis://localhost:6379}
+      fallback: redis-direct  # Fallback to direct Redis if MCP unavailable
+    - name: postgres-mcp
+      version: "2.x"
+      required: false  # Optional dependency
+  
+  # External service dependencies
+  services:
+    - name: stripe-api
+      type: rest
+      url: ${STRIPE_API_URL:-https://api.stripe.com}
+      version: "2024-01-01"
+      auth:
+        type: bearer
+        token: ${STRIPE_API_KEY}
+      phase: implementation
+    - name: openai-api
+      type: rest
+      url: https://api.openai.com/v1
+      phase: prototyping
+  
+  # Python package dependencies
+  packages:
+    - name: redis[vector]
+      version: ">=5.0.0"
+      phase: all
+    - name: fastapi
+      version: ">=0.100.0,<1.0.0"
+      phase: implementation
+    - name: langchain
+      version: "^0.1.0"
+      phase: prototyping
+  
+  # Container dependencies
+  containers:
+    - name: redis
+      image: redis/redis-stack:latest
+      ports:
+        - "6379:6379"
+      phase: all
+    - name: postgres
+      image: postgres:15-alpine
+      env:
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+      phase: implementation
+  
+  # LLM model dependencies
+  models:
+    - name: claude-3-opus
+      provider: anthropic
+      version: "20240229"
+      purpose: complex-reasoning
+      config:
+        temperature: 0.7
+        max_tokens: 4096
+      phase: prototyping
+    - name: gpt-4-turbo
+      provider: openai
+      version: "gpt-4-turbo-preview"
+      purpose: code-generation
+      config:
+        temperature: 0.3
+        max_tokens: 8192
+      fallback: gpt-3.5-turbo  # Use if primary unavailable
+    - name: llama-3.1-70b
+      provider: local
+      endpoint: ${LOCAL_LLM_ENDPOINT:-http://localhost:11434}
+      purpose: fast-inference
+      config:
+        temperature: 0.5
+      phase: prototyping
+    - name: text-embedding-3-large
+      provider: openai
+      purpose: embeddings
+      dimensions: 3072
+      phase: all
 ```
 
 ## Configuration (optional)
@@ -347,6 +469,7 @@ def assert_valid_session(session_data):
 ### 2. Frontmatter Metadata
 - **Required fields**: name, version, phase
 - **Optional fields**: tags, dependencies, tests
+- **Dependency types**: features, mcp_servers, services, packages, containers, models
 - **Extensible**: Add custom fields as needed
 
 ### 3. Phase Support
@@ -396,6 +519,7 @@ class EOLFeature:
     implementation: Optional[Dict]
     operations: List[Dict]
     tests: Optional[str]
+    dependencies: Optional[Dict]
     
 class EOLParser:
     def parse(self, file_path: str) -> EOLFeature:
@@ -432,7 +556,8 @@ class EOLParser:
             prototyping=code_blocks.get('natural'),
             implementation=code_blocks.get('python'),
             operations=self.parse_operations(sections),
-            tests=frontmatter.get('tests')
+            tests=frontmatter.get('tests'),
+            dependencies=self.parse_dependencies(frontmatter.get('dependencies', {}))
         )
         
         # Validate
@@ -451,6 +576,45 @@ class EOLParser:
         code_blocks = {}
         # Extract ```language blocks
         return code_blocks
+    
+    def parse_dependencies(self, deps: Dict) -> Dict:
+        """Parse and validate dependencies"""
+        parsed = {
+            'features': [],
+            'mcp_servers': [],
+            'services': [],
+            'packages': [],
+            'containers': [],
+            'models': []
+        }
+        
+        # Parse each dependency type
+        for dep_type in parsed.keys():
+            if dep_type in deps:
+                parsed[dep_type] = self.validate_dependency_type(
+                    dep_type, 
+                    deps[dep_type]
+                )
+        
+        return parsed
+    
+    def validate_dependency_type(self, dep_type: str, deps: List) -> List:
+        """Validate specific dependency type"""
+        validated = []
+        for dep in deps:
+            if dep_type == 'models':
+                # Validate LLM model dependencies
+                assert 'name' in dep, f"Model dependency missing name: {dep}"
+                assert 'provider' in dep, f"Model dependency missing provider: {dep}"
+                assert 'purpose' in dep, f"Model dependency missing purpose: {dep}"
+            elif dep_type == 'features':
+                # Validate feature dependencies
+                if isinstance(dep, str):
+                    dep = {'path': dep}
+                assert 'path' in dep or 'name' in dep
+            # Add more validations as needed
+            validated.append(dep)
+        return validated
     
     def validate_feature(self, feature: EOLFeature):
         """Validate feature specification"""

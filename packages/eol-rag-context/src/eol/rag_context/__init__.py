@@ -7,7 +7,6 @@ replacing static context files with intelligent retrieval.
 
 __version__ = "0.1.0"
 
-from .server import EOLRAGContextServer
 from .config import RAGConfig
 
-__all__ = ["EOLRAGContextServer", "RAGConfig"]
+__all__ = ["RAGConfig"]

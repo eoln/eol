@@ -15,8 +15,15 @@ from bs4 import BeautifulSoup
 import markdown
 import pypdf
 from docx import Document as DocxDocument
-import tree_sitter
-from tree_sitter import Language, Parser
+# Optional tree-sitter for AST parsing
+try:
+    import tree_sitter
+    from tree_sitter import Language, Parser
+    TREE_SITTER_AVAILABLE = True
+except ImportError:
+    TREE_SITTER_AVAILABLE = False
+    Language = None
+    Parser = None
 import logging
 
 from .config import DocumentConfig, ChunkingConfig
@@ -47,6 +54,9 @@ class DocumentProcessor:
     def _init_code_parsers(self) -> Dict[str, Parser]:
         """Initialize tree-sitter parsers for code."""
         parsers = {}
+        
+        if not TREE_SITTER_AVAILABLE:
+            return parsers
         
         # Map file extensions to languages
         lang_map = {

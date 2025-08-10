@@ -1,0 +1,24 @@
+[project]
+name = "eol-cli"
+version = "0.1.0"
+description = "CLI interface for EOL framework"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0" }
+authors = [
+    { name = "eoln", email = "eoln@users.noreply.github.com" }
+]
+dependencies = [
+    "eol-core",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "click>=8.1.0",
+    "watchdog>=3.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+eol = "eol.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -191,8 +191,7 @@ jobs:
         uv pip install --system pydantic pydantic-settings aiofiles
         uv pip install --system numpy redis aioredis
         
-        # Mocking dependencies
-        uv pip install --system unittest-mock
+        # Note: unittest.mock is part of Python standard library (no install needed)
         
         echo "📦 Installed dependencies for Python ${{ matrix.python-version }}"
     

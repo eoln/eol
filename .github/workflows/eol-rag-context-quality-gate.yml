@@ -189,7 +189,7 @@ jobs:
         
         # Application dependencies (minimal for unit tests)
         uv pip install --system pydantic pydantic-settings aiofiles
-        uv pip install --system numpy redis aioredis
+        uv pip install --system numpy redis aioredis python-magic pypdf python-docx
         
         # Note: unittest.mock is part of Python standard library (no install needed)
         
@@ -276,7 +276,7 @@ jobs:
         # Full dependencies for integration tests
         uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout
         uv pip install --system redis aioredis numpy pydantic pydantic-settings
-        uv pip install --system aiofiles beautifulsoup4 markdown pyyaml
+        uv pip install --system aiofiles beautifulsoup4 markdown pyyaml python-magic pypdf python-docx
         uv pip install --system networkx sentence-transformers
         
         # Optional dependencies for comprehensive testing
@@ -395,8 +395,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv pip install --system pytest pytest-asyncio pytest-benchmark
-        uv pip install --system redis numpy pydantic sentence-transformers
-        uv pip install --system networkx aiofiles
+        uv pip install --system redis numpy pydantic sentence-transformers python-magic
+        uv pip install --system networkx aiofiles pypdf python-docx
     
     - name: Run performance tests
       working-directory: ${{ env.PACKAGE_PATH }}
@@ -470,8 +470,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv pip install --system pytest pytest-asyncio pytest-cov
-        uv pip install --system redis numpy pydantic sentence-transformers
-        uv pip install --system networkx aiofiles beautifulsoup4 aioredis pydantic-settings
+        uv pip install --system redis numpy pydantic sentence-transformers python-magic
+        uv pip install --system networkx aiofiles pypdf python-docx beautifulsoup4 aioredis pydantic-settings
     
     - name: Wait for Redis
       run: |

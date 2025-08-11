@@ -101,9 +101,11 @@ jobs:
           ${{ runner.os }}-pip-
     
     - name: Install quality tools
+      working-directory: ${{ env.PACKAGE_PATH }}
       run: |
         python -m pip install --upgrade pip
-        pip install black isort flake8 mypy bandit safety
+        pip install -r requirements-dev.txt  # Includes black, ruff, mypy, etc.
+        pip install bandit safety  # Additional security tools
     
     - name: Code formatting check (Black)
       working-directory: ${{ env.PACKAGE_PATH }}
@@ -187,10 +189,9 @@ jobs:
         # Core testing dependencies
         uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist
         
-        # Application dependencies (minimal for unit tests)
-        uv pip install --system pydantic pydantic-settings aiofiles
-        uv pip install --system numpy redis aioredis python-magic pypdf python-docx
-        uv pip install --system beautifulsoup4 markdown networkx
+        # Install project dependencies from requirements files
+        uv pip install --system -r requirements.txt
+        uv pip install --system sentence-transformers  # For embeddings in tests
         
         # Note: unittest.mock is part of Python standard library (no install needed)
         
@@ -274,11 +275,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         
-        # Full dependencies for integration tests
+        # Install all project dependencies for integration tests
         uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout
-        uv pip install --system redis aioredis numpy pydantic pydantic-settings
-        uv pip install --system aiofiles beautifulsoup4 markdown pyyaml python-magic pypdf python-docx
-        uv pip install --system networkx sentence-transformers
+        uv pip install --system -r requirements.txt
+        uv pip install --system sentence-transformers  # For embeddings
+        uv pip install --system aioredis  # For async Redis operations
         
         # Optional dependencies for comprehensive testing
         uv pip install --system watchdog gitignore-parser || true
@@ -396,8 +397,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv pip install --system pytest pytest-asyncio pytest-benchmark
-        uv pip install --system redis numpy pydantic sentence-transformers python-magic
-        uv pip install --system networkx aiofiles pypdf python-docx beautifulsoup4 markdown
+        uv pip install --system -r requirements.txt
+        uv pip install --system sentence-transformers  # For embeddings
     
     - name: Run performance tests
       working-directory: ${{ env.PACKAGE_PATH }}
@@ -471,8 +472,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv pip install --system pytest pytest-asyncio pytest-cov
-        uv pip install --system redis numpy pydantic sentence-transformers python-magic
-        uv pip install --system networkx aiofiles pypdf python-docx beautifulsoup4 aioredis pydantic-settings
+        uv pip install --system -r requirements.txt
+        uv pip install --system sentence-transformers aioredis  # Additional for coverage tests
     
     - name: Wait for Redis
       run: |

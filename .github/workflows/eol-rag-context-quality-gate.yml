@@ -211,6 +211,8 @@ jobs:
           tests/test_indexer.py \
           -v \
           --tb=short \
+          --timeout=300 \
+          --timeout-method=thread \
           --cov=eol.rag_context \
           --cov-report=term \
           --cov-report=xml:unit-coverage-${{ matrix.python-version }}.xml \

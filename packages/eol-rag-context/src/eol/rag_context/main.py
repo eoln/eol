@@ -15,10 +15,9 @@ def main():
     """Main CLI entry point."""
     # Setup logging
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    
+
     # Parse arguments
     if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
         print("EOL RAG Context MCP Server")
@@ -32,10 +31,10 @@ def main():
         print("  REDIS_PORT     Redis port (default: 6379)")
         print("  EMBEDDING_PROVIDER  Embedding provider (default: sentence-transformers)")
         sys.exit(0)
-    
+
     # Load configuration
     config_path = Path(sys.argv[1]) if len(sys.argv) > 1 else None
-    
+
     try:
         if config_path:
             config = RAGConfig.from_file(config_path)
@@ -46,10 +45,10 @@ def main():
     except Exception as e:
         logging.error(f"Failed to load configuration: {e}")
         sys.exit(1)
-    
+
     # Create and run server
     server = EOLRAGContextServer(config)
-    
+
     try:
         asyncio.run(server.run())
     except KeyboardInterrupt:

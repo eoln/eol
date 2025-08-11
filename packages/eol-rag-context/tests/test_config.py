@@ -12,13 +12,13 @@ from eol.rag_context.config import (
     CacheConfig,
     ContextConfig,
     DocumentConfig,
-    RAGConfig
+    RAGConfig,
 )
 
 
 class TestRedisConfig:
     """Test Redis configuration."""
-    
+
     def test_default_config(self):
         """Test default Redis configuration."""
         config = RedisConfig()
@@ -26,12 +26,12 @@ class TestRedisConfig:
         assert config.port == 6379
         assert config.db == 0
         assert config.decode_responses is False
-    
+
     def test_url_generation(self):
         """Test Redis URL generation."""
         config = RedisConfig(host="redis.example.com", port=6380, db=1)
         assert config.url == "redis://redis.example.com:6380/1"
-        
+
         # With password
         config = RedisConfig(password="secret")
         assert config.url == "redis://:secret@localhost:6379/0"
@@ -39,7 +39,7 @@ class TestRedisConfig:
 
 class TestEmbeddingConfig:
     """Test embedding configuration."""
-    
+
     def test_default_config(self):
         """Test default embedding configuration."""
         config = EmbeddingConfig()
@@ -47,7 +47,7 @@ class TestEmbeddingConfig:
         assert config.model_name == "all-MiniLM-L6-v2"
         assert config.dimension == 384
         assert config.normalize is True
-    
+
     def test_dimension_validation(self):
         """Test embedding dimension validation."""
         # Should auto-correct dimension for known models
@@ -58,7 +58,7 @@ class TestEmbeddingConfig:
 
 class TestIndexConfig:
     """Test index configuration."""
-    
+
     def test_default_config(self):
         """Test default index configuration."""
         config = IndexConfig()
@@ -71,7 +71,7 @@ class TestIndexConfig:
 
 class TestChunkingConfig:
     """Test chunking configuration."""
-    
+
     def test_default_config(self):
         """Test default chunking configuration."""
         config = ChunkingConfig()
@@ -83,7 +83,7 @@ class TestChunkingConfig:
 
 class TestCacheConfig:
     """Test cache configuration."""
-    
+
     def test_default_config(self):
         """Test default cache configuration."""
         config = CacheConfig()
@@ -95,7 +95,7 @@ class TestCacheConfig:
 
 class TestContextConfig:
     """Test context configuration."""
-    
+
     def test_default_config(self):
         """Test default context configuration."""
         config = ContextConfig()
@@ -107,7 +107,7 @@ class TestContextConfig:
 
 class TestDocumentConfig:
     """Test document configuration."""
-    
+
     def test_default_config(self):
         """Test default document configuration."""
         config = DocumentConfig()
@@ -120,15 +120,15 @@ class TestDocumentConfig:
 
 class TestRAGConfig:
     """Test main RAG configuration."""
-    
+
     def test_default_config(self, tmp_path):
         """Test default RAG configuration."""
         config = RAGConfig(data_dir=tmp_path / "data", index_dir=tmp_path / "index")
-        
+
         assert config.server_name == "eol-rag-context"
         assert config.server_version == "0.1.0"
         assert config.debug is False
-        
+
         # Sub-configs should be initialized
         assert isinstance(config.redis, RedisConfig)
         assert isinstance(config.embedding, EmbeddingConfig)
@@ -137,13 +137,13 @@ class TestRAGConfig:
         assert isinstance(config.cache, CacheConfig)
         assert isinstance(config.context, ContextConfig)
         assert isinstance(config.document, DocumentConfig)
-    
+
     def test_directory_creation(self, tmp_path):
         """Test that directories are created."""
         data_dir = tmp_path / "test_data"
         index_dir = tmp_path / "test_index"
-        
+
         config = RAGConfig(data_dir=data_dir, index_dir=index_dir)
-        
+
         assert data_dir.exists()
         assert index_dir.exists()

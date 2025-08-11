@@ -613,7 +613,7 @@ jobs:
     
     - name: Upload Trivy scan results to GitHub Security
       if: always()
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
     
@@ -622,8 +622,8 @@ jobs:
       run: |
         echo "🔍 Checking for known vulnerabilities..."
         
-        # Install safety for dependency checking
-        pip install safety
+        # Install safety and tomli for dependency checking
+        pip install safety tomli
         
         # Create a temporary requirements file from pyproject.toml
         python -c "

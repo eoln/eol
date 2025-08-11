@@ -22,6 +22,13 @@ types-markdown
 # Development tools
 ipython>=8.0.0
 
+# Documentation tools
+mkdocs>=1.6.0
+mkdocs-material>=9.6.0
+mkdocstrings[python]>=0.30.0
+pydocstyle>=6.3.0
+docformatter>=1.7.0
+
 # Optional: Embedding providers (uncomment as needed)
 # sentence-transformers>=2.2.0  # For local embeddings
 # openai>=1.0.0  # For OpenAI embeddings

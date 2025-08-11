@@ -601,6 +601,11 @@ jobs:
     needs: pre-flight
     if: needs.pre-flight.outputs.package-changed == 'true'
     
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -615,9 +620,36 @@ jobs:
     
     - name: Upload Trivy scan results to GitHub Security
       if: always()
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v2
+      continue-on-error: true
       with:
         sarif_file: 'trivy-results.sarif'
+        category: 'trivy-security-scan'
+    
+    - name: Display security scan summary
+      if: always()
+      run: |
+        echo "🔒 Security scan completed"
+        if [ -f trivy-results.sarif ]; then
+          echo "✅ SARIF report generated successfully"
+          # Extract basic info from SARIF (if available)
+          python -c "
+          import json
+          try:
+              with open('trivy-results.sarif', 'r') as f:
+                  data = json.load(f)
+              runs = data.get('runs', [])
+              if runs:
+                  results = runs[0].get('results', [])
+                  print(f'📊 Security scan found {len(results)} issues')
+              else:
+                  print('📊 No security issues found')
+          except:
+              print('📊 Security scan completed (details in SARIF file)')
+          " || echo "📊 Security scan completed"
+        else
+          echo "⚠️ SARIF report not found"
+        fi
     
     - name: Dependency vulnerability check
       working-directory: ${{ env.PACKAGE_PATH }}

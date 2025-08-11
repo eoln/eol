@@ -126,9 +126,9 @@ Third paragraph with more information."""
         chunks = processor._chunk_code_by_lines(content, "python")
 
         assert len(chunks) > 0
-        assert all(chunk["language"] == "python" for chunk in chunks)
+        assert all(chunk["metadata"]["language"] == "python" for chunk in chunks)
         assert all(chunk["type"] == "lines" for chunk in chunks)
-        assert chunks[0]["start_line"] == 1
+        assert chunks[0]["metadata"]["start_line"] == 1
 
     @pytest.mark.asyncio
     async def test_process_nonexistent_file(self, processor):

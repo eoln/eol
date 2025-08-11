@@ -921,9 +921,14 @@ class DocumentProcessor:
                                 )
                             )
 
+                        # Always advance start to avoid infinite loop
                         start = (
                             end - self.chunk_config.chunk_overlap if end < len(para_text) else end
                         )
+                        
+                        # Ensure we make progress even if overlap is large
+                        if start <= end - self.chunk_config.max_chunk_size:
+                            start = end
                 elif current_size + para_char_size > self.chunk_config.max_chunk_size:
                     if current_chunk:
                         chunks.append(

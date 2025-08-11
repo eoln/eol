@@ -153,7 +153,7 @@ class KnowledgeGraphBuilder:
         doc_count = 0
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match=pattern,
                 count=100
@@ -164,7 +164,7 @@ class KnowledgeGraphBuilder:
                     return
                 
                 # Get document data
-                data = await self.redis.redis.hgetall(key)
+                data = self.redis.redis.hgetall(key)
                 if not data:
                     continue
                 
@@ -408,14 +408,14 @@ class KnowledgeGraphBuilder:
         cursor = 0
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match=pattern,
                 count=100
             )
             
             for key in keys:
-                data = await self.redis.redis.hgetall(key)
+                data = self.redis.redis.hgetall(key)
                 if not data:
                     continue
                 
@@ -526,7 +526,7 @@ class KnowledgeGraphBuilder:
             if entity.embedding is not None:
                 entity_data["embedding"] = entity.embedding.tobytes()
             
-            await self.redis.redis.hset(entity_key, mapping=entity_data)
+            self.redis.redis.hset(entity_key, mapping=entity_data)
         
         # Store relationships
         for rel in self.relationships:
@@ -538,11 +538,11 @@ class KnowledgeGraphBuilder:
                 "weight": rel.weight,
                 "properties": json.dumps(rel.properties),
             }
-            await self.redis.redis.hset(rel_key, mapping=rel_data)
+            self.redis.redis.hset(rel_key, mapping=rel_data)
         
         # Store graph metadata
         graph_meta_key = "kg_metadata"
-        await self.redis.redis.hset(graph_meta_key, mapping={
+        self.redis.redis.hset(graph_meta_key, mapping={
             "entity_count": len(self.entities),
             "relationship_count": len(self.relationships),
             "last_updated": json.dumps({"timestamp": time.time()}),
@@ -657,14 +657,14 @@ class KnowledgeGraphBuilder:
         similarities = []
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match=pattern,
                 count=100
             )
             
             for key in keys:
-                data = await self.redis.redis.hgetall(key)
+                data = self.redis.redis.hgetall(key)
                 if b"embedding" in data:
                     entity_id = key.decode().split(":", 1)[1]
                     embedding = np.frombuffer(data[b"embedding"], dtype=np.float32)

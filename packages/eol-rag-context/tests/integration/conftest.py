@@ -19,7 +19,7 @@ mock_modules = [
     'fastmcp', 'fastmcp.server', 
     'tree_sitter', 'tree_sitter_python', 'tree_sitter_javascript',
     'pypdf', 'docx',
-    'networkx',
+    # 'networkx',  # Don't mock - needed for knowledge graph
     'watchdog', 'watchdog.observers', 'watchdog.events',
     'typer', 'rich', 'rich.console', 'rich.table',
     'gitignore_parser'
@@ -229,7 +229,7 @@ async def file_watcher_instance(indexer_instance):
     yield watcher
     
     # Cleanup
-    await watcher.stop_all()
+    await watcher.stop()
 
 
 @pytest.fixture

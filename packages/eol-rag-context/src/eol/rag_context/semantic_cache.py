@@ -135,7 +135,7 @@ class SemanticCache:
                 
                 # Update hit count
                 cache_key = f"cache:{best_match[0]}"
-                await self.redis.redis.hincrby(cache_key, "hit_count", 1)
+                self.redis.redis.hincrby(cache_key, "hit_count", 1)
                 
                 # Get response
                 response = best_match[2]["response"]
@@ -182,10 +182,10 @@ class SemanticCache:
         }
         
         # Store in Redis
-        await self.redis.redis.hset(cache_key, mapping=cache_data)
+        self.redis.redis.hset(cache_key, mapping=cache_data)
         
         # Set TTL
-        await self.redis.redis.expire(cache_key, self.config.ttl_seconds)
+        self.redis.redis.expire(cache_key, self.config.ttl_seconds)
         
         logger.debug(f"Cached response for query")
     
@@ -209,7 +209,7 @@ class SemanticCache:
         
         # Execute search
         try:
-            results = await self.redis.redis.ft("cache_index").search(
+            results = self.redis.redis.ft("cache_index").search(
                 redis_query,
                 query_params={"vec": query_vector}
             )
@@ -240,7 +240,7 @@ class SemanticCache:
         count = 0
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match="cache:*",
                 count=100
@@ -259,14 +259,14 @@ class SemanticCache:
         entries = []
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match="cache:*",
                 count=100
             )
             
             for key in keys:
-                timestamp = await self.redis.redis.hget(key, "timestamp")
+                timestamp = self.redis.redis.hget(key, "timestamp")
                 if timestamp:
                     entries.append((key, float(timestamp)))
             
@@ -279,7 +279,7 @@ class SemanticCache:
         # Evict 10% of cache
         evict_count = max(1, len(entries) // 10)
         for key, _ in entries[:evict_count]:
-            await self.redis.redis.delete(key)
+            self.redis.redis.delete(key)
         
         logger.debug(f"Evicted {evict_count} cache entries")
     
@@ -326,14 +326,14 @@ class SemanticCache:
         deleted = 0
         
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match="cache:*",
                 count=100
             )
             
             if keys:
-                await self.redis.redis.delete(*keys)
+                self.redis.redis.delete(*keys)
                 deleted += len(keys)
             
             if cursor == 0:

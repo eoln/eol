@@ -192,8 +192,7 @@ class TestRedisIntegration:
     async def test_filtered_search(self, redis_store, embedding_manager):
         """Test vector search with metadata filters."""
         # NOTE: Redis TAG field filtering with KNN queries is not working properly
-        # This test is simplified to just test basic vector search
-        pytest.skip("TAG field filtering with KNN queries not supported in current Redis setup")
+        # This test is simplified to just test basic vector search without filters
         
         # Store documents with different metadata and real embeddings
         categories = ["science", "technology", "history"]

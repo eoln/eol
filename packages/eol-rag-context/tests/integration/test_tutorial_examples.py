@@ -103,22 +103,22 @@ class TestTutorialExamples:
         server._initialized = True
         
         # Start watching a directory for changes using watcher directly
-        watch_result = await file_watcher_instance.watch_directory(
-            str(temp_test_directory),
-            patterns=["*.py", "*.md"],
-            auto_index=True
+        source_id = await file_watcher_instance.watch(
+            temp_test_directory,
+            recursive=True,
+            file_patterns=["*.py", "*.md"]
         )
         
-        assert watch_result['status'] == 'success'
-        assert 'watch_id' in watch_result
-        print(f"Watching with ID: {watch_result['watch_id']}")
+        assert source_id is not None
+        assert isinstance(source_id, str)
+        print(f"Watching with source ID: {source_id}")
         
         # Stop watching using watcher directly
-        unwatch_result = await file_watcher_instance.unwatch_directory(watch_result['watch_id'])
-        assert unwatch_result['status'] == 'success'
+        unwatch_result = await file_watcher_instance.unwatch(source_id)
+        assert unwatch_result is True
     
     @pytest.mark.asyncio
-    async def test_basic_search(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_basic_search(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Basic Search (from Searching & Retrieval section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -129,9 +129,8 @@ class TestTutorialExamples:
         await indexer_instance.index_folder(str(temp_test_directory))
         
         # Search for relevant context using Redis store directly
-        from eol.rag_context.embeddings import MockSentenceTransformer
-        embedder = MockSentenceTransformer()
-        query_embedding = embedder.encode(["How to implement authentication?"])[0]
+        query = "How to implement authentication?"
+        query_embedding = await embedding_manager.get_embedding(query)
         results = await redis_store.vector_search(
             query_embedding=query_embedding,
             hierarchy_level=3,
@@ -151,7 +150,7 @@ class TestTutorialExamples:
             print("---")
     
     @pytest.mark.asyncio
-    async def test_hierarchical_search(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_hierarchical_search(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Hierarchical Search (from Searching & Retrieval section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -162,9 +161,8 @@ class TestTutorialExamples:
         await indexer_instance.index_folder(str(temp_test_directory))
         
         # Search at different hierarchy levels using Redis store
-        from eol.rag_context.embeddings import MockSentenceTransformer
-        embedder = MockSentenceTransformer()
-        query_embedding = embedder.encode(["database connection"])[0]
+        query = "database connection"
+        query_embedding = await embedding_manager.get_embedding(query)
         results = await redis_store.vector_search(
             query_embedding=query_embedding,
             hierarchy_level=1,  # Concepts only
@@ -186,7 +184,7 @@ class TestTutorialExamples:
             assert isinstance(sections, list)
     
     @pytest.mark.asyncio
-    async def test_search_with_filters(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_search_with_filters(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Using Filters (from Searching & Retrieval section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -197,9 +195,8 @@ class TestTutorialExamples:
         await indexer_instance.index_folder(str(temp_test_directory))
         
         # Search with metadata filters using Redis store
-        from eol.rag_context.embeddings import MockSentenceTransformer
-        embedder = MockSentenceTransformer()
-        query_embedding = embedder.encode(["error handling"])[0]
+        query = "error handling"
+        query_embedding = await embedding_manager.get_embedding(query)
         results = await redis_store.vector_search(
             query_embedding=query_embedding,
             hierarchy_level=3,
@@ -230,20 +227,20 @@ class TestTutorialExamples:
             max_depth=2
         )
         
-        assert 'entities' in graph
-        assert 'relationships' in graph
-        assert isinstance(graph['entities'], list)
-        assert isinstance(graph['relationships'], list)
+        assert hasattr(graph, 'entities')
+        assert hasattr(graph, 'relationships')
+        assert isinstance(graph.entities, list)
+        assert isinstance(graph.relationships, list)
         
-        print(f"Found {len(graph['entities'])} entities")
-        print(f"Found {len(graph['relationships'])} relationships")
+        print(f"Found {len(graph.entities)} entities")
+        print(f"Found {len(graph.relationships)} relationships")
         
         # Visualize relationships
-        for rel in graph['relationships']:
-            print(f"{rel.get('source', 'unknown')} --{rel.get('type', 'unknown')}--> {rel.get('target', 'unknown')}")
+        for rel in graph.relationships:
+            print(f"{rel.source} --{rel.type}--> {rel.target}")
     
     @pytest.mark.asyncio
-    async def test_semantic_caching(self, redis_store, indexer_instance, semantic_cache_instance, temp_test_directory):
+    async def test_semantic_caching(self, redis_store, indexer_instance, semantic_cache_instance, temp_test_directory, embedding_manager):
         """Test: Semantic Caching (from Advanced Features section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -259,10 +256,8 @@ class TestTutorialExamples:
         
         # First query (cache miss) using cache directly
         start = time.time()
-        from eol.rag_context.embeddings import MockSentenceTransformer
-        embedder = MockSentenceTransformer()
         query1 = "user authentication flow"
-        embedding1 = embedder.encode([query1])[0]
+        embedding1 = await embedding_manager.get_embedding(query1)
         results1 = await semantic_cache_instance.get_cached(query1, embedding1)
         if results1 is None:
             results1 = await redis_store.vector_search(embedding1, hierarchy_level=3, k=5)
@@ -273,7 +268,7 @@ class TestTutorialExamples:
         # Similar query (potential cache hit)
         start = time.time()
         query2 = "authentication process for users"
-        embedding2 = embedder.encode([query2])[0]
+        embedding2 = await embedding_manager.get_embedding(query2)
         results2 = await semantic_cache_instance.get_cached(query2, embedding2)
         if results2 is None:
             results2 = await redis_store.vector_search(embedding2, hierarchy_level=3, k=5)
@@ -287,7 +282,7 @@ class TestTutorialExamples:
         print(f"Cache hit rate: {stats.get('hit_rate', 0):.2%}")
     
     @pytest.mark.asyncio
-    async def test_context_windows_management(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_context_windows_management(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Context Windows Management (from Advanced Features section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -298,9 +293,8 @@ class TestTutorialExamples:
         await indexer_instance.index_folder(str(temp_test_directory))
         
         # Get optimized context for LLM using Redis store
-        from eol.rag_context.embeddings import MockSentenceTransformer
-        embedder = MockSentenceTransformer()
-        query_embedding = embedder.encode(["implement payment processing"])[0]
+        query = "implement payment processing"
+        query_embedding = await embedding_manager.get_embedding(query)
         context = await redis_store.hierarchical_search(
             query_embedding=query_embedding,
             max_chunks=10,
@@ -318,7 +312,7 @@ class TestTutorialExamples:
         assert isinstance(formatted, str)
     
     @pytest.mark.asyncio
-    async def test_code_assistant_example(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_code_assistant_example(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Code Assistant Example (from Integration Examples section) with real Redis."""
         async def code_assistant():
             # Initialize RAG server with real Redis
@@ -337,9 +331,7 @@ class TestTutorialExamples:
             query = "How do I add a new API endpoint?"
             
             # Get relevant context using Redis store
-            from eol.rag_context.embeddings import MockSentenceTransformer
-            embedder = MockSentenceTransformer()
-            query_embedding = embedder.encode([query])[0]
+            query_embedding = await embedding_manager.get_embedding(query)
             results = await redis_store.vector_search(
                 query_embedding=query_embedding,
                 hierarchy_level=3,
@@ -366,7 +358,7 @@ class TestTutorialExamples:
         assert isinstance(context, list)
     
     @pytest.mark.asyncio
-    async def test_documentation_search_example(self, redis_store, indexer_instance, temp_test_directory):
+    async def test_documentation_search_example(self, redis_store, indexer_instance, temp_test_directory, embedding_manager):
         """Test: Documentation Search Example (from Integration Examples section) with real Redis."""
         async def search_docs(query: str):
             server = EOLRAGContextServer()
@@ -378,9 +370,7 @@ class TestTutorialExamples:
             await indexer_instance.index_folder(str(temp_test_directory))
             
             # Search only markdown files using Redis store
-            from eol.rag_context.embeddings import MockSentenceTransformer
-            embedder = MockSentenceTransformer()
-            query_embedding = embedder.encode([query])[0]
+            query_embedding = await embedding_manager.get_embedding(query)
             results = await redis_store.vector_search(
                 query_embedding=query_embedding,
                 hierarchy_level=2,  # Section level

@@ -3,15 +3,16 @@ Final push to achieve 80% test coverage.
 Focus on executing uncovered lines with minimal mocking.
 """
 
-import pytest
-import sys
 import asyncio
-import os
 import json
+import os
+import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, mock_open, patch
+
 import numpy as np
+import pytest
 
 # Mock all external dependencies before imports
 for module in [
@@ -64,16 +65,9 @@ for lang in [
 ]:
     sys.modules[f"tree_sitter_{lang}"] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import document_processor
-from eol.rag_context import embeddings
-from eol.rag_context import redis_client
-from eol.rag_context import indexer
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 @pytest.mark.asyncio

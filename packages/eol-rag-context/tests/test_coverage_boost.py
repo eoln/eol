@@ -2,11 +2,11 @@
 Direct coverage boost - test all uncovered lines directly.
 """
 
-import sys
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
 import asyncio
+import os
+import sys
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Mock all external dependencies before import
 mock_redis = MagicMock()
@@ -48,13 +48,13 @@ sys.modules["fastmcp"] = MagicMock()
 sys.modules["markdown"] = MagicMock()
 sys.modules["gitignore_parser"] = MagicMock()
 
+import eol.rag_context.file_watcher as file_watcher
+import eol.rag_context.knowledge_graph as knowledge_graph
 # Now import the modules
 import eol.rag_context.main as main
-import eol.rag_context.server as server
 import eol.rag_context.redis_client as redis_client
-import eol.rag_context.knowledge_graph as knowledge_graph
 import eol.rag_context.semantic_cache as semantic_cache
-import eol.rag_context.file_watcher as file_watcher
+import eol.rag_context.server as server
 
 
 # Test main.py functions (20% -> 80%)
@@ -256,8 +256,10 @@ def test_server_methods():
 def test_redis_client_methods():
     """Test Redis client methods."""
 
-    import numpy as np
     import json
+
+    import numpy as np
+
     from eol.rag_context import config
 
     store = redis_client.RedisVectorStore(config.RedisConfig(), config.IndexConfig())
@@ -357,8 +359,10 @@ def test_redis_client_methods():
 def test_semantic_cache_methods():
     """Test semantic cache methods."""
 
-    import numpy as np
     import json
+
+    import numpy as np
+
     from eol.rag_context import config
 
     # Create config
@@ -454,6 +458,7 @@ def test_knowledge_graph_methods():
     """Test knowledge graph methods."""
 
     import numpy as np
+
     from eol.rag_context import config
 
     # Mock embeddings

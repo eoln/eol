@@ -3,17 +3,18 @@ Aggressive test to boost coverage to 80%.
 Focuses on uncovered lines in each module.
 """
 
-import sys
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open, PropertyMock
-import tempfile
-import json
 import asyncio
-import numpy as np
-from dataclasses import asdict
-from collections import deque
 import hashlib
+import json
+import os
+import sys
+import tempfile
+from collections import deque
+from dataclasses import asdict
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, mock_open, patch
+
+import numpy as np
 
 # Mock all external dependencies
 for module in [
@@ -54,16 +55,9 @@ for module in [
     sys.modules[module] = MagicMock()
 
 # Import modules
-from eol.rag_context import config
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import redis_client
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 async def boost_document_processor():

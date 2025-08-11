@@ -4,16 +4,15 @@ Test embeddings module.
 Tests cover both sentence-transformers and mock embedding providers.
 """
 
-import pytest
-import numpy as np
 import sys
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from eol.rag_context.embeddings import (
-    EmbeddingProvider,
-    SentenceTransformerProvider,
-    EmbeddingManager,
-)
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pytest
+
 from eol.rag_context.config import EmbeddingConfig
+from eol.rag_context.embeddings import (EmbeddingManager, EmbeddingProvider,
+                                        SentenceTransformerProvider)
 
 
 class TestSentenceTransformerProvider:

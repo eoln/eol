@@ -2,11 +2,13 @@
 Unit tests for document indexer.
 """
 
-import pytest
-from pathlib import Path
 import hashlib
+from pathlib import Path
 
-from eol.rag_context.indexer import DocumentIndexer, FolderScanner, DocumentMetadata
+import pytest
+
+from eol.rag_context.indexer import (DocumentIndexer, DocumentMetadata,
+                                     FolderScanner)
 
 
 class TestFolderScanner:

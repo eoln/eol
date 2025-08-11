@@ -2,9 +2,10 @@
 Simplified MCP Server tests - skipping internal API tests that are broken.
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from eol.rag_context.server import EOLRAGContextServer
 

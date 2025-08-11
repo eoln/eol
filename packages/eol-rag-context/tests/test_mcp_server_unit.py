@@ -2,13 +2,14 @@
 Unit tests for MCP server with proper mocking.
 """
 
-import pytest
-import sys
-from pathlib import Path
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
-import numpy as np
 import json
+import sys
 import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pytest
 
 # Mock all external dependencies
 for module in [

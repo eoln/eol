@@ -40,16 +40,19 @@ Example:
 
 import asyncio
 import json
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
-import numpy as np
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
-    from redis.commands.search.field import TextField, VectorField, NumericField, TagField
-    from redis.commands.search.index_definition import IndexDefinition, IndexType
+    from redis.commands.search.field import (NumericField, TagField, TextField,
+                                             VectorField)
+    from redis.commands.search.index_definition import (IndexDefinition,
+                                                        IndexType)
     from redis.commands.search.query import Query
 except ImportError:
     # Fallback for testing without redis-py[search]
@@ -65,7 +68,7 @@ except ImportError:
     IndexType = MagicMock
     Query = MagicMock
 
-from .config import RedisConfig, IndexConfig
+from .config import IndexConfig, RedisConfig
 
 logger = logging.getLogger(__name__)
 

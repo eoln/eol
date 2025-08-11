@@ -7,8 +7,8 @@ import logging
 import sys
 from pathlib import Path
 
-from .server import EOLRAGContextServer
 from .config import RAGConfig
+from .server import EOLRAGContextServer
 
 
 def main():

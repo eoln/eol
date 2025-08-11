@@ -2,18 +2,18 @@
 Improved tests for embeddings.py to boost coverage from 47% to 70%.
 """
 
-import pytest
-import sys
 import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch
+import sys
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
+import pytest
 
 # Mock external dependencies
 for module in ["sentence_transformers", "openai", "redis", "redis.asyncio"]:
     sys.modules[module] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import embeddings
+from eol.rag_context import config, embeddings
 
 
 @pytest.mark.asyncio

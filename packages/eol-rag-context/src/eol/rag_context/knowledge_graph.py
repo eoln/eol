@@ -48,18 +48,19 @@ Example:
 """
 
 import asyncio
-import json
 import hashlib
-from typing import List, Dict, Any, Set, Tuple, Optional
-from dataclasses import dataclass, field, asdict
-from collections import defaultdict
-import numpy as np
-import networkx as nx
+import json
 import logging
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from .redis_client import RedisVectorStore
+import networkx as nx
+import numpy as np
+
 from .embeddings import EmbeddingManager
+from .redis_client import RedisVectorStore
 
 logger = logging.getLogger(__name__)
 

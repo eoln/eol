@@ -2,14 +2,15 @@
 Comprehensive unit tests for all modules.
 """
 
-import pytest
-import sys
-from pathlib import Path
-from unittest.mock import Mock, AsyncMock, MagicMock, patch, call
-import numpy as np
 import json
-from dataclasses import asdict
+import sys
 import tempfile
+from dataclasses import asdict
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+
+import numpy as np
+import pytest
 
 # Mock all external dependencies
 mock_modules = [
@@ -34,20 +35,20 @@ for module in mock_modules:
     sys.modules[module] = MagicMock()
 
 # Now import our modules
-from eol.rag_context.config import RAGConfig, RedisConfig, EmbeddingConfig
-from eol.rag_context.embeddings import EmbeddingManager, SentenceTransformerProvider
-from eol.rag_context.document_processor import DocumentProcessor, ProcessedDocument
-from eol.rag_context.indexer import DocumentIndexer, FolderScanner, DocumentMetadata, IndexedSource
+from eol.rag_context.config import EmbeddingConfig, RAGConfig, RedisConfig
+from eol.rag_context.document_processor import (DocumentProcessor,
+                                                ProcessedDocument)
+from eol.rag_context.embeddings import (EmbeddingManager,
+                                        SentenceTransformerProvider)
+from eol.rag_context.file_watcher import (ChangeType, FileChange, FileWatcher,
+                                          WatchedSource)
+from eol.rag_context.indexer import (DocumentIndexer, DocumentMetadata,
+                                     FolderScanner, IndexedSource)
+from eol.rag_context.knowledge_graph import (Entity, EntityType,
+                                             KnowledgeGraphBuilder,
+                                             Relationship, RelationType)
 from eol.rag_context.redis_client import RedisVectorStore, VectorDocument
-from eol.rag_context.semantic_cache import SemanticCache, CachedQuery
-from eol.rag_context.knowledge_graph import (
-    KnowledgeGraphBuilder,
-    Entity,
-    EntityType,
-    Relationship,
-    RelationType,
-)
-from eol.rag_context.file_watcher import FileWatcher, FileChange, ChangeType, WatchedSource
+from eol.rag_context.semantic_cache import CachedQuery, SemanticCache
 
 
 class TestRedisVectorStore:

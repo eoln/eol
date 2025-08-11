@@ -3,12 +3,13 @@ Integration tests for full RAG workflow.
 Tests complete indexing, searching, and caching workflow.
 """
 
-import pytest
-import tempfile
-from pathlib import Path
-import numpy as np
 import asyncio
+import tempfile
 import time
+from pathlib import Path
+
+import numpy as np
+import pytest
 
 
 @pytest.mark.integration

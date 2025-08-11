@@ -47,11 +47,12 @@ Example:
 
 import hashlib
 import json
-import time
-from typing import Optional, Dict, Any, List, Tuple
-from dataclasses import dataclass, field, asdict
-import numpy as np
 import logging
+import time
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 from .config import CacheConfig
 from .embeddings import EmbeddingManager
@@ -231,8 +232,10 @@ class SemanticCache:
             logger.info("Cache index already exists")
         except:
             # Create new cache index
-            from redis.commands.search.field import VectorField, TextField, NumericField
-            from redis.commands.search.index_definition import IndexDefinition, IndexType
+            from redis.commands.search.field import (NumericField, TextField,
+                                                     VectorField)
+            from redis.commands.search.index_definition import (
+                IndexDefinition, IndexType)
 
             schema = [
                 TextField("query"),

@@ -60,18 +60,18 @@ Example:
 
 import asyncio
 import hashlib
+import json
 import logging
 import time
-from pathlib import Path
-from typing import Dict, Set, Optional, Callable, List, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import json
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set
 
 try:
+    from watchdog.events import FileSystemEvent, FileSystemEventHandler
     from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
     WATCHDOG_AVAILABLE = True
 except ImportError:

@@ -3,22 +3,24 @@ Comprehensive test suite for eol-rag-context.
 Target: 80% code coverage through systematic testing.
 """
 
-import pytest
-import sys
 import asyncio
-from pathlib import Path
-from unittest.mock import Mock, AsyncMock, MagicMock, patch, PropertyMock, call, mock_open, ANY
-import numpy as np
-import json
-import tempfile
-import os
-from dataclasses import asdict, fields
 import hashlib
-from typing import Any, Dict, List, Optional
-from io import BytesIO, StringIO
+import json
+import os
 import subprocess
-from collections import deque
+import sys
+import tempfile
 import time
+from collections import deque
+from dataclasses import asdict, fields
+from io import BytesIO, StringIO
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from unittest.mock import (ANY, AsyncMock, MagicMock, Mock, PropertyMock, call,
+                           mock_open, patch)
+
+import numpy as np
+import pytest
 
 # =============================================================================
 # MOCK SETUP
@@ -81,17 +83,9 @@ for name, mock in MOCK_MODULES.items():
         sys.modules[name] = mock
 
 # Import modules after mocking
-from eol.rag_context import config
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import redis_client
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
-
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 # =============================================================================
 # CONFIG MODULE TESTS (92% -> 100%)

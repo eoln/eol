@@ -3,16 +3,17 @@ Integration tests for all code examples in the tutorial.
 Ensures all tutorial code is runnable and correct with real Redis v8.
 """
 
-import pytest
 import asyncio
-import tempfile
-from pathlib import Path
 import json
+import tempfile
 import time
-import numpy as np
+from pathlib import Path
 
-from eol.rag_context.server import EOLRAGContextServer
+import numpy as np
+import pytest
+
 from eol.rag_context.config import RAGConfig
+from eol.rag_context.server import EOLRAGContextServer
 
 
 @pytest.mark.integration

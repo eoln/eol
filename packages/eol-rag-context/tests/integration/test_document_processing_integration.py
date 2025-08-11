@@ -3,11 +3,13 @@ Integration tests for document processing.
 Tests real file processing with various formats.
 """
 
-import pytest
+import json
 import tempfile
 from pathlib import Path
-import json
+
 import numpy as np
+import pytest
+
 from eol.rag_context import document_processor
 
 

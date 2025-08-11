@@ -2,18 +2,13 @@
 Test configuration module.
 """
 
-import pytest
 from pathlib import Path
-from eol.rag_context.config import (
-    RedisConfig,
-    EmbeddingConfig,
-    IndexConfig,
-    ChunkingConfig,
-    CacheConfig,
-    ContextConfig,
-    DocumentConfig,
-    RAGConfig,
-)
+
+import pytest
+
+from eol.rag_context.config import (CacheConfig, ChunkingConfig, ContextConfig,
+                                    DocumentConfig, EmbeddingConfig,
+                                    IndexConfig, RAGConfig, RedisConfig)
 
 
 class TestRedisConfig:

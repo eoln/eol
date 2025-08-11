@@ -2,13 +2,14 @@
 Simplified unit tests for indexer without Redis dependency.
 """
 
-import pytest
-import sys
-from pathlib import Path
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
 import hashlib
-import tempfile
 import shutil
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 # Mock external dependencies
 sys.modules["magic"] = MagicMock()
@@ -26,8 +27,8 @@ sys.modules["watchdog.observers"] = MagicMock()
 sys.modules["watchdog.events"] = MagicMock()
 sys.modules["networkx"] = MagicMock()
 
-from eol.rag_context.indexer import FolderScanner, DocumentMetadata
 from eol.rag_context.config import RAGConfig
+from eol.rag_context.indexer import DocumentMetadata, FolderScanner
 
 
 class TestFolderScanner:

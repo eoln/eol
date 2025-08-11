@@ -3,17 +3,19 @@ Pytest configuration and fixtures for unit tests.
 """
 
 import asyncio
-import pytest
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
-from typing import Generator, Dict, AsyncGenerator
-from unittest.mock import Mock, AsyncMock
-import numpy as np
+from typing import AsyncGenerator, Dict, Generator
+from unittest.mock import AsyncMock, Mock
 
-from eol.rag_context.config import RAGConfig, RedisConfig, EmbeddingConfig, IndexConfig
-from eol.rag_context.embeddings import EmbeddingManager
+import numpy as np
+import pytest
+
+from eol.rag_context.config import (EmbeddingConfig, IndexConfig, RAGConfig,
+                                    RedisConfig)
 from eol.rag_context.document_processor import DocumentProcessor
+from eol.rag_context.embeddings import EmbeddingManager
 
 
 @pytest.fixture

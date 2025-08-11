@@ -2,15 +2,15 @@
 Embeddings management for EOL RAG Context.
 """
 
+import asyncio
 import hashlib
-import time
-from typing import List, Optional, Dict, Any, Union
-import numpy as np
-
 # from sentence_transformers import SentenceTransformer  # Optional dependency
 import logging
-import asyncio
+import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
 
 from .config import EmbeddingConfig
 

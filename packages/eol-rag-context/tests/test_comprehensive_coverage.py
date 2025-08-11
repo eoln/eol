@@ -3,16 +3,17 @@ Comprehensive test suite to achieve 80% coverage for EOL RAG Context.
 This file tests all untested code paths to reach the 80% coverage requirement.
 """
 
-import pytest
 import asyncio
-import json
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, Mock, PropertyMock
-import numpy as np
-import sys
 import hashlib
+import json
+import sys
+import tempfile
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
+
+import numpy as np
+import pytest
 
 # Mock external dependencies before importing our modules
 sys.modules["magic"] = MagicMock()
@@ -37,16 +38,9 @@ sys.modules["rich.table"] = MagicMock()
 sys.modules["gitignore_parser"] = MagicMock()
 
 # Now import our modules
-from eol.rag_context import config
-from eol.rag_context import redis_client
-from eol.rag_context import document_processor
-from eol.rag_context import embeddings
-from eol.rag_context import indexer
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 class TestRedisClientCoverage:

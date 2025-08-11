@@ -29,14 +29,15 @@ Example:
 import asyncio
 import hashlib
 import json
-import time
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Set, Tuple
-from dataclasses import dataclass, field, asdict
-import numpy as np
 import logging
+import time
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import gitignore_parser
+import numpy as np
 
 from .config import RAGConfig
 from .document_processor import DocumentProcessor, ProcessedDocument

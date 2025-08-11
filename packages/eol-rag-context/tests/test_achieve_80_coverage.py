@@ -3,18 +3,19 @@ Comprehensive test file to achieve 80% coverage.
 Focuses on executing all uncovered lines across all modules.
 """
 
-import pytest
-import sys
 import asyncio
-import os
-import json
-import tempfile
 import hashlib
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open, PropertyMock
+import json
+import os
+import sys
+import tempfile
 from collections import deque
 from dataclasses import asdict
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, mock_open, patch
+
 import numpy as np
+import pytest
 
 # Mock ALL external dependencies before imports
 mock_modules = {}
@@ -65,16 +66,9 @@ for module in [
     sys.modules[module] = mock_modules[module]
 
 # Import our modules after mocking
-from eol.rag_context import config
-from eol.rag_context import document_processor
-from eol.rag_context import embeddings
-from eol.rag_context import redis_client
-from eol.rag_context import indexer
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 class TestRedisClient80:

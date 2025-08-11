@@ -2,16 +2,16 @@
 Integration test configuration and fixtures.
 """
 
-import pytest
 import asyncio
 import os
-import tempfile
-from pathlib import Path
-import time
-
 # Only mock what's absolutely necessary for missing packages
 import sys
+import tempfile
+import time
+from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 # Mock all external dependencies that aren't installed
 mock_modules = [
@@ -42,15 +42,9 @@ for module in mock_modules:
     if module not in sys.modules:
         sys.modules[module] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import redis_client
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph,
+                             redis_client, semantic_cache, server)
 
 
 @pytest.fixture(scope="session")
@@ -227,7 +221,7 @@ def process_data(data):
 @pytest.fixture
 def mock_fastmcp():
     """Mock FastMCP for server tests."""
-    from unittest.mock import MagicMock, AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
 
     mock_mcp = MagicMock()
     mock_mcp.tool = MagicMock()

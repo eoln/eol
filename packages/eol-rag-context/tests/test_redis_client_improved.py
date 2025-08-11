@@ -2,11 +2,12 @@
 Improved tests for redis_client to boost coverage from 26% to 60%.
 """
 
-import sys
-import json
 import asyncio
+import json
+import sys
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+
 import numpy as np
 
 # Mock all Redis dependencies
@@ -31,9 +32,7 @@ sys.modules["redis.exceptions"] = mock_redis.exceptions
 # Mock knowledge_graph
 sys.modules["networkx"] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import redis_client
-from eol.rag_context import knowledge_graph
+from eol.rag_context import config, knowledge_graph, redis_client
 
 
 def test_vector_document():

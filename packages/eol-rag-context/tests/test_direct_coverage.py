@@ -4,13 +4,13 @@ Direct module testing for coverage boost.
 This script directly imports and executes code paths to boost coverage.
 """
 
-import sys
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open
 import asyncio
 import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 # Setup path
 sys.path.insert(0, "/Users/eoln/Devel/eol/packages/eol-rag-context/src")
@@ -66,18 +66,11 @@ for name, mock in mocks.items():
 
 # Now import our modules
 print("Importing modules...")
-from eol.rag_context import config
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import redis_client
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
-
 import numpy as np
+
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 async def boost_coverage():

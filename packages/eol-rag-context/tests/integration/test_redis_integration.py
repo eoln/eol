@@ -3,9 +3,11 @@ Integration tests for Redis vector store operations.
 Tests real Redis connectivity and vector operations.
 """
 
-import pytest
-import numpy as np
 import json
+
+import numpy as np
+import pytest
+
 from eol.rag_context import redis_client
 
 

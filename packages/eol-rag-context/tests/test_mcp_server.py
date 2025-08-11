@@ -2,15 +2,16 @@
 Tests for MCP server functionality.
 """
 
-import pytest
 import asyncio
 import json
-from unittest.mock import Mock, AsyncMock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from eol.rag_context.server import EOLRAGContextServer
-from eol.rag_context.config import RAGConfig
+import pytest
 from fastmcp import FastMCP
+
+from eol.rag_context.config import RAGConfig
+from eol.rag_context.server import EOLRAGContextServer
 
 
 class TestMCPServer:
@@ -103,7 +104,7 @@ class TestMCPServer:
         request = IndexDirectoryRequest(path="/test/path", recursive=True, watch=False)
 
         # FunctionTool objects have a run method that needs context
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await index_tool.run(request)
@@ -129,7 +130,7 @@ class TestMCPServer:
 
         request = SearchContextRequest(query="test query", max_results=5, min_relevance=0.7)
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await search_tool.run(request)
@@ -154,7 +155,7 @@ class TestMCPServer:
 
         request = QueryKnowledgeGraphRequest(query="test query", max_depth=2, max_entities=10)
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await kg_tool.run(request)
@@ -180,7 +181,7 @@ class TestMCPServer:
 
         request = WatchDirectoryRequest(path="/test/path", recursive=True)
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await watch_tool.run(request)
@@ -203,7 +204,7 @@ class TestMCPServer:
 
         # Test with no cache hit
         # Resources are FunctionResource objects with read method
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         # Resources take a uri parameter
@@ -227,7 +228,7 @@ class TestMCPServer:
 
         assert sources_resource is not None
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await sources_resource.read("context://sources")
@@ -247,7 +248,7 @@ class TestMCPServer:
 
         assert stats_resource is not None
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await stats_resource.read("context://stats")
@@ -270,7 +271,7 @@ class TestMCPServer:
 
         assert query_prompt is not None
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         # Prompts use render method
@@ -298,7 +299,7 @@ class TestMCPServer:
             query="test query", max_tokens=1000, strategy="hierarchical"
         )
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await optimize_tool.run(request)
@@ -372,7 +373,7 @@ class TestMCPServerIntegration:
         assert clear_tool is not None
 
         # For tools with no parameters
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         result = await clear_tool.run({})
@@ -397,7 +398,7 @@ class TestMCPServerIntegration:
         # Already mocked in conftest, just ensure it returns True
         server.indexer.remove_source.return_value = True
 
-        from fastmcp.server.context import _current_context, Context
+        from fastmcp.server.context import Context, _current_context
 
         _current_context.set(Context(fastmcp=server.mcp))
         # Pass source_id as a proper argument dict

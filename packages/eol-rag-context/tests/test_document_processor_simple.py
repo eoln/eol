@@ -2,19 +2,22 @@
 Simplified unit tests for document processor without external dependencies.
 """
 
-import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from eol.rag_context.config import DocumentConfig, ChunkingConfig
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
+from eol.rag_context.config import ChunkingConfig, DocumentConfig
 
 # Mock external dependencies
 sys.modules["magic"] = MagicMock()
 sys.modules["pypdf"] = MagicMock()
 sys.modules["docx"] = MagicMock()
 
-from eol.rag_context.document_processor import DocumentProcessor
 from bs4 import BeautifulSoup
+
+from eol.rag_context.document_processor import DocumentProcessor
 
 
 class TestDocumentProcessor:

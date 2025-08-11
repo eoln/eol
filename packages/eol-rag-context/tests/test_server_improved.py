@@ -2,13 +2,14 @@
 Improved tests for server.py to boost coverage from 50% to 70%.
 """
 
-import pytest
-import sys
 import asyncio
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
 import json
+import sys
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
+import pytest
 
 # Mock all external dependencies
 for module in [
@@ -40,11 +41,8 @@ for module in [
 ]:
     sys.modules[module] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import server
-from eol.rag_context import document_processor
-from eol.rag_context import redis_client
-from eol.rag_context import knowledge_graph
+from eol.rag_context import (config, document_processor, knowledge_graph,
+                             redis_client, server)
 
 
 @pytest.mark.asyncio

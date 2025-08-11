@@ -73,15 +73,16 @@ import asyncio
 import hashlib
 import json
 import re
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass, field
 import time
-import magic
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 import aiofiles
-from bs4 import BeautifulSoup
+import magic
 import markdown
 import pypdf
+from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 
 # Optional tree-sitter for AST parsing
@@ -96,7 +97,7 @@ except ImportError:
     Parser = None
 import logging
 
-from .config import DocumentConfig, ChunkingConfig
+from .config import ChunkingConfig, DocumentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -242,12 +243,12 @@ class DocumentProcessor:
 
         # Load available parsers
         try:
-            import tree_sitter_python
-            import tree_sitter_javascript
-            import tree_sitter_typescript
-            import tree_sitter_rust
             import tree_sitter_go
             import tree_sitter_java
+            import tree_sitter_javascript
+            import tree_sitter_python
+            import tree_sitter_rust
+            import tree_sitter_typescript
 
             languages = {
                 "python": Language(tree_sitter_python.language(), "python"),

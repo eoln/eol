@@ -2,17 +2,18 @@
 Final push to 80% coverage - Direct testing of all uncovered lines.
 """
 
-import pytest
-import sys
-import os
 import asyncio
-from pathlib import Path
-from unittest.mock import Mock, AsyncMock, MagicMock, patch, mock_open, ANY
-import numpy as np
 import json
+import os
+import subprocess
+import sys
 import tempfile
 from dataclasses import asdict
-import subprocess
+from pathlib import Path
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock, mock_open, patch
+
+import numpy as np
+import pytest
 
 # Setup comprehensive mocks
 for module in [
@@ -34,17 +35,17 @@ for module in [
 ]:
     sys.modules[module] = MagicMock()
 
-from eol.rag_context import *
 import eol.rag_context.config as config
-import eol.rag_context.embeddings as embeddings
 import eol.rag_context.document_processor as document_processor
+import eol.rag_context.embeddings as embeddings
+import eol.rag_context.file_watcher as file_watcher
 import eol.rag_context.indexer as indexer
+import eol.rag_context.knowledge_graph as knowledge_graph
+import eol.rag_context.main as main
 import eol.rag_context.redis_client as redis_client
 import eol.rag_context.semantic_cache as semantic_cache
-import eol.rag_context.knowledge_graph as knowledge_graph
-import eol.rag_context.file_watcher as file_watcher
 import eol.rag_context.server as server
-import eol.rag_context.main as main
+from eol.rag_context import *
 
 
 # Force execute every line

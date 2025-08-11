@@ -24,10 +24,11 @@ Example:
     >>> config.redis.host = "redis.example.com"
 """
 
-from typing import Optional, Dict, Any, List
-from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator, ConfigDict
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from pydantic import ConfigDict, Field, field_validator
+from pydantic_settings import BaseSettings
 
 
 class RedisConfig(BaseSettings):
@@ -594,6 +595,7 @@ class RAGConfig(BaseSettings):
             6380
         """
         import json
+
         import yaml
 
         if config_path.suffix == ".json":

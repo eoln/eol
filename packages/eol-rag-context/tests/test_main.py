@@ -2,10 +2,11 @@
 Unit tests for main CLI module.
 """
 
-import pytest
 import sys
-from unittest.mock import Mock, MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Mock dependencies
 for module in ["typer", "rich", "rich.console", "redis", "redis.asyncio"]:

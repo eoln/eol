@@ -3,15 +3,16 @@ Integration test configuration and fixtures.
 This version doesn't mock Redis since we need real Redis for integration tests.
 """
 
-import pytest
 import asyncio
 import os
-import tempfile
-from pathlib import Path
-import time
 import sys
+import tempfile
+import time
+from pathlib import Path
 from unittest.mock import MagicMock, Mock
+
 import numpy as np
+import pytest
 
 # Mock only non-essential dependencies for integration tests
 # Don't mock modules that we have installed and need for tests
@@ -101,15 +102,9 @@ mock_openai.OpenAI.return_value = mock_openai_client
 sys.modules["openai"] = mock_openai
 
 # Now import our modules - Redis will use real implementation
-from eol.rag_context import config
-from eol.rag_context import redis_client
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph,
+                             redis_client, semantic_cache, server)
 
 
 @pytest.fixture(scope="function")

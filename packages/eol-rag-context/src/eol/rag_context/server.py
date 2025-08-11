@@ -5,21 +5,21 @@ EOL RAG Context MCP Server.
 import asyncio
 import json
 import logging
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from fastmcp import FastMCP, Context
+from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
 
 from .config import RAGConfig
-from .redis_client import RedisVectorStore
-from .embeddings import EmbeddingManager
 from .document_processor import DocumentProcessor
-from .indexer import DocumentIndexer
-from .semantic_cache import SemanticCache
-from .knowledge_graph import KnowledgeGraphBuilder
+from .embeddings import EmbeddingManager
 from .file_watcher import FileWatcher
+from .indexer import DocumentIndexer
+from .knowledge_graph import KnowledgeGraphBuilder
+from .redis_client import RedisVectorStore
+from .semantic_cache import SemanticCache
 
 logger = logging.getLogger(__name__)
 

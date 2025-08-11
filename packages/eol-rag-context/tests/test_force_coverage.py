@@ -2,13 +2,14 @@
 Force coverage by directly executing all code paths.
 """
 
-import sys
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open
-import tempfile
-import json
 import asyncio
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+
 import numpy as np
 
 # Mock all external dependencies
@@ -48,16 +49,9 @@ for module in [
     sys.modules[module] = MagicMock()
 
 # Import modules
-from eol.rag_context import config
-from eol.rag_context import embeddings
-from eol.rag_context import document_processor
-from eol.rag_context import indexer
-from eol.rag_context import redis_client
-from eol.rag_context import semantic_cache
-from eol.rag_context import knowledge_graph
-from eol.rag_context import file_watcher
-from eol.rag_context import server
-from eol.rag_context import main
+from eol.rag_context import (config, document_processor, embeddings,
+                             file_watcher, indexer, knowledge_graph, main,
+                             redis_client, semantic_cache, server)
 
 
 def test_document_processor():

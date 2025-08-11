@@ -3,13 +3,14 @@ Improved tests for document_processor to boost coverage from 52% to 70%.
 Targets specific uncovered lines.
 """
 
-import pytest
-import sys
 import asyncio
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch, mock_open
-import tempfile
 import json
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+
+import pytest
 
 # Mock all external dependencies
 for module in [
@@ -36,8 +37,7 @@ for module in [
 ]:
     sys.modules[module] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context import document_processor
+from eol.rag_context import config, document_processor
 
 
 @pytest.mark.asyncio

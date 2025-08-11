@@ -3,10 +3,12 @@ Integration tests for document indexing.
 Tests real indexing workflow with Redis.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
+
 import numpy as np
+import pytest
+
 from eol.rag_context import indexer
 
 

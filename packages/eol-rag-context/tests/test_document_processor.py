@@ -62,7 +62,7 @@ class TestDocumentProcessor:
         doc = await processor.process_file(json_file)
 
         assert doc is not None
-        assert doc.doc_type == "json"
+        assert doc.doc_type == "structured"  # JSON files are processed as structured
         assert len(doc.chunks) > 0
         assert "keys" in doc.metadata
         assert "name" in doc.metadata["keys"]
@@ -97,8 +97,8 @@ More content here."""
         chunks = processor._chunk_markdown_by_headers(content)
 
         assert len(chunks) == 4
-        assert all("header" in chunk for chunk in chunks)
-        assert chunks[0]["header"] == "Header 1"
+        assert all("header" in chunk["metadata"] for chunk in chunks)
+        assert chunks[0]["metadata"]["header"] == "Header 1"
 
     def test_chunk_text_semantic(self, processor):
         """Test semantic text chunking."""

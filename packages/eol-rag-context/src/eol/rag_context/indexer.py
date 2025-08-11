@@ -217,7 +217,7 @@ class FolderScanner:
     
     async def scan_folder(
         self,
-        folder_path: Path,
+        folder_path: Path | str,
         recursive: bool = True,
         respect_gitignore: bool = True,
         file_patterns: Optional[List[str]] = None
@@ -234,6 +234,10 @@ class FolderScanner:
         Returns:
             List of file paths to index
         """
+        # Handle both Path and string inputs
+        if isinstance(folder_path, str):
+            folder_path = Path(folder_path)
+            
         if not folder_path.exists():
             raise ValueError(f"Folder does not exist: {folder_path}")
         
@@ -303,7 +307,7 @@ class DocumentIndexer:
     
     async def index_folder(
         self,
-        folder_path: Path,
+        folder_path: Path | str,
         source_id: Optional[str] = None,
         recursive: bool = True,
         force_reindex: bool = False,
@@ -323,18 +327,14 @@ class DocumentIndexer:
             IndexedSource summary
         """
         start_time = time.time()
+        # Handle both Path and string inputs
+        if isinstance(folder_path, str):
+            folder_path = Path(folder_path)
         folder_path = folder_path.resolve()
         
         # Generate source ID if not provided
         if not source_id:
             source_id = self.scanner.generate_source_id(folder_path)
-        
-        # Check if already indexed
-        if not force_reindex:
-            existing = await self._get_indexed_source(source_id)
-            if existing:
-                logger.info(f"Source already indexed: {folder_path}")
-                return existing
         
         # Scan folder
         files = await self.scanner.scan_folder(folder_path, recursive=recursive)
@@ -346,6 +346,13 @@ class DocumentIndexer:
         total_chunks = 0
         indexed_files = 0
         all_errors = []
+        skipped_files = 0
+        
+        # Get existing source info if available
+        existing = await self._get_indexed_source(source_id)
+        if existing and not force_reindex:
+            # Start with existing chunk count for unchanged files
+            total_chunks = existing.total_chunks
         
         for i, file_path in enumerate(files):
             try:
@@ -356,6 +363,7 @@ class DocumentIndexer:
                 # Check if file needs reindexing
                 if not force_reindex and await self._is_file_current(file_path):
                     logger.debug(f"Skipping unchanged file: {file_path}")
+                    skipped_files += 1
                     continue
                 
                 # Process and index file
@@ -383,9 +391,9 @@ class DocumentIndexer:
             source_id=source_id,
             path=folder_path,
             indexed_at=time.time(),
-            file_count=indexed_files,
+            file_count=len(files),  # Total files in folder
             total_chunks=total_chunks,
-            indexed_files=indexed_files,
+            indexed_files=indexed_files + skipped_files,  # All files processed
             metadata={
                 "recursive": recursive,
                 "git": git_metadata,
@@ -403,7 +411,7 @@ class DocumentIndexer:
     
     async def index_file(
         self,
-        file_path: Path,
+        file_path: Path | str,
         source_id: Optional[str] = None,
         root_path: Optional[Path] = None,
         git_metadata: Optional[Dict[str, Any]] = None
@@ -414,6 +422,9 @@ class DocumentIndexer:
         Returns:
             IndexResult with source_id, chunks count, and any errors
         """
+        # Handle both Path and string inputs
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
         file_path = file_path.resolve()
         
         # Generate source ID if not provided
@@ -514,7 +525,8 @@ class DocumentIndexer:
         
         # Create concept document
         concept_id = f"{base_metadata.source_id}_concept_main"
-        concept_metadata = asdict(base_metadata)
+        # Filter out None values for Redis
+        concept_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
         concept_metadata.update({
             "hierarchy_level": 1,
             "concept_type": "document_summary",
@@ -628,8 +640,8 @@ class DocumentIndexer:
         # Generate section ID
         section_id = f"{base_metadata.source_id}_section_{hashlib.md5(content.encode()).hexdigest()[:8]}"
         
-        # Create section metadata
-        section_metadata = asdict(base_metadata)
+        # Create section metadata - filter out None values for Redis
+        section_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
         section_metadata.update({
             "hierarchy_level": 2,
             "section_title": section_title,
@@ -673,9 +685,9 @@ class DocumentIndexer:
             else:
                 parent_section = None
             
-            # Create chunk metadata
-            chunk_metadata = asdict(base_metadata)
-            chunk_metadata.update({
+            # Create chunk metadata - filter out None values for Redis
+            chunk_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
+            chunk_updates = {
                 "chunk_index": i,
                 "hierarchy_level": 3,
                 "section_title": chunk.get("header") or chunk.get("type"),
@@ -683,7 +695,9 @@ class DocumentIndexer:
                 "line_end": chunk.get("end_line"),
                 "char_start": chunk.get("char_start"),
                 "char_end": chunk.get("char_end"),
-            })
+            }
+            # Only add non-None values
+            chunk_metadata.update({k: v for k, v in chunk_updates.items() if v is not None})
             
             # Add chunk-specific metadata
             if doc.doc_type == "code":

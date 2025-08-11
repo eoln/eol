@@ -1,5 +1,50 @@
-"""
-Knowledge graph builder for knowledge discovery.
+"""Knowledge graph builder for semantic knowledge discovery and relationship mapping.
+
+This module constructs and manages dynamic knowledge graphs from indexed documents,
+enabling advanced semantic search and knowledge discovery capabilities. The knowledge
+graph captures entities (concepts, functions, classes, topics) and their relationships
+(structural, semantic, temporal) to provide rich contextual information for RAG systems.
+
+Key Features:
+    - Multi-level entity extraction (documents, concepts, code elements, topics)
+    - Semantic relationship discovery using vector similarity
+    - Code structure analysis with function/class relationships
+    - Graph-based query processing for contextual information retrieval
+    - Community detection and pattern discovery for knowledge insights
+    - NetworkX integration for advanced graph algorithms
+    - Redis-backed persistent storage with efficient querying
+
+The knowledge graph operates on multiple entity types (documents, concepts, functions,
+classes, topics, terms) and relationship types (structural, semantic, code-specific)
+to create a comprehensive representation of the codebase and documentation.
+
+Example:
+    Building and querying a knowledge graph:
+    
+    >>> from eol.rag_context.knowledge_graph import KnowledgeGraphBuilder
+    >>> 
+    >>> # Initialize builder
+    >>> kg_builder = KnowledgeGraphBuilder(redis_store, embedding_manager)
+    >>> 
+    >>> # Build graph from indexed documents
+    >>> await kg_builder.build_from_documents(source_id="project_docs")
+    >>> 
+    >>> # Query for relevant subgraph
+    >>> subgraph = await kg_builder.query_subgraph(
+    ...     query="authentication and security",
+    ...     max_depth=2,
+    ...     max_entities=15
+    ... )
+    >>> 
+    >>> # Analyze results
+    >>> print(f"Found {len(subgraph.entities)} related entities")
+    >>> for entity in subgraph.entities[:5]:
+    ...     print(f"- {entity.name} ({entity.type.value})")
+    >>> 
+    >>> # Discover patterns
+    >>> patterns = await kg_builder.discover_patterns(min_support=0.1)
+    >>> for pattern in patterns[:3]:
+    ...     print(f"Pattern: {pattern['pattern']} (support: {pattern['support']:.1%})")
 """
 
 import asyncio
@@ -20,7 +65,24 @@ logger = logging.getLogger(__name__)
 
 
 class EntityType(Enum):
-    """Types of entities in the knowledge graph."""
+    """Enumeration of entity types supported in the knowledge graph.
+    
+    Defines the various types of entities that can be extracted and stored
+    in the knowledge graph. Each entity type represents a different kind of
+    semantic unit with specific properties and relationship patterns.
+    
+    Entity Categories:
+        Structural: DOCUMENT, SECTION, MODULE, FILE
+        Code Elements: FUNCTION, CLASS, API
+        Conceptual: CONCEPT, TOPIC, TERM
+        External: PERSON, ORGANIZATION, TECHNOLOGY, DATABASE, URL
+    
+    Example:
+        >>> entity_type = EntityType.FUNCTION
+        >>> print(entity_type.value)  # "function"
+        >>> print(EntityType.CONCEPT in [EntityType.CONCEPT, EntityType.TOPIC])
+        True
+    """
 
     CONCEPT = "concept"
     DOCUMENT = "document"
@@ -40,7 +102,28 @@ class EntityType(Enum):
 
 
 class RelationType(Enum):
-    """Types of relationships in the knowledge graph."""
+    """Enumeration of relationship types for connecting knowledge graph entities.
+    
+    Defines the various relationship types that can exist between entities in
+    the knowledge graph. Relationships capture both structural organization
+    and semantic connections to enable rich graph traversal and discovery.
+    
+    Relationship Categories:
+        Structural: CONTAINS, PART_OF, PARENT_OF, CHILD_OF
+        Semantic: RELATES_TO, SIMILAR_TO, DEPENDS_ON, IMPLEMENTS, EXTENDS
+        Code-Specific: USES, CALLS, IMPORTS
+        Documentation: DESCRIBES, REFERENCES, DEFINES, EXPLAINS
+        Temporal: BEFORE, AFTER, DURING
+        Comparative: SAME_AS, DIFFERENT_FROM, ALTERNATIVE_TO
+    
+    Example:
+        >>> rel_type = RelationType.SIMILAR_TO
+        >>> print(rel_type.value)  # "similar_to"
+        >>> 
+        >>> # Check if relationship is structural
+        >>> structural_types = {RelationType.CONTAINS, RelationType.PART_OF}
+        >>> is_structural = rel_type in structural_types
+    """
 
     # Structural relationships
     CONTAINS = "contains"
@@ -77,7 +160,43 @@ class RelationType(Enum):
 
 @dataclass
 class Entity:
-    """Entity in the knowledge graph."""
+    """Knowledge graph entity representing a semantic unit with properties and relationships.
+    
+    Represents a single entity in the knowledge graph, containing all necessary
+    information for semantic processing, similarity matching, and relationship
+    building. Entities can represent anything from code functions to abstract concepts.
+    
+    Attributes:
+        id: Unique identifier for the entity (format: "{type}_{hash}" or custom).
+        name: Human-readable name or title of the entity.
+        type: EntityType enum value specifying the kind of entity.
+        content: Full or partial text content associated with the entity.
+        embedding: Optional vector embedding for similarity calculations.
+        properties: Additional metadata as key-value pairs.
+        source_ids: Set of source document IDs where this entity appears.
+        
+    Example:
+        Creating a function entity:
+        
+        >>> import numpy as np
+        >>> from eol.rag_context.knowledge_graph import Entity, EntityType
+        >>> 
+        >>> entity = Entity(
+        ...     id="func_auth_validate_token",
+        ...     name="validate_token",
+        ...     type=EntityType.FUNCTION,
+        ...     content="Function to validate JWT tokens",
+        ...     embedding=np.random.rand(384).astype(np.float32),
+        ...     properties={
+        ...         "language": "python",
+        ...         "parameters": ["token", "secret"],
+        ...         "returns": "bool"
+        ...     },
+        ...     source_ids={"auth_module_v1"}
+        ... )
+        >>> print(f"{entity.name} ({entity.type.value})")
+        validate_token (function)
+    """
 
     id: str
     name: str
@@ -90,7 +209,37 @@ class Entity:
 
 @dataclass
 class Relationship:
-    """Relationship between entities."""
+    """Directed relationship between two entities in the knowledge graph.
+    
+    Represents a typed, weighted connection between two entities, enabling
+    graph traversal, relationship analysis, and contextual information retrieval.
+    Relationships can have additional properties for storing relationship-specific data.
+    
+    Attributes:
+        source_id: ID of the source entity (relationship origin).
+        target_id: ID of the target entity (relationship destination).
+        type: RelationType enum value specifying the relationship kind.
+        weight: Numeric weight indicating relationship strength (default: 1.0).
+        properties: Additional relationship metadata as key-value pairs.
+        
+    Example:
+        Creating a similarity relationship:
+        
+        >>> from eol.rag_context.knowledge_graph import Relationship, RelationType
+        >>> 
+        >>> relationship = Relationship(
+        ...     source_id="func_auth_login",
+        ...     target_id="func_auth_validate",
+        ...     type=RelationType.SIMILAR_TO,
+        ...     weight=0.87,
+        ...     properties={
+        ...         "similarity": 0.87,
+        ...         "common_tokens": ["auth", "token", "validate"]
+        ...     }
+        ... )
+        >>> print(f"Relationship: {relationship.type.value} (weight: {relationship.weight})")
+        Relationship: similar_to (weight: 0.87)
+    """
 
     source_id: str
     target_id: str
@@ -101,7 +250,33 @@ class Relationship:
 
 @dataclass
 class KnowledgeSubgraph:
-    """Subgraph for a specific query or context."""
+    """Query-specific subgraph containing relevant entities and relationships.
+    
+    Represents a subset of the knowledge graph that is relevant to a specific
+    query or context. Used for providing focused knowledge context to LLMs
+    while maintaining computational efficiency.
+    
+    Attributes:
+        entities: List of entities included in the subgraph.
+        relationships: List of relationships between included entities.
+        central_entities: List of entity IDs that were most relevant to the query.
+        metadata: Additional subgraph information including query context.
+        
+    Example:
+        Processing a query subgraph:
+        
+        >>> subgraph = await kg_builder.query_subgraph("database connections")
+        >>> print(f"Found {len(subgraph.entities)} entities, {len(subgraph.relationships)} relationships")
+        >>> 
+        >>> # Focus on central entities first
+        >>> central = [e for e in subgraph.entities if e.id in subgraph.central_entities]
+        >>> for entity in central:
+        ...     print(f"Central: {entity.name} ({entity.type.value})")
+        >>> 
+        >>> # Analyze relationship patterns
+        >>> rel_types = {r.type.value for r in subgraph.relationships}
+        >>> print(f"Relationship types: {rel_types}")
+    """
 
     entities: List[Entity]
     relationships: List[Relationship]
@@ -110,9 +285,73 @@ class KnowledgeSubgraph:
 
 
 class KnowledgeGraphBuilder:
-    """Builds and manages knowledge graph from indexed documents."""
+    """Comprehensive knowledge graph builder and manager for semantic information extraction.
+    
+    Constructs, maintains, and queries a dynamic knowledge graph from indexed documents,
+    extracting entities and relationships to enable advanced semantic search and
+    knowledge discovery. Integrates with Redis for persistent storage and NetworkX
+    for graph algorithms.
+    
+    The builder processes multiple document types (code files, markdown, plain text)
+    and extracts various entity types (functions, classes, concepts, topics) along
+    with their relationships (structural, semantic, code-specific). This creates a
+    rich knowledge representation for contextual information retrieval.
+    
+    Key Capabilities:
+        - Multi-format document processing (code, markdown, text)
+        - Entity extraction with type classification and embedding generation
+        - Relationship discovery through structural analysis and semantic similarity
+        - Graph-based querying with depth-limited traversal
+        - Pattern discovery and community detection
+        - Persistent storage in Redis with efficient retrieval
+    
+    Attributes:
+        redis: Redis vector store for persistent graph storage.
+        embeddings: Embedding manager for vector similarity calculations.
+        graph: NetworkX MultiDiGraph for in-memory graph operations.
+        entities: Dictionary mapping entity IDs to Entity objects.
+        relationships: List of all relationships in the graph.
+        
+    Example:
+        Complete knowledge graph workflow:
+        
+        >>> from eol.rag_context.knowledge_graph import KnowledgeGraphBuilder
+        >>> 
+        >>> # Initialize with dependencies
+        >>> kg_builder = KnowledgeGraphBuilder(redis_store, embedding_manager)
+        >>> 
+        >>> # Build graph from specific source
+        >>> await kg_builder.build_from_documents(
+        ...     source_id="my_project",
+        ...     max_documents=1000
+        ... )
+        >>> 
+        >>> # Get comprehensive statistics
+        >>> stats = kg_builder.get_graph_stats()
+        >>> print(f"Graph: {stats['entity_count']} entities, {stats['relationship_count']} relationships")
+        >>> print(f"Density: {stats['density']:.3f}, Components: {stats['connected_components']}")
+        >>> 
+        >>> # Query for specific information
+        >>> subgraph = await kg_builder.query_subgraph(
+        ...     query="machine learning algorithms",
+        ...     max_depth=3,
+        ...     max_entities=25
+        ... )
+        >>> 
+        >>> # Discover structural patterns
+        >>> patterns = await kg_builder.discover_patterns(min_support=0.05)
+        >>> for pattern in patterns:
+        ...     if pattern['pattern'].startswith('function'):
+        ...         print(f"Code pattern: {pattern['pattern']} ({pattern['support']:.1%} support)")
+    """
 
     def __init__(self, redis_store: RedisVectorStore, embedding_manager: EmbeddingManager):
+        """Initialize knowledge graph builder with required dependencies.
+        
+        Args:
+            redis_store: Redis vector store for graph persistence and vector operations.
+            embedding_manager: Manager for generating and caching entity embeddings.
+        """
         self.redis = redis_store
         self.embeddings = embedding_manager
         self.graph = nx.MultiDiGraph()  # Multi-directed graph for multiple relationship types
@@ -122,7 +361,46 @@ class KnowledgeGraphBuilder:
     async def build_from_documents(
         self, source_id: Optional[str] = None, max_documents: Optional[int] = None
     ) -> None:
-        """Build knowledge graph from indexed documents."""
+        """Build comprehensive knowledge graph from indexed documents.
+        
+        Constructs a complete knowledge graph by extracting entities and relationships
+        from indexed documents across all hierarchy levels (concepts, sections, chunks).
+        The process includes entity extraction, relationship discovery, semantic
+        similarity analysis, and persistent storage in Redis.
+        
+        Build Process:
+        1. Extract document-level entities from chunks with metadata
+        2. Extract code-specific entities (functions, classes, imports)
+        3. Extract conceptual entities from high-level documents
+        4. Build structural relationships (parent-child, contains)
+        5. Build semantic relationships using vector similarity
+        6. Build code-specific relationships (calls, inheritance)
+        7. Store complete graph in Redis for persistence
+        
+        Args:
+            source_id: Optional source ID to limit graph building to specific documents.
+                If None, processes all indexed documents.
+            max_documents: Optional limit on number of documents to process.
+                Useful for large corpora or testing scenarios.
+                
+        Example:
+            Build graph for entire project:
+            
+            >>> await kg_builder.build_from_documents()
+            >>> stats = kg_builder.get_graph_stats()
+            >>> print(f"Built graph: {stats['entity_count']} entities")
+            
+            Build graph for specific source:
+            
+            >>> await kg_builder.build_from_documents(
+            ...     source_id="auth_module",
+            ...     max_documents=50
+            ... )
+            
+        Note:
+            This operation can be time-intensive for large document sets.
+            Progress is logged at INFO level for monitoring.
+        """
         logger.info("Building knowledge graph from documents...")
 
         # Extract entities from different hierarchy levels
@@ -145,7 +423,20 @@ class KnowledgeGraphBuilder:
     async def _extract_document_entities(
         self, source_id: Optional[str] = None, max_documents: Optional[int] = None
     ) -> None:
-        """Extract document-level entities."""
+        """Extract entities from document chunks with content analysis.
+        
+        Scans Redis for indexed document chunks and creates entity objects
+        for each document. Analyzes document content to extract nested
+        entities based on document type (code, markdown, text).
+        
+        Args:
+            source_id: Optional filter for specific source documents.
+            max_documents: Optional limit on documents to process.
+            
+        Note:
+            This is the primary entity extraction method that processes
+            chunk-level documents and delegates to content-specific extractors.
+        """
         # Scan for documents
         pattern = f"chunk:{source_id}*" if source_id else "chunk:*"
         cursor = 0
@@ -209,7 +500,26 @@ class KnowledgeGraphBuilder:
     async def _extract_code_entities_from_content(
         self, content: str, doc_id: str, metadata: Dict[str, Any]
     ) -> None:
-        """Extract code entities (functions, classes, imports)."""
+        """Extract code-specific entities using pattern matching.
+        
+        Analyzes source code content to identify functions, classes, and
+        import statements. Uses language-specific regular expressions to
+        parse code structure and create appropriate entities.
+        
+        Supported Languages:
+            - Python: functions, classes, imports (from/import)
+            - JavaScript/TypeScript: functions, classes, ES6 imports
+            - Future: Can be extended for other languages
+        
+        Args:
+            content: Source code content to analyze.
+            doc_id: Parent document ID for relationship creation.
+            metadata: Document metadata including language information.
+            
+        Note:
+            Uses regex patterns for simplicity. Could be enhanced with
+            AST parsing for more accurate code structure analysis.
+        """
         language = metadata.get("language", "unknown")
 
         # Simple pattern-based extraction (can be enhanced with AST)
@@ -412,7 +722,22 @@ class KnowledgeGraphBuilder:
         pass
 
     async def _build_semantic_relationships(self) -> None:
-        """Build semantic relationships based on similarity."""
+        """Build semantic relationships using vector embedding similarity.
+        
+        Calculates cosine similarity between entity embeddings and creates
+        SIMILAR_TO relationships for highly similar entities. This captures
+        semantic relationships that aren't apparent from structural analysis.
+        
+        Process:
+        1. Filter entities that have embeddings
+        2. Calculate pairwise cosine similarities
+        3. Create relationships for similarities above 0.8 threshold
+        4. Store similarity scores as relationship weights
+        
+        Note:
+            Computationally intensive for large entity sets (O(n²)).
+            Consider sampling or clustering for very large graphs.
+        """
         # Get entities with embeddings
         entities_with_embeddings = [e for e in self.entities.values() if e.embedding is not None]
 
@@ -506,16 +831,54 @@ class KnowledgeGraphBuilder:
     async def query_subgraph(
         self, query: str, max_depth: int = 2, max_entities: int = 20
     ) -> KnowledgeSubgraph:
-        """
-        Query knowledge graph to get relevant subgraph for a query.
-
+        """Query knowledge graph to retrieve relevant subgraph for a specific query.
+        
+        Performs semantic search to find the most relevant entities for the query,
+        then traverses the graph to build a focused subgraph containing related
+        entities and their relationships. Uses breadth-first search with depth
+        limiting to control subgraph size.
+        
+        Query Process:
+        1. Generate embedding for input query
+        2. Find most relevant entities using vector similarity
+        3. Perform BFS traversal from central entities
+        4. Collect connected entities within max_depth hops
+        5. Extract relationships between included entities
+        6. Return structured subgraph with metadata
+        
         Args:
-            query: User query
-            max_depth: Maximum traversal depth from central entities
-            max_entities: Maximum number of entities to return
-
+            query: Natural language query for finding relevant knowledge.
+            max_depth: Maximum graph traversal depth from central entities.
+                Higher values include more distant relationships.
+            max_entities: Maximum number of entities to include in subgraph.
+                Controls computational complexity and context size.
+                
         Returns:
-            KnowledgeSubgraph with relevant entities and relationships
+            KnowledgeSubgraph containing:
+            - entities: List of relevant Entity objects
+            - relationships: List of relationships between entities
+            - central_entities: IDs of most relevant entities to query
+            - metadata: Query context and subgraph statistics
+            
+        Example:
+            Query for authentication-related information:
+            
+            >>> subgraph = await kg_builder.query_subgraph(
+            ...     query="user authentication and security",
+            ...     max_depth=3,
+            ...     max_entities=15
+            ... )
+            >>> 
+            >>> # Analyze central entities
+            >>> central = [e for e in subgraph.entities if e.id in subgraph.central_entities]
+            >>> for entity in central:
+            ...     print(f"Central: {entity.name} ({entity.type.value})")
+            >>> 
+            >>> # Check relationship patterns
+            >>> rel_counts = {}
+            >>> for rel in subgraph.relationships:
+            ...     rel_counts[rel.type.value] = rel_counts.get(rel.type.value, 0) + 1
+            >>> print(f"Relationship distribution: {rel_counts}")
         """
         # Get query embedding
         query_embedding = await self.embeddings.get_embedding(query)
@@ -593,7 +956,23 @@ class KnowledgeGraphBuilder:
         )
 
     async def _find_relevant_entities(self, query_embedding: np.ndarray, k: int = 5) -> List[str]:
-        """Find most relevant entities using vector similarity."""
+        """Find k most relevant entities using vector similarity search.
+        
+        Searches through all stored entity embeddings to find those most
+        similar to the query embedding. Used as starting points for
+        subgraph traversal in query processing.
+        
+        Args:
+            query_embedding: Query vector for similarity comparison.
+            k: Number of top similar entities to return.
+            
+        Returns:
+            List of entity IDs ranked by similarity to query.
+            
+        Note:
+            Scans all entities in Redis, which may be slow for large graphs.
+            Could be optimized with dedicated vector search index.
+        """
         relevant = []
 
         # Search in stored entities
@@ -625,7 +1004,41 @@ class KnowledgeGraphBuilder:
         return [entity_id for entity_id, _ in similarities[:k]]
 
     def get_graph_stats(self) -> Dict[str, Any]:
-        """Get knowledge graph statistics."""
+        """Get comprehensive statistics about the knowledge graph structure and content.
+        
+        Provides detailed metrics about graph composition, connectivity, and
+        distribution of entity and relationship types. Useful for monitoring
+        graph growth, analyzing knowledge coverage, and optimizing performance.
+        
+        Returns:
+            Dictionary containing:
+            - entity_count: Total number of entities in the graph
+            - relationship_count: Total number of relationships
+            - entity_types: Distribution of entity types with counts
+            - relationship_types: Distribution of relationship types with counts
+            - connected_components: Number of weakly connected components
+            - density: Graph density (0-1, higher = more connected)
+            
+        Example:
+            >>> stats = kg_builder.get_graph_stats()
+            >>> print(f"Graph Overview:")
+            >>> print(f"  Entities: {stats['entity_count']}")
+            >>> print(f"  Relationships: {stats['relationship_count']}")
+            >>> print(f"  Density: {stats['density']:.3f}")
+            >>> print(f"  Components: {stats['connected_components']}")
+            >>> 
+            >>> # Analyze entity distribution
+            >>> print("\nEntity Types:")
+            >>> for entity_type, count in stats['entity_types'].items():
+            ...     print(f"  {entity_type}: {count}")
+            >>> 
+            >>> # Analyze relationship patterns
+            >>> print("\nTop Relationship Types:")
+            >>> sorted_rels = sorted(stats['relationship_types'].items(), 
+            ...                      key=lambda x: x[1], reverse=True)
+            >>> for rel_type, count in sorted_rels[:5]:
+            ...     print(f"  {rel_type}: {count}")
+        """
         return {
             "entity_count": len(self.entities),
             "relationship_count": len(self.relationships),
@@ -654,14 +1067,58 @@ class KnowledgeGraphBuilder:
         }
 
     async def discover_patterns(self, min_support: float = 0.1) -> List[Dict[str, Any]]:
-        """
-        Discover common patterns in the knowledge graph.
-
+        """Discover common structural and semantic patterns in the knowledge graph.
+        
+        Analyzes the knowledge graph to identify recurring patterns, hub entities,
+        and community structures. This provides insights into knowledge organization,
+        identifies important entities, and reveals structural characteristics.
+        
+        Pattern Types Discovered:
+        - Entity-Relationship Patterns: Common triplet patterns (A -rel-> B)
+        - Hub Entities: Highly connected nodes (top 10% by degree)
+        - Communities: Densely connected subgroups of entities
+        - Support Analysis: Statistical significance of patterns
+        
         Args:
-            min_support: Minimum support threshold for patterns
-
+            min_support: Minimum support threshold (0.0-1.0) for including patterns.
+                Support = pattern_count / total_relationships. Higher values
+                return only most common patterns.
+                
         Returns:
-            List of discovered patterns
+            List of pattern dictionaries containing:
+            - pattern: Pattern description or type identifier
+            - count: Absolute occurrence count
+            - support: Relative frequency (0.0-1.0)
+            - Additional pattern-specific fields (entities, communities, etc.)
+            
+        Example:
+            Discover and analyze graph patterns:
+            
+            >>> patterns = await kg_builder.discover_patterns(min_support=0.05)
+            >>> 
+            >>> # Analyze relationship patterns
+            >>> rel_patterns = [p for p in patterns if '->' in p.get('pattern', '')]
+            >>> for pattern in rel_patterns[:3]:
+            ...     print(f"Pattern: {pattern['pattern']}")
+            ...     print(f"  Count: {pattern['count']} (support: {pattern['support']:.1%})")
+            >>> 
+            >>> # Find hub entities
+            >>> hub_pattern = next((p for p in patterns if p['pattern'] == 'hub_entities'), None)
+            >>> if hub_pattern:
+            ...     print(f"\nHub Entities (threshold: {hub_pattern['threshold']:.1f}):")
+            ...     for hub in hub_pattern['entities'][:5]:
+            ...         print(f"  {hub['entity_name']} ({hub['type']}) - degree: {hub['degree']}")
+            >>> 
+            >>> # Analyze communities
+            >>> comm_pattern = next((p for p in patterns if p['pattern'] == 'communities'), None)
+            >>> if comm_pattern:
+            ...     print(f"\nFound {comm_pattern['count']} communities")
+            ...     for comm_id, members in list(comm_pattern['communities'].items())[:3]:
+            ...         print(f"  Community {comm_id}: {len(members)} members")
+            
+        Note:
+            Community detection requires the 'python-louvain' package.
+            If not available, community patterns are skipped silently.
         """
         patterns = []
 

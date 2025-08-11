@@ -413,7 +413,24 @@ class SemanticCache:
     async def _search_similar(
         self, query_embedding: np.ndarray, k: int = 5
     ) -> List[Tuple[str, float, Dict[str, Any]]]:
-        """Search for similar cached queries."""
+        """Search for cached queries similar to the input embedding.
+        
+        Performs vector similarity search against the cache index to find
+        the k most similar cached queries. Uses cosine similarity and
+        returns results sorted by similarity score.
+        
+        Args:
+            query_embedding: Query vector to search for (float32 numpy array).
+            k: Maximum number of similar queries to return.
+            
+        Returns:
+            List of tuples containing (cache_id, similarity_score, cached_data).
+            Similarity scores are between 0.0 and 1.0 (higher = more similar).
+            
+        Note:
+            This is an internal method used by get() for cache lookups.
+            Handles Redis connection errors gracefully by returning empty list.
+        """
         from redis.commands.search.query import Query
 
         # Prepare query
@@ -453,7 +470,19 @@ class SemanticCache:
             return []
 
     async def _get_cache_size(self) -> int:
-        """Get current cache size."""
+        """Get current number of entries in the cache.
+        
+        Scans Redis for all cache entries using the "cache:*" pattern
+        and returns the total count. Used for cache size monitoring
+        and eviction decisions.
+        
+        Returns:
+            Integer count of cached entries currently stored.
+            
+        Note:
+            This method scans the entire keyspace with "cache:*" pattern,
+            which may be slow for very large caches.
+        """
         cursor = 0
         count = 0
 
@@ -467,7 +496,22 @@ class SemanticCache:
         return count
 
     async def _evict_oldest(self) -> None:
-        """Evict oldest cache entries to make room."""
+        """Evict oldest cache entries when cache reaches capacity.
+        
+        Implements LRU-style eviction by removing the 10% oldest entries
+        based on timestamps. This maintains cache freshness and prevents
+        unlimited growth when max_cache_size is reached.
+        
+        The eviction process:
+        1. Scans all cache entries and collects timestamps
+        2. Sorts entries by timestamp (oldest first)
+        3. Removes the oldest 10% of entries
+        4. Logs the eviction count for monitoring
+        
+        Note:
+            This is an internal method called automatically by set()
+            when cache size limits are reached.
+        """
         # Find oldest entries
         cursor = 0
         entries = []
@@ -494,7 +538,21 @@ class SemanticCache:
         logger.debug(f"Evicted {evict_count} cache entries")
 
     def _update_stats(self) -> None:
-        """Update cache statistics and adaptive threshold."""
+        """Update cache statistics and perform adaptive threshold optimization.
+        
+        Updates hit rate calculations, similarity score averages, and performs
+        adaptive threshold adjustments to maintain target hit rate. Called
+        after each cache operation to maintain accurate performance metrics.
+        
+        Adaptive threshold logic:
+        - If hit rate < target: Lower threshold to increase hits
+        - If hit rate > target: Raise threshold to reduce hits
+        - Threshold bounded between 0.85 and 0.99 for stability
+        
+        Note:
+            This is an internal method called automatically by get() and set()
+            to maintain real-time performance optimization.
+        """
         # Update hit rate
         if self.stats["queries"] > 0:
             self.stats["hit_rate"] = self.stats["hits"] / self.stats["queries"]
@@ -526,14 +584,65 @@ class SemanticCache:
                 )
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get cache statistics."""
+        """Get comprehensive cache performance statistics.
+        
+        Returns detailed statistics about cache performance, hit rates,
+        adaptive threshold adjustments, and overall effectiveness. Used
+        for monitoring, debugging, and optimization decisions.
+        
+        Returns:
+            Dictionary containing:
+            - queries: Total number of queries processed
+            - hits: Number of successful cache hits
+            - misses: Number of cache misses
+            - hit_rate: Current hit rate as decimal (0.0-1.0)
+            - avg_similarity: Average similarity score of recent matches
+            - threshold_adjustments: Number of adaptive threshold changes
+            - adaptive_threshold: Current adaptive threshold value
+            - cache_enabled: Whether caching is currently enabled
+            
+        Example:
+            >>> stats = cache.get_stats()
+            >>> print(f"Hit rate: {stats['hit_rate']:.1%}")
+            >>> print(f"Queries processed: {stats['queries']}")
+            >>> print(f"Adaptive threshold: {stats['adaptive_threshold']:.3f}")
+            >>> 
+            >>> # Check if hitting target
+            >>> if stats['hit_rate'] > 0.35:
+            ...     print("Hit rate too high, consider raising threshold")
+            >>> elif stats['hit_rate'] < 0.25:
+            ...     print("Hit rate too low, consider lowering threshold")
+        """
         stats = self.stats.copy()
         stats["adaptive_threshold"] = self.adaptive_threshold
         stats["cache_enabled"] = self.config.enabled
         return stats
 
     async def clear(self) -> None:
-        """Clear all cached entries."""
+        """Clear all cached entries and reset statistics.
+        
+        Removes all cached query-response pairs from Redis and resets all
+        performance statistics and adaptive thresholds to initial values.
+        Useful for cache maintenance, testing, or when changing cache
+        configuration significantly.
+        
+        The operation:
+        1. Scans and deletes all cache entries with "cache:" prefix
+        2. Resets all performance statistics to zero
+        3. Clears similarity score history
+        4. Resets adaptive threshold to configured default
+        
+        Example:
+            >>> # Clear cache for fresh start
+            >>> await cache.clear()
+            >>> stats = cache.get_stats()
+            >>> print(f"Queries: {stats['queries']}")  # Will be 0
+            >>> print(f"Hit rate: {stats['hit_rate']}")  # Will be 0.0
+            
+        Note:
+            This operation cannot be undone. Consider using cache statistics
+            to evaluate performance before clearing productive caches.
+        """
         cursor = 0
         deleted = 0
 
@@ -562,10 +671,42 @@ class SemanticCache:
         logger.info(f"Cleared {deleted} cache entries")
 
     async def optimize(self) -> Dict[str, Any]:
-        """
-        Optimize cache for target hit rate.
-
-        Returns optimization report.
+        """Analyze cache performance and provide optimization recommendations.
+        
+        Performs comprehensive analysis of cache performance including similarity
+        score distributions, hit rate trends, and capacity utilization. Generates
+        actionable recommendations for improving cache effectiveness.
+        
+        The analysis includes:
+        - Current vs target hit rate comparison
+        - Similarity score percentile analysis
+        - Optimal threshold recommendations based on target hit rate
+        - Cache size and capacity warnings
+        - TTL effectiveness evaluation
+        
+        Returns:
+            Dictionary containing:
+            - current_hit_rate: Current cache hit rate
+            - target_hit_rate: Configured target hit rate
+            - current_threshold: Current similarity threshold
+            - recommended_threshold: Statistically optimal threshold
+            - similarity_percentiles: Distribution of similarity scores
+            - cache_size: Current number of cached entries
+            - recommendations: List of actionable optimization suggestions
+            
+        Example:
+            >>> report = await cache.optimize()
+            >>> print(f"Hit rate: {report['current_hit_rate']:.1%} (target: {report['target_hit_rate']:.1%})")
+            >>> print(f"Current threshold: {report['current_threshold']:.3f}")
+            >>> print(f"Recommended threshold: {report.get('recommended_threshold', 'N/A')}")
+            >>> 
+            >>> # Apply recommendations
+            >>> for rec in report['recommendations']:
+            ...     print(f"💡 {rec}")
+            
+        Note:
+            Requires at least 100 queries for meaningful statistical analysis.
+            Recommendations are based on empirical performance data.
         """
         report = {
             "current_hit_rate": self.stats["hit_rate"],

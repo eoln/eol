@@ -211,15 +211,25 @@ class RedisVectorStore:
             "max_connections": self.redis_config.max_connections,
         }
 
-        # Add platform-specific socket keepalive options (skip on macOS)
-        import platform
+        # Add platform-specific socket keepalive options
+        if self.redis_config.socket_keepalive:
+            connection_kwargs["socket_keepalive"] = True
+            # Set platform-specific socket options
+            import platform
+            import socket
 
-        if platform.system() != "Darwin":
-            if self.redis_config.socket_keepalive:
-                connection_kwargs["socket_keepalive"] = True
-                connection_kwargs["socket_keepalive_options"] = (
-                    self.redis_config.socket_keepalive_options
-                )
+            if platform.system() == "Linux":
+                # Use Linux-specific TCP keepalive options
+                keepalive_options = {}
+                if hasattr(socket, "TCP_KEEPIDLE"):
+                    keepalive_options[socket.TCP_KEEPIDLE] = 1
+                if hasattr(socket, "TCP_KEEPINTVL"):
+                    keepalive_options[socket.TCP_KEEPINTVL] = 3
+                if hasattr(socket, "TCP_KEEPCNT"):
+                    keepalive_options[socket.TCP_KEEPCNT] = 5
+                if keepalive_options:
+                    connection_kwargs["socket_keepalive_options"] = keepalive_options
+            # Skip socket options on macOS and other platforms to avoid issues
 
         self.redis = Redis(**connection_kwargs)
 
@@ -268,13 +278,22 @@ class RedisVectorStore:
         # Configure socket keepalive for non-macOS platforms only
         if self.redis_config.socket_keepalive:
             async_connection_kwargs["socket_keepalive"] = True
-            # Skip socket_keepalive_options on macOS as they can cause issues
+            # Set platform-specific socket options
             import platform
+            import socket
 
-            if platform.system() != "Darwin":
-                async_connection_kwargs["socket_keepalive_options"] = (
-                    self.redis_config.socket_keepalive_options
-                )
+            if platform.system() == "Linux":
+                # Use Linux-specific TCP keepalive options
+                keepalive_options = {}
+                if hasattr(socket, "TCP_KEEPIDLE"):
+                    keepalive_options[socket.TCP_KEEPIDLE] = 1
+                if hasattr(socket, "TCP_KEEPINTVL"):
+                    keepalive_options[socket.TCP_KEEPINTVL] = 3
+                if hasattr(socket, "TCP_KEEPCNT"):
+                    keepalive_options[socket.TCP_KEEPCNT] = 5
+                if keepalive_options:
+                    async_connection_kwargs["socket_keepalive_options"] = keepalive_options
+            # Skip socket options on macOS and other platforms to avoid issues
 
         self.async_redis = AsyncRedis(**async_connection_kwargs)
 

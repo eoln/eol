@@ -1,6 +1,6 @@
-# Server Module
+# Configuration Module
 
-::: eol.rag_context.server
+::: eol.rag_context.config
     options:
       show_source: true
       show_bases: true

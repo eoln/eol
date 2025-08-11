@@ -1,6 +1,6 @@
-# Server Module
+# Knowledge Graph Module
 
-::: eol.rag_context.server
+::: eol.rag_context.knowledge_graph
     options:
       show_source: true
       show_bases: true

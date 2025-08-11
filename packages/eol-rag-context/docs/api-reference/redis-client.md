@@ -1,6 +1,6 @@
-# Server Module
+# Redis Client Module
 
-::: eol.rag_context.server
+::: eol.rag_context.redis_client
     options:
       show_source: true
       show_bases: true

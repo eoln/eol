@@ -1,6 +1,6 @@
-# Server Module
+# Semantic Cache Module
 
-::: eol.rag_context.server
+::: eol.rag_context.semantic_cache
     options:
       show_source: true
       show_bases: true

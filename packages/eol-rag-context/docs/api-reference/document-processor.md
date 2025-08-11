@@ -1,6 +1,6 @@
-# Server Module
+# Document Processor Module
 
-::: eol.rag_context.server
+::: eol.rag_context.document_processor
     options:
       show_source: true
       show_bases: true

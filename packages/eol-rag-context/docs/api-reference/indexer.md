@@ -1,6 +1,6 @@
-# Server Module
+# Indexer Module
 
-::: eol.rag_context.server
+::: eol.rag_context.indexer
     options:
       show_source: true
       show_bases: true

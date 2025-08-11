@@ -70,11 +70,7 @@ class RedisConfig(BaseSettings):
     max_connections: int = Field(default=50)
     socket_keepalive: bool = True
     socket_keepalive_options: Dict[int, int] = Field(
-        default_factory=lambda: {
-            1: 1,  # TCP_KEEPIDLE
-            2: 3,  # TCP_KEEPINTVL
-            3: 5,  # TCP_KEEPCNT
-        }
+        default_factory=lambda: {}  # Empty dict - will be set platform-specifically if needed
     )
 
     @property

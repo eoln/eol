@@ -1,6 +1,6 @@
-# Server Module
+# File Watcher Module
 
-::: eol.rag_context.server
+::: eol.rag_context.file_watcher
     options:
       show_source: true
       show_bases: true

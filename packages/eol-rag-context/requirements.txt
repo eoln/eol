@@ -1,0 +1,40 @@
+# Core dependencies for eol-rag-context
+# Auto-generated from pyproject.toml
+# Install with: pip install -r requirements.txt
+
+# Redis and vector search
+redis>=5.0.0
+numpy>=1.24.0
+
+# Configuration and validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# MCP server
+fastmcp>=2.0.0
+
+# Async support
+aiofiles>=23.0.0
+
+# Document processing
+beautifulsoup4>=4.12.0
+markdown>=3.5.0
+pyyaml>=6.0
+python-magic>=0.4.27
+pypdf>=4.0.0
+python-docx>=1.0.0
+lxml>=4.9.0
+
+# Code parsing
+tree-sitter>=0.20.0
+tree-sitter-python>=0.20.0
+tree-sitter-javascript>=0.20.0
+
+# Graph and utilities
+networkx>=3.0
+watchdog>=3.0.0
+gitignore-parser>=0.1.0
+
+# CLI
+typer>=0.9.0
+rich>=13.0.0

@@ -1,37 +1,33 @@
-# EOL AI Framework - Project Context for AI Assistants
+# EOL RAG Framework - Project Context for AI Assistants
 
 ## Overview
-EOL is an AI Framework for building modern LLM applications. The framework provides tools and services for intelligent context management, with the `eol-rag-context` MCP server replacing static documentation with dynamic, Redis 8-backed RAG systems. This document provides essential context and guidelines for AI assistants working on this project.
+EOL is a Retrieval-Augmented Generation (RAG) framework for building intelligent, context-aware AI applications. The framework provides production-ready tools for document indexing, semantic search, and dynamic context retrieval using Redis as a high-performance vector database. The `eol-rag-context` MCP server is the core component that enables applications to leverage RAG capabilities through the Model Context Protocol.
 
 ## Key Components
 
 ### eol-rag-context MCP Server
-The core context management service that:
-- Indexes project files hierarchically (concepts → sections → chunks)
-- Provides intelligent context retrieval via RAG
-- Optimizes context structure based on 2024 LLM best practices
-- Eliminates need for static `.claude/context` files
-- Serves context dynamically via MCP protocol
+The core RAG service that provides:
+- **Document Processing**: Intelligent chunking and hierarchical indexing (concepts → sections → chunks)
+- **Vector Search**: High-performance semantic search using Redis vector database
+- **Semantic Caching**: Reduces LLM API calls with intelligent response caching (31% hit rate target)
+- **Knowledge Graph**: Builds entity relationships for enhanced context understanding
+- **MCP Integration**: Serves RAG capabilities to any MCP-compatible client
+- **File Watching**: Auto-indexes changes for always-current context
 
 ## Core Principles
 
-### 1. Two-Phase Development Model
-- **Phase 1: Prototyping** - Use natural language specifications in `.eol.md` files
-- **Phase 2: Implementation** - Convert to deterministic Python code
-- **Hybrid Mode** - Mix both phases, switch ad-hoc based on needs
-- Always consider which phase is appropriate for the current task
-
-### 2. Context-First Development
+### 1. Context-First Development
 - Leverage Redis v8 vector database for context storage
 - Implement semantic caching (target: 31% hit rate)
 - Use content-aware chunking (AST for code, semantic for text)
 - Manage LLM context window efficiently
 
-### 3. Dependency-Driven Architecture
-- Features can depend on other features
-- Support 6 dependency types: features, MCP servers, services, packages, containers, models
-- Always resolve dependencies before execution
-- Implement fallback mechanisms for critical dependencies
+### 2. RAG-First Architecture
+- Every component designed for optimal RAG performance
+- Hierarchical document structure for multi-level retrieval
+- Content-aware processing (AST for code, semantic for text)
+- Vector embeddings optimized for semantic similarity
+- Caching layer to minimize redundant computations
 
 ## Technical Stack
 
@@ -53,13 +49,15 @@ The core context management service that:
 ```
 eol/
 ├── packages/          # Monorepo packages (uv workspace)
-│   ├── eol-core/     # Core engine (parser, phase manager, context)
-│   ├── eol-cli/      # CLI interface
-│   ├── eol-mcp/      # MCP server implementation
-│   └── eol-redis/    # Redis integration
-├── examples/         # Example .eol.md files
-├── features/         # Feature specifications
-└── .claude/context/  # RAG and technical documentation
+│   ├── eol-rag-context/ # Core RAG implementation with MCP server
+│   │   ├── src/         # Source code
+│   │   ├── tests/       # Unit and integration tests
+│   │   └── examples/    # Usage examples
+│   ├── eol-core/       # Core framework utilities (planned)
+│   ├── eol-cli/        # CLI interface (planned)
+│   └── eol-sdk/        # Python SDK for RAG apps (planned)
+├── examples/           # Example RAG applications
+└── .claude/context/    # Technical documentation
 ```
 
 ## Code Style and Conventions
@@ -72,8 +70,6 @@ eol/
 - Comprehensive docstrings with examples
 
 ### File Naming
-- Feature files: `<name>.eol.md`
-- Test files: `<name>.test.eol.md`
 - Python modules: lowercase with underscores
 - Classes: PascalCase
 - Functions/variables: snake_case
@@ -86,31 +82,17 @@ eol/
 
 ## Implementation Guidelines
 
-### When Adding New Features
+### Building RAG Applications
 
-1. **Start with Documentation**
-   - Create or update `.eol.md` specification
-   - Write test cases in `.test.eol.md`
-   - Document dependencies explicitly
+1. **Document Processing Pipeline**
+   - Use appropriate chunking strategies for content type
+   - Generate embeddings with consistent models (all-MiniLM-L6-v2)
+   - Store metadata for filtering and ranking
 
-2. **Follow the Phase Pattern**
-   ```python
-   # Always support both phases
-   async def execute_operation(phase: ExecutionPhase):
-       if phase == ExecutionPhase.PROTOTYPING:
-           return await execute_via_llm()
-       elif phase == ExecutionPhase.IMPLEMENTATION:
-           return await execute_deterministic()
-       else:  # HYBRID
-           # Try implementation first, fallback to prototype
-   ```
-
-3. **Manage Dependencies**
-   ```python
-   # Always resolve dependencies first
-   resolver = DependencyResolver(project_root)
-   deps = await resolver.resolve_feature(feature_path, phase)
-   ```
+2. **Vector Search Optimization**
+   - Index documents at multiple hierarchy levels
+   - Use hybrid search (vector + keyword) when appropriate
+   - Implement result re-ranking based on relevance
 
 ### When Working with RAG
 
@@ -175,39 +157,35 @@ async def test_operation_failure(setup):
 ## Security Considerations
 
 - **Never hardcode credentials** - Use environment variables
-- **Validate all inputs** - Especially in .eol.md files
+- **Validate all inputs** - For all external data
 - **Sanitize LLM outputs** - Before execution
 - **Implement rate limiting** - For all external APIs
 - **Use least privilege** - For all service accounts
 
 ## Performance Targets
 
-- **Response Time**: < 2s for prototyping, < 500ms for implementation
+- **Document Indexing**: > 10 documents/second
+- **Vector Search Latency**: < 100ms for 10k documents
 - **Cache Hit Rate**: > 31% for semantic cache
+- **Embedding Generation**: < 50ms per chunk
 - **Context Window Usage**: Keep below 80% normally
-- **Dependency Resolution**: < 1s for typical features
+- **MCP Response Time**: < 500ms for typical queries
 
 ## Common Patterns
 
-### Dependency Injection
+### RAG Pipeline Implementation
 ```python
-class FeatureExecutor:
-    def __init__(self, dependencies: Dict[str, Any]):
-        self.deps = dependencies
-    
-    async def execute(self):
-        model = self.deps.get('models:claude-3-opus')
-        redis = self.deps.get('services:redis')
-```
+# Initialize RAG components
+indexer = DocumentIndexer(redis_store, embedding_manager)
+cache = SemanticCache(redis_store, embedding_manager)
 
-### Phase Switching
-```python
-# Allow runtime phase switching
-phase_manager.switch_phase(
-    feature="payment-processor",
-    to_phase=ExecutionPhase.IMPLEMENTATION,
-    operations=["process_payment"]
-)
+# Index documents
+await indexer.index_folder("./docs")
+
+# Perform RAG search
+query = "How does authentication work?"
+context = await redis_store.search_similar(query, k=5)
+response = await llm.generate(prompt=query, context=context)
 ```
 
 ### Health Checking
@@ -225,8 +203,8 @@ async def health_check() -> Dict[str, Any]:
 
 ## Debugging Tips
 
-1. **Enable verbose logging**: `eol run feature.eol.md --verbose`
-2. **Check dependency graph**: `eol deps graph feature.eol.md`
+1. **Enable verbose logging**: `eol run --verbose`
+2. **Check dependency graph**: `eol deps graph`
 3. **Monitor Redis**: Use RedisInsight on port 8001
 4. **Track context usage**: Check window status regularly
 5. **Profile performance**: Use `cProfile` for bottlenecks
@@ -239,15 +217,12 @@ async def health_check() -> Dict[str, Any]:
 - ✅ Use type hints everywhere
 - ✅ Test edge cases
 - ✅ Document dependencies
-- ✅ Follow the two-phase model
 - ✅ Optimize for context window
 - ✅ Use semantic caching
 
 ### DON'T:
 - ❌ Hardcode credentials
 - ❌ Skip error handling
-- ❌ Ignore phase requirements
-- ❌ Mix prototyping and implementation code
 - ❌ Exceed context window limits
 - ❌ Use synchronous I/O
 - ❌ Forget dependency resolution

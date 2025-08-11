@@ -1,6 +1,6 @@
 #!/bin/bash
 # Complete test runner for EOL RAG Context
-# Automatically handles Redis lifecycle and runs all tests
+# Runs all tests with proper Redis Stack setup
 
 set -e
 
@@ -20,15 +20,20 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to check Redis with RediSearch
+check_redis_stack() {
+    if redis-cli ping >/dev/null 2>&1; then
+        if redis-cli MODULE LIST | grep -q search; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 # Function to stop Redis
 stop_redis() {
     echo "Cleaning up Redis..."
-    if [ ! -z "$REDIS_CONTAINER" ]; then
-        docker rm -f "$REDIS_CONTAINER" >/dev/null 2>&1 || true
-    fi
-    if [ ! -z "$REDIS_PID" ]; then
-        kill "$REDIS_PID" 2>/dev/null || true
-    fi
+    redis-cli shutdown 2>/dev/null || true
 }
 
 # Trap to ensure cleanup on exit
@@ -42,85 +47,84 @@ fi
 
 PYTHON_CMD=$(command_exists python3 && echo "python3" || echo "python")
 
-# Activate virtual environment if it exists
-if [ -f "venv/bin/activate" ]; then
+# Activate virtual environment
+if [ -f ".venv/bin/activate" ]; then
+    echo "Activating virtual environment..."
+    source .venv/bin/activate
+elif [ -f "venv/bin/activate" ]; then
     echo "Activating virtual environment..."
     source venv/bin/activate
-elif [ -f "../../../venv/bin/activate" ]; then
-    echo "Activating virtual environment..."
-    source ../../../venv/bin/activate
+else
+    echo -e "${RED}Virtual environment not found!${NC}"
+    echo "Please run ./setup_test_environment.sh first"
+    exit 1
 fi
 
-# Install dependencies
+# Check dependencies
 echo "Checking dependencies..."
-$PYTHON_CMD -m pip install -q --upgrade pip
+MISSING_DEPS=""
 
-# Check if packages are installed
-PACKAGES_TO_CHECK="redis pytest pytest-asyncio pytest-cov numpy pydantic aiofiles"
-MISSING_PACKAGES=""
-
-for package in $PACKAGES_TO_CHECK; do
-    if ! $PYTHON_CMD -c "import ${package//-/_}" 2>/dev/null; then
-        MISSING_PACKAGES="$MISSING_PACKAGES $package"
+# Check for critical Python packages
+for pkg in redis pytest pytest_asyncio pytest_cov numpy pydantic; do
+    if ! $PYTHON_CMD -c "import $pkg" 2>/dev/null; then
+        MISSING_DEPS="$MISSING_DEPS $pkg"
     fi
 done
 
-if [ ! -z "$MISSING_PACKAGES" ]; then
-    echo "Installing missing packages:$MISSING_PACKAGES"
-    $PYTHON_CMD -m pip install -q $MISSING_PACKAGES
+if [ ! -z "$MISSING_DEPS" ]; then
+    echo -e "${YELLOW}Installing missing packages:$MISSING_DEPS${NC}"
+    pip install $MISSING_DEPS
 fi
 
-# Start Redis
+# Start Redis Stack if needed
 echo ""
-echo "Starting Redis..."
-REDIS_STARTED=false
+echo "Checking Redis Stack..."
 
-# Try Docker first
-if command_exists docker && docker info >/dev/null 2>&1; then
-    echo "Using Docker for Redis..."
+if ! check_redis_stack; then
+    echo "Starting Redis Stack Server..."
     
-    # Stop any existing container
-    docker rm -f eol-test-redis >/dev/null 2>&1 || true
+    # Stop any existing Redis
+    redis-cli shutdown 2>/dev/null || true
+    sleep 2
     
-    # Start Redis container
-    REDIS_CONTAINER=$(docker run -d --name eol-test-redis -p 6379:6379 redis/redis-stack:latest 2>/dev/null || \
-                      docker run -d --name eol-test-redis -p 6379:6379 redis:latest)
-    
-    # Wait for Redis
-    for i in {1..30}; do
-        if docker exec eol-test-redis redis-cli ping 2>/dev/null | grep -q PONG; then
-            echo -e "${GREEN}Redis is ready (Docker)${NC}"
-            REDIS_STARTED=true
-            break
+    # Start Redis Stack (has RediSearch module)
+    if command_exists redis-stack-server; then
+        redis-stack-server --daemonize yes
+        sleep 3
+        
+        if check_redis_stack; then
+            echo -e "${GREEN}✓ Redis Stack Server started${NC}"
+        else
+            echo -e "${RED}Failed to start Redis Stack Server${NC}"
+            echo "Please install Redis Stack: brew install --cask redis-stack-server"
+            exit 1
         fi
-        sleep 1
-    done
-    
-# Try native Redis
-elif command_exists redis-server; then
-    echo "Using native Redis..."
-    
-    # Start Redis in background
-    redis-server --port 6379 --save "" --appendonly no >/dev/null 2>&1 &
-    REDIS_PID=$!
-    
-    # Wait for Redis
-    for i in {1..30}; do
-        if redis-cli ping 2>/dev/null | grep -q PONG; then
-            echo -e "${GREEN}Redis is ready (Native)${NC}"
-            REDIS_STARTED=true
-            break
-        fi
-        sleep 1
-    done
+    else
+        echo -e "${RED}Redis Stack Server not installed${NC}"
+        echo "Please install with: brew install --cask redis-stack-server"
+        exit 1
+    fi
 else
-    echo -e "${YELLOW}Warning: Redis not available. Some tests will be skipped.${NC}"
+    echo -e "${GREEN}✓ Redis Stack is already running${NC}"
 fi
+
+# Clear Redis data for clean test state
+redis-cli FLUSHDB >/dev/null 2>&1
+echo -e "${GREEN}✓ Redis data cleared${NC}"
 
 # Set environment variables
 export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
+
+# Create test data if needed
+if [ ! -d "tests/test_data" ]; then
+    mkdir -p tests/test_data
+    echo "# Test Document" > tests/test_data/test.md
+    echo "def test(): pass" > tests/test_data/test.py
+    echo '{"test": true}' > tests/test_data/test.json
+    echo "Test content" > tests/test_data/test.txt
+fi
 
 # Run tests
 echo ""
@@ -129,36 +133,50 @@ echo "Running Test Suite"
 echo "======================================"
 echo ""
 
+# Create results directory
+mkdir -p test_results
+mkdir -p coverage
+
 # Run unit tests first
 echo "Running Unit Tests..."
 $PYTHON_CMD -m pytest \
     tests/test_config.py \
     tests/test_embeddings.py \
-    tests/test_force_coverage.py \
+    tests/test_document_processor.py \
+    tests/test_indexer.py \
+    tests/test_mcp_server.py \
     --cov=eol.rag_context \
+    --cov-branch \
     --cov-report= \
     --tb=short \
-    -q
+    -q 2>/dev/null
 
 UNIT_EXIT=$?
 
-# Run integration tests if Redis is available
-if [ "$REDIS_STARTED" = true ]; then
-    echo ""
-    echo "Running Integration Tests..."
-    $PYTHON_CMD -m pytest \
-        tests/integration/ \
-        --cov=eol.rag_context \
-        --cov-append \
-        --cov-report= \
-        --tb=short \
-        -q \
-        -m integration 2>/dev/null || true
-    
-    INTEGRATION_EXIT=$?
+if [ $UNIT_EXIT -eq 0 ]; then
+    UNIT_STATUS="${GREEN}PASSED${NC}"
 else
-    echo -e "${YELLOW}Skipping integration tests (Redis not available)${NC}"
-    INTEGRATION_EXIT=0
+    UNIT_STATUS="${RED}FAILED${NC}"
+fi
+
+# Run integration tests
+echo ""
+echo "Running Integration Tests..."
+$PYTHON_CMD -m pytest \
+    tests/integration/ \
+    --cov=eol.rag_context \
+    --cov-branch \
+    --cov-append \
+    --cov-report= \
+    --tb=short \
+    -q 2>/dev/null
+
+INTEGRATION_EXIT=$?
+
+if [ $INTEGRATION_EXIT -eq 0 ]; then
+    INTEGRATION_STATUS="${GREEN}PASSED${NC}"
+else
+    INTEGRATION_STATUS="${YELLOW}SOME FAILED${NC}"
 fi
 
 # Generate combined coverage report
@@ -168,30 +186,28 @@ echo "Coverage Report"
 echo "======================================"
 echo ""
 
+# Generate coverage reports in multiple formats
 $PYTHON_CMD -m pytest \
-    tests/ \
     --cov=eol.rag_context \
-    --cov-report=term \
+    --cov-report=term:skip-covered \
     --cov-report=html:coverage/html \
+    --cov-report=xml:test_results/coverage.xml \
+    --cov-report=json:test_results/coverage.json \
     --quiet \
-    --no-header 2>/dev/null | grep -E "Name|TOTAL|---" || true
+    --no-header \
+    tests/ 2>/dev/null
 
-# Calculate coverage percentage
+# Extract coverage percentage from JSON
 COVERAGE=$($PYTHON_CMD -c "
-import subprocess
+import json
 import sys
-import re
-result = subprocess.run(
-    [sys.executable, '-m', 'pytest', 'tests/', '--cov=eol.rag_context', '--cov-report=', '--quiet'],
-    capture_output=True, text=True, cwd='$(pwd)'
-)
-for line in result.stdout.split('\n'):
-    if 'TOTAL' in line:
-        # Extract percentage using regex
-        match = re.search(r'(\d+)%', line)
-        if match:
-            print(match.group(1))
-            break
+try:
+    with open('test_results/coverage.json', 'r') as f:
+        data = json.load(f)
+        coverage = data.get('totals', {}).get('percent_covered', 0)
+        print(f'{coverage:.1f}')
+except:
+    print('0')
 " 2>/dev/null || echo "0")
 
 echo ""
@@ -200,55 +216,34 @@ echo "Test Results Summary"
 echo "======================================"
 echo ""
 
-# Check if we reached 80% coverage
-if [ -z "$COVERAGE" ]; then
-    COVERAGE=0
-fi
+# Parse coverage as integer for comparison
+COVERAGE_INT=$(echo "$COVERAGE" | cut -d'.' -f1)
 
-# Use bc for floating point comparison if available, otherwise use integer comparison
-if command_exists bc; then
-    if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
-        echo -e "${GREEN}✅ Coverage: ${COVERAGE}% - Target (80%) achieved!${NC}"
-        COVERAGE_MET=true
-    else
-        echo -e "${YELLOW}⚠️  Coverage: ${COVERAGE}% - Below target (80%)${NC}"
-        COVERAGE_MET=false
-    fi
+if [ "$COVERAGE_INT" -ge 80 ]; then
+    echo -e "${GREEN}✅ Coverage: ${COVERAGE}% - Target (80%) achieved!${NC}"
+    COVERAGE_MET=true
 else
-    COVERAGE_INT=${COVERAGE%.*}
-    if [ "$COVERAGE_INT" -ge 80 ]; then
-        echo -e "${GREEN}✅ Coverage: ${COVERAGE}% - Target (80%) achieved!${NC}"
-        COVERAGE_MET=true
-    else
-        echo -e "${YELLOW}⚠️  Coverage: ${COVERAGE}% - Below target (80%)${NC}"
-        COVERAGE_MET=false
-    fi
+    echo -e "${YELLOW}⚠️  Coverage: ${COVERAGE}% - Below target (80%)${NC}"
+    COVERAGE_MET=false
 fi
 
-if [ $UNIT_EXIT -eq 0 ]; then
-    echo -e "${GREEN}✅ Unit tests passed${NC}"
-else
-    echo -e "${RED}❌ Unit tests failed${NC}"
-fi
-
-if [ "$REDIS_STARTED" = true ]; then
-    if [ $INTEGRATION_EXIT -eq 0 ]; then
-        echo -e "${GREEN}✅ Integration tests passed${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Some integration tests failed${NC}"
-    fi
-fi
-
+echo -e "Unit Tests: $UNIT_STATUS"
+echo -e "Integration Tests: $INTEGRATION_STATUS"
 echo ""
-echo "HTML coverage report: coverage/html/index.html"
+echo "Detailed Reports:"
+echo "• HTML Coverage: coverage/html/index.html"
+echo "• XML Coverage: test_results/coverage.xml"
+echo "• JSON Coverage: test_results/coverage.json"
 echo ""
 
-# Determine exit code
+# Determine overall exit code
 if [ $UNIT_EXIT -ne 0 ]; then
+    echo -e "${RED}❌ Test suite failed: Unit tests failed${NC}"
     exit $UNIT_EXIT
 elif [ "$COVERAGE_MET" = false ]; then
-    echo -e "${YELLOW}Tests passed but coverage is below 80% target${NC}"
+    echo -e "${YELLOW}⚠️  Tests passed but coverage is below 80% target${NC}"
     exit 1
 else
+    echo -e "${GREEN}✅ All tests passed with adequate coverage!${NC}"
     exit 0
 fi

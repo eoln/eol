@@ -4,12 +4,52 @@
 
 The EOL RAG Context MCP server has a comprehensive test suite with both unit and integration tests. The target coverage is 80%, which requires running both test types.
 
+## Prerequisites
+
+### IMPORTANT: Environment Setup Required
+
+1. **Python Virtual Environment (REQUIRED)**:
+   - The project uses a virtual environment at `.venv`
+   - You MUST activate it before running any tests
+   - Without venv, you'll get "No module named pytest" errors
+
+2. **Docker Desktop (REQUIRED for integration tests)**:
+   - Docker Desktop must be running on macOS
+   - Required for Redis Stack container
+   - Without Docker, integration tests will fail
+
+3. **Redis Stack (not regular Redis)**:
+   - Uses `redis/redis-stack:latest` image
+   - Includes RediSearch module for vector operations
+   - Regular Redis will NOT work
+
 ## Quick Start
 
-### Automated Testing (Recommended)
+### Step-by-Step Setup
 
 ```bash
-# Run all tests with automatic Redis management
+# 1. Ensure Docker Desktop is running (macOS)
+open -a Docker  # Start Docker Desktop if not running
+# Wait for Docker to fully start (check menu bar icon)
+
+# 2. Start Redis Stack container
+docker compose -f docker-compose.test.yml up -d redis
+# Wait for Redis to be healthy
+sleep 5
+redis-cli ping  # Should return "PONG"
+
+# 3. Activate Python virtual environment
+source .venv/bin/activate  # or source venv/bin/activate
+
+# 4. Run tests
+pytest tests/  # All tests
+pytest tests/integration/  # Integration tests only
+```
+
+### Automated Testing (After Setup)
+
+```bash
+# Only works if Docker and venv are properly set up
 ./test_all.sh
 ```
 
@@ -48,28 +88,52 @@ Located in `tests/integration/`:
 
 ## Manual Test Running
 
-### Prerequisites
+### Manual Prerequisites Setup
 
-1. **Install Dependencies**:
+1. **Create and Activate Virtual Environment**:
 ```bash
+# If .venv doesn't exist
+python3 -m venv .venv
+
+# Activate the environment (REQUIRED for every session)
+source .venv/bin/activate
+```
+
+2. **Install Dependencies (in activated venv)**:
+```bash
+# Ensure venv is activated first!
 pip install pytest pytest-asyncio pytest-cov
 pip install redis aioredis numpy pydantic pydantic-settings
 pip install sentence-transformers aiofiles beautifulsoup4
 ```
 
-2. **Start Redis**:
+3. **Start Redis Stack**:
 
-**Option A: Docker (Recommended)**
+**Option A: Docker Compose (Recommended)**
 ```bash
-docker run -d --name redis-test -p 6379:6379 redis/redis-stack:latest
+# Ensure Docker Desktop is running first!
+docker compose -f docker-compose.test.yml up -d redis
 ```
 
-**Option B: Native Redis**
+**Option B: Docker Run**
 ```bash
-redis-server --port 6379
+docker run -d --name redis-test -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 ```
+
+**Option C: Native Redis Stack (macOS)**
+```bash
+brew install --cask redis-stack-server
+redis-stack-server --daemonize yes
+```
+
+**WARNING**: Regular Redis (without Stack modules) will NOT work!
 
 ### Run Tests
+
+**CRITICAL**: Always activate venv first!
+```bash
+source .venv/bin/activate
+```
 
 1. **Unit Tests Only**:
 ```bash
@@ -150,32 +214,56 @@ docker-compose -f docker-compose.test.yml down
 
 ### Common Issues
 
-1. **Redis Connection Failed**
+1. **"No module named pytest" Error**
 ```bash
-# Check if Redis is running
-redis-cli ping
-# Should return: PONG
+# You forgot to activate venv!
+source .venv/bin/activate
+# Then retry your command
 ```
 
-2. **Import Errors**
+2. **"Cannot connect to Docker daemon" Error**
 ```bash
-# Ensure virtual environment is activated
-source venv/bin/activate
-# or
-python -m venv venv && source venv/bin/activate
+# Docker Desktop is not running
+open -a Docker  # macOS
+# Wait for Docker to fully start (check menu bar)
 ```
 
-3. **Coverage Below 80%**
+3. **Redis Connection Failed**
 ```bash
-# Ensure both unit and integration tests run
-./test_all.sh  # This runs everything
+# Check if Redis container is running
+docker ps | grep redis
+# If not, start it:
+docker compose -f docker-compose.test.yml up -d redis
+# Test connection:
+redis-cli ping  # Should return: PONG
 ```
 
-4. **Docker Not Available**
+4. **Import Errors or Missing Dependencies**
 ```bash
-# Install native Redis as fallback
-brew install redis  # macOS
-apt-get install redis-server  # Ubuntu
+# Always work in venv
+source .venv/bin/activate
+# Install all dependencies
+pip install -r requirements-dev.txt
+```
+
+5. **Coverage Below 80%**
+```bash
+# Ensure Redis is running for integration tests
+docker ps | grep redis
+# Run both unit and integration tests
+source .venv/bin/activate
+pytest tests/ --cov=eol.rag_context
+```
+
+6. **Docker Not Available**
+```bash
+# On macOS, install Docker Desktop:
+brew install --cask docker
+# Then start Docker Desktop from Applications
+
+# Alternative: Install Redis Stack natively
+brew install --cask redis-stack-server
+redis-stack-server --daemonize yes
 ```
 
 ## Test Markers
@@ -315,20 +403,38 @@ pytest --cov=eol.rag_context --cov-report=xml
 6. **Mock external dependencies** in unit tests
 7. **Test real interactions** in integration tests
 
+## Current Test Status (as of last run)
+
+- **Redis Integration Tests**: ✅ All 9 tests passing
+- **Document Processing**: ⚠️ Some tests failing (missing metadata in chunks)
+- **Indexing Tests**: ⚠️ Some async/await issues being fixed
+- **Tutorial Examples**: ⚠️ API mismatches being resolved
+
+Total: 15 passing, 35 failing (work in progress)
+
 ## Summary
 
-The test suite is designed to be easy to run and maintain:
+The test suite requires proper environment setup:
 
-- **One command testing**: `./test_all.sh`
-- **Automated lifecycle management**: Redis starts/stops automatically
-- **Clear coverage targets**: 80% overall, module-specific goals
-- **CI/CD ready**: GitHub Actions workflow included
-- **Comprehensive coverage**: Unit + Integration = 80%+
+1. **Docker Desktop MUST be running** for integration tests
+2. **Virtual environment MUST be activated** (`.venv`)
+3. **Redis Stack (not regular Redis)** is required
+4. **Use docker-compose.test.yml** for consistent setup
 
-For quick testing during development:
+Quick commands for experienced users:
 ```bash
-# Just run this - it handles everything
-./test_all.sh
+# Complete setup and run
+open -a Docker && sleep 10
+docker compose -f docker-compose.test.yml up -d redis
+source .venv/bin/activate
+pytest tests/
 ```
 
-The testing infrastructure ensures code quality and reliability while being developer-friendly.
+For detailed testing during development:
+```bash
+# Run specific test with details
+source .venv/bin/activate
+pytest tests/integration/test_redis_integration.py -xvs
+```
+
+The testing infrastructure ensures code quality but requires proper setup to function correctly.

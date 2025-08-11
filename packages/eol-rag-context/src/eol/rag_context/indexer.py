@@ -31,6 +31,35 @@ class IndexedSource:
     file_count: int
     total_chunks: int
     metadata: Dict[str, Any] = field(default_factory=dict)
+    indexed_files: int = 0
+    
+    def __post_init__(self):
+        """Ensure indexed_files matches file_count if not set."""
+        if self.indexed_files == 0 and self.file_count > 0:
+            self.indexed_files = self.file_count
+
+
+@dataclass
+class IndexResult:
+    """Result from indexing operations."""
+    source_id: str
+    chunks: int = 0
+    files: int = 0
+    errors: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    # Additional fields for compatibility
+    file_count: int = 0
+    total_chunks: int = 0
+    indexed_files: int = 0
+    
+    def __post_init__(self):
+        """Ensure consistency between field names."""
+        if self.file_count == 0 and self.files > 0:
+            self.file_count = self.files
+        if self.total_chunks == 0 and self.chunks > 0:
+            self.total_chunks = self.chunks
+        if self.indexed_files == 0 and self.files > 0:
+            self.indexed_files = self.files
 
 
 @dataclass
@@ -275,6 +304,7 @@ class DocumentIndexer:
     async def index_folder(
         self,
         folder_path: Path,
+        source_id: Optional[str] = None,
         recursive: bool = True,
         force_reindex: bool = False,
         progress_callback: Optional[callable] = None
@@ -284,6 +314,7 @@ class DocumentIndexer:
         
         Args:
             folder_path: Folder to index
+            source_id: Optional source ID (generated if not provided)
             recursive: Whether to scan recursively
             force_reindex: Force reindexing even if unchanged
             progress_callback: Callback for progress updates
@@ -294,8 +325,9 @@ class DocumentIndexer:
         start_time = time.time()
         folder_path = folder_path.resolve()
         
-        # Generate source ID
-        source_id = self.scanner.generate_source_id(folder_path)
+        # Generate source ID if not provided
+        if not source_id:
+            source_id = self.scanner.generate_source_id(folder_path)
         
         # Check if already indexed
         if not force_reindex:
@@ -313,6 +345,7 @@ class DocumentIndexer:
         # Index each file
         total_chunks = 0
         indexed_files = 0
+        all_errors = []
         
         for i, file_path in enumerate(files):
             try:
@@ -326,19 +359,24 @@ class DocumentIndexer:
                     continue
                 
                 # Process and index file
-                chunks = await self.index_file(
+                result = await self.index_file(
                     file_path,
                     source_id=source_id,
                     root_path=folder_path,
                     git_metadata=git_metadata
                 )
                 
-                total_chunks += chunks
+                total_chunks += result.chunks
                 indexed_files += 1
+                
+                # Collect any errors
+                if result.errors:
+                    all_errors.extend(result.errors)
                 
             except Exception as e:
                 logger.error(f"Error indexing {file_path}: {e}")
                 self.stats["errors"] += 1
+                all_errors.append(f"Error indexing {file_path}: {str(e)}")
         
         # Store source metadata
         indexed_source = IndexedSource(
@@ -347,6 +385,7 @@ class DocumentIndexer:
             indexed_at=time.time(),
             file_count=indexed_files,
             total_chunks=total_chunks,
+            indexed_files=indexed_files,
             metadata={
                 "recursive": recursive,
                 "git": git_metadata,
@@ -368,12 +407,12 @@ class DocumentIndexer:
         source_id: Optional[str] = None,
         root_path: Optional[Path] = None,
         git_metadata: Optional[Dict[str, Any]] = None
-    ) -> int:
+    ) -> IndexResult:
         """
         Index a single file with full metadata tracking.
         
         Returns:
-            Number of chunks created
+            IndexResult with source_id, chunks count, and any errors
         """
         file_path = file_path.resolve()
         
@@ -381,62 +420,86 @@ class DocumentIndexer:
         if not source_id:
             source_id = self.scanner.generate_source_id(file_path.parent)
         
-        # Calculate relative path
-        if root_path:
-            relative_path = file_path.relative_to(root_path)
-        else:
-            relative_path = file_path.name
-        
-        # Process document
-        doc = await self.processor.process_file(file_path)
-        if not doc:
-            return 0
-        
-        # Calculate file hash
-        with open(file_path, 'rb') as f:
-            file_hash = hashlib.sha256(f.read()).hexdigest()
-        
-        # Get file metadata
-        file_stat = file_path.stat()
-        
-        # Create base metadata
-        base_metadata = DocumentMetadata(
-            source_path=str(file_path),
+        # Initialize result
+        result = IndexResult(
             source_id=source_id,
-            relative_path=str(relative_path),
-            file_type=doc.doc_type,
-            file_size=file_stat.st_size,
-            file_hash=file_hash,
-            modified_time=file_stat.st_mtime,
-            indexed_at=time.time(),
-            chunk_index=0,
-            total_chunks=len(doc.chunks),
-            hierarchy_level=3,  # Start with chunks
-            language=doc.language,
-            git_commit=git_metadata.get("git_commit") if git_metadata else None,
-            git_branch=git_metadata.get("git_branch") if git_metadata else None,
-            git_remote=git_metadata.get("git_remote") if git_metadata else None,
+            files=1,
+            file_count=1,
+            indexed_files=1
         )
         
-        # Extract document-level concepts (hierarchy level 1)
-        concepts = await self._extract_concepts(doc, base_metadata)
-        
-        # Extract sections (hierarchy level 2)
-        sections = await self._extract_sections(doc, base_metadata, concepts)
-        
-        # Index chunks (hierarchy level 3)
-        chunks_indexed = await self._index_chunks(doc, base_metadata, sections)
-        
-        # Update statistics
-        self.stats["documents_indexed"] += 1
-        self.stats["chunks_created"] += chunks_indexed
-        self.stats["concepts_extracted"] += len(concepts)
-        self.stats["sections_created"] += len(sections)
-        
-        # Store file metadata for change detection
-        await self._store_file_metadata(file_path, file_hash, file_stat.st_mtime)
-        
-        return chunks_indexed
+        try:
+            # Calculate relative path
+            if root_path:
+                relative_path = file_path.relative_to(root_path)
+            else:
+                relative_path = file_path.name
+            
+            # Process document
+            doc = await self.processor.process_file(file_path)
+            if not doc:
+                return result
+            
+            # Calculate file hash
+            with open(file_path, 'rb') as f:
+                file_hash = hashlib.sha256(f.read()).hexdigest()
+            
+            # Get file metadata
+            file_stat = file_path.stat()
+            
+            # Create base metadata
+            base_metadata = DocumentMetadata(
+                source_path=str(file_path),
+                source_id=source_id,
+                relative_path=str(relative_path),
+                file_type=doc.doc_type,
+                file_size=file_stat.st_size,
+                file_hash=file_hash,
+                modified_time=file_stat.st_mtime,
+                indexed_at=time.time(),
+                chunk_index=0,
+                total_chunks=len(doc.chunks),
+                hierarchy_level=3,  # Start with chunks
+                language=doc.language,
+                git_commit=git_metadata.get("git_commit") if git_metadata else None,
+                git_branch=git_metadata.get("git_branch") if git_metadata else None,
+                git_remote=git_metadata.get("git_remote") if git_metadata else None,
+            )
+            
+            # Extract document-level concepts (hierarchy level 1)
+            concepts = await self._extract_concepts(doc, base_metadata)
+            
+            # Extract sections (hierarchy level 2)
+            sections = await self._extract_sections(doc, base_metadata, concepts)
+            
+            # Index chunks (hierarchy level 3)
+            chunks_indexed = await self._index_chunks(doc, base_metadata, sections)
+            
+            # Update statistics
+            self.stats["documents_indexed"] += 1
+            self.stats["chunks_created"] += chunks_indexed
+            self.stats["concepts_extracted"] += len(concepts)
+            self.stats["sections_created"] += len(sections)
+            
+            # Store file metadata for change detection
+            await self._store_file_metadata(file_path, file_hash, file_stat.st_mtime)
+            
+            # Update result
+            result.chunks = chunks_indexed
+            result.total_chunks = chunks_indexed
+            result.metadata = {
+                "file_path": str(file_path),
+                "concepts": len(concepts),
+                "sections": len(sections)
+            }
+            
+            return result
+            
+        except Exception as e:
+            # Add error to result
+            result.errors.append(f"Error indexing {file_path}: {str(e)}")
+            logger.error(f"Error indexing {file_path}: {e}")
+            return result
     
     async def _extract_concepts(
         self,
@@ -680,7 +743,7 @@ class DocumentIndexer:
         try:
             # Get stored metadata
             file_key = f"file_meta:{hashlib.md5(str(file_path).encode()).hexdigest()}"
-            stored = await self.redis.redis.hgetall(file_key)
+            stored = self.redis.redis.hgetall(file_key)
             
             if not stored:
                 return False
@@ -698,7 +761,7 @@ class DocumentIndexer:
         """Store file metadata for change detection."""
         file_key = f"file_meta:{hashlib.md5(str(file_path).encode()).hexdigest()}"
         
-        await self.redis.redis.hset(file_key, mapping={
+        self.redis.redis.hset(file_key, mapping={
             "path": str(file_path),
             "hash": file_hash,
             "mtime": mtime,
@@ -706,12 +769,12 @@ class DocumentIndexer:
         })
         
         # Set TTL to 30 days
-        await self.redis.redis.expire(file_key, 30 * 24 * 3600)
+        self.redis.redis.expire(file_key, 30 * 24 * 3600)
     
     async def _get_indexed_source(self, source_id: str) -> Optional[IndexedSource]:
         """Get indexed source metadata."""
         source_key = f"source:{source_id}"
-        data = await self.redis.redis.hgetall(source_key)
+        data = self.redis.redis.hgetall(source_key)
         
         if not data:
             return None
@@ -722,19 +785,21 @@ class DocumentIndexer:
             indexed_at=float(data[b"indexed_at"]),
             file_count=int(data[b"file_count"]),
             total_chunks=int(data[b"total_chunks"]),
-            metadata=json.loads(data[b"metadata"].decode()),
+            indexed_files=int(data.get(b"indexed_files", data[b"file_count"])),
+            metadata=json.loads(data[b"metadata"].decode()) if data.get(b"metadata") else {},
         )
     
     async def _store_indexed_source(self, source: IndexedSource) -> None:
         """Store indexed source metadata."""
         source_key = f"source:{source.source_id}"
         
-        await self.redis.redis.hset(source_key, mapping={
+        self.redis.redis.hset(source_key, mapping={
             "path": str(source.path),
             "indexed_at": source.indexed_at,
             "file_count": source.file_count,
             "total_chunks": source.total_chunks,
-            "metadata": json.dumps(source.metadata),
+            "indexed_files": source.indexed_files,
+            "metadata": json.dumps(source.metadata) if source.metadata else "{}",
         })
     
     async def list_sources(self) -> List[IndexedSource]:
@@ -744,7 +809,7 @@ class DocumentIndexer:
         # Scan for source keys
         cursor = 0
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match="source:*",
                 count=100
@@ -769,14 +834,14 @@ class DocumentIndexer:
         for prefix in ["concept:", "section:", "chunk:"]:
             cursor = 0
             while True:
-                cursor, keys = await self.redis.redis.scan(
+                cursor, keys = self.redis.redis.scan(
                     cursor,
                     match=f"{prefix}{source_id}*",
                     count=100
                 )
                 
                 if keys:
-                    await self.redis.redis.delete(*keys)
+                    self.redis.redis.delete(*keys)
                     deleted += len(keys)
                 
                 if cursor == 0:
@@ -784,21 +849,21 @@ class DocumentIndexer:
         
         # Delete source metadata
         source_key = f"source:{source_id}"
-        await self.redis.redis.delete(source_key)
+        self.redis.redis.delete(source_key)
         
         # Delete file metadata
         cursor = 0
         while True:
-            cursor, keys = await self.redis.redis.scan(
+            cursor, keys = self.redis.redis.scan(
                 cursor,
                 match="file_meta:*",
                 count=100
             )
             
             for key in keys:
-                data = await self.redis.redis.hgetall(key)
+                data = self.redis.redis.hgetall(key)
                 if data and source_id in data.get(b"path", b"").decode():
-                    await self.redis.redis.delete(key)
+                    self.redis.redis.delete(key)
                     deleted += 1
             
             if cursor == 0:

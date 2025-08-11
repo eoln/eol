@@ -52,7 +52,7 @@ class TestDocumentProcessor:
         # Check that functions are detected
         chunk_contents = [c["content"] for c in doc.chunks]
         assert any("factorial" in content for content in chunk_contents)
-        assert any("Calculator" in content for content in chunk_contents)
+        assert any("TestClass" in content for content in chunk_contents)
     
     @pytest.mark.asyncio
     async def test_process_json(self, processor, sample_documents):

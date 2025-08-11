@@ -78,7 +78,7 @@ class TestIndexingIntegration:
             
             # Should exclude .git and __pycache__
             assert len(files) == 2
-            file_paths = [f.path.name for f in files]
+            file_paths = [f.name for f in files]
             assert "file1.py" in file_paths
             assert "file2.md" in file_paths
             assert "test.pyc" not in file_paths
@@ -105,12 +105,12 @@ class TestIndexingIntegration:
         # Find our source
         our_source = None
         for source in sources:
-            if source.get("source_id") == source_id:
+            if source.source_id == source_id:
                 our_source = source
                 break
         
         assert our_source is not None
-        assert our_source["file_count"] > 0
+        assert our_source.file_count > 0
         
         # Remove source
         removed = await indexer_instance.remove_source(source_id)

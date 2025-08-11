@@ -17,7 +17,6 @@ class TestSentenceTransformerProvider:
     """Test Sentence Transformer provider."""
     
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Mock conflicts with test setup")
     async def test_mock_embeddings(self):
         """Test that mock embeddings work when model not available."""
         config = EmbeddingConfig(
@@ -36,7 +35,6 @@ class TestSentenceTransformerProvider:
         assert embeddings.dtype == np.float32
     
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Mock conflicts with test setup") 
     async def test_batch_embeddings(self):
         """Test batch embedding generation."""
         config = EmbeddingConfig(model_name="test-model", dimension=64, batch_size=2)

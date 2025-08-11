@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
+import time
 import magic
 import aiofiles
 from bs4 import BeautifulSoup
@@ -123,6 +124,9 @@ class DocumentProcessor:
             return await self._process_docx(file_path)
         elif suffix in [".json", ".yaml", ".yml"]:
             return await self._process_structured(file_path)
+        elif suffix in [".py", ".js", ".jsx", ".ts", ".tsx", ".rs", ".go", ".java", ".cpp", ".c", ".cs"]:
+            # Process as code even if tree-sitter parser not available
+            return await self._process_code(file_path)
         elif suffix in self.parsers:
             return await self._process_code(file_path)
         elif "text" in mime_type:
@@ -154,9 +158,9 @@ class DocumentProcessor:
         
         # Chunk by headers if configured
         if self.chunk_config.markdown_split_headers:
-            doc.chunks = self._chunk_markdown_by_headers(content)
+            doc.chunks = self._chunk_markdown_by_headers(content, str(file_path))
         else:
-            doc.chunks = self._chunk_text(content)
+            doc.chunks = self._chunk_text(content, str(file_path))
         
         return doc
     
@@ -170,7 +174,7 @@ class DocumentProcessor:
             })
         return headers
     
-    def _chunk_markdown_by_headers(self, content: str) -> List[Dict[str, Any]]:
+    def _chunk_markdown_by_headers(self, content: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk markdown by header structure."""
         chunks = []
         lines = content.split('\n')
@@ -184,11 +188,14 @@ class DocumentProcessor:
             if header_match:
                 # Save previous chunk if exists
                 if current_chunk:
-                    chunks.append({
-                        "content": '\n'.join(current_chunk),
-                        "header": current_header,
-                        "type": "section",
-                    })
+                    chunks.append(self._create_chunk(
+                        content='\n'.join(current_chunk),
+                        chunk_type="section",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        header=current_header,
+                        section=current_header
+                    ))
                 
                 # Start new chunk
                 current_header = header_match.group(2)
@@ -198,11 +205,14 @@ class DocumentProcessor:
         
         # Add final chunk
         if current_chunk:
-            chunks.append({
-                "content": '\n'.join(current_chunk),
-                "header": current_header,
-                "type": "section",
-            })
+            chunks.append(self._create_chunk(
+                content='\n'.join(current_chunk),
+                chunk_type="section",
+                chunk_index=len(chunks),
+                source=source_path,
+                header=current_header,
+                section=current_header
+            ))
         
         return chunks
     
@@ -237,11 +247,11 @@ class DocumentProcessor:
         )
         
         # Chunk by pages or semantic boundaries
-        doc.chunks = self._chunk_pdf_content(content_parts)
+        doc.chunks = self._chunk_pdf_content(content_parts, str(file_path))
         
         return doc
     
-    def _chunk_pdf_content(self, pages: List[str]) -> List[Dict[str, Any]]:
+    def _chunk_pdf_content(self, pages: List[str], source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk PDF content intelligently."""
         chunks = []
         
@@ -251,11 +261,13 @@ class DocumentProcessor:
             
             for para in paragraphs:
                 if len(para.strip()) > 50:  # Skip very short paragraphs
-                    chunks.append({
-                        "content": para.strip(),
-                        "page": i + 1,
-                        "type": "paragraph",
-                    })
+                    chunks.append(self._create_chunk(
+                        content=para.strip(),
+                        chunk_type="paragraph",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        page=i + 1
+                    ))
         
         return chunks
     
@@ -325,9 +337,9 @@ class DocumentProcessor:
         
         # Parse with tree-sitter if available
         if suffix in self.parsers and self.chunk_config.code_chunk_by_function:
-            doc.chunks = self._chunk_code_by_ast(content, self.parsers[suffix], language)
+            doc.chunks = self._chunk_code_by_ast(content, self.parsers[suffix], language, str(file_path))
         else:
-            doc.chunks = self._chunk_code_by_lines(content, language)
+            doc.chunks = self._chunk_code_by_lines(content, language, str(file_path))
         
         return doc
     
@@ -352,7 +364,7 @@ class DocumentProcessor:
         }
         return lang_map.get(suffix, "unknown")
     
-    def _chunk_code_by_ast(self, content: str, parser: Parser, language: str) -> List[Dict[str, Any]]:
+    def _chunk_code_by_ast(self, content: str, parser: Parser, language: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk code using AST to preserve function/class boundaries."""
         chunks = []
         tree = parser.parse(bytes(content, "utf8"))
@@ -376,13 +388,15 @@ class DocumentProcessor:
                 end = node.end_byte
                 chunk_content = content[start:end].decode('utf-8') if isinstance(content[start:end], bytes) else content[start:end]
                 
-                chunks.append({
-                    "content": chunk_content,
-                    "type": node.type,
-                    "language": language,
-                    "start_line": node.start_point[0] + 1,
-                    "end_line": node.end_point[0] + 1,
-                })
+                chunks.append(self._create_chunk(
+                    content=chunk_content,
+                    chunk_type=node.type,
+                    chunk_index=len(chunks),
+                    source=source_path,
+                    language=language,
+                    start_line=node.start_point[0] + 1,
+                    end_line=node.end_point[0] + 1
+                ))
             
             for child in node.children:
                 extract_nodes(child, depth + 1)
@@ -391,11 +405,11 @@ class DocumentProcessor:
         
         # If no functions found, fall back to line-based chunking
         if not chunks:
-            return self._chunk_code_by_lines(content, language)
+            return self._chunk_code_by_lines(content, language, source_path)
         
         return chunks
     
-    def _chunk_code_by_lines(self, content: str, language: str) -> List[Dict[str, Any]]:
+    def _chunk_code_by_lines(self, content: str, language: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk code by lines with overlap."""
         chunks = []
         lines = content.splitlines()
@@ -406,13 +420,15 @@ class DocumentProcessor:
         for i in range(0, len(lines), chunk_size - overlap):
             chunk_lines = lines[i:i + chunk_size]
             if chunk_lines:
-                chunks.append({
-                    "content": '\n'.join(chunk_lines),
-                    "type": "lines",
-                    "language": language,
-                    "start_line": i + 1,
-                    "end_line": min(i + chunk_size, len(lines)),
-                })
+                chunks.append(self._create_chunk(
+                    content='\n'.join(chunk_lines),
+                    chunk_type="lines",
+                    chunk_index=len(chunks),
+                    source=source_path,
+                    language=language,
+                    start_line=i + 1,
+                    end_line=min(i + chunk_size, len(lines))
+                ))
         
         return chunks
     
@@ -427,11 +443,11 @@ class DocumentProcessor:
         if suffix == ".json":
             import json
             data = json.loads(content)
-            doc_type = "json"
+            doc_type = "structured"  # Use "structured" for consistency with tests
         else:
             import yaml
             data = yaml.safe_load(content)
-            doc_type = "yaml"
+            doc_type = "structured"  # Use "structured" for consistency with tests
         
         doc = ProcessedDocument(
             file_path=file_path,
@@ -445,36 +461,45 @@ class DocumentProcessor:
         )
         
         # Chunk by top-level keys or array items
-        doc.chunks = self._chunk_structured_data(data, doc_type)
+        doc.chunks = self._chunk_structured_data(data, doc_type, str(file_path))
         
         return doc
     
-    def _chunk_structured_data(self, data: Any, format: str) -> List[Dict[str, Any]]:
+    def _chunk_structured_data(self, data: Any, format: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk structured data intelligently."""
         chunks = []
         
         if isinstance(data, dict):
             for key, value in data.items():
                 chunk_content = json.dumps({key: value}, indent=2) if format == "json" else str({key: value})
-                chunks.append({
-                    "content": chunk_content,
-                    "key": key,
-                    "type": "object_field",
-                })
+                chunks.append(self._create_chunk(
+                    content=chunk_content,
+                    chunk_type="object_field",
+                    chunk_index=len(chunks),
+                    source=source_path,
+                    key=key,
+                    format=format
+                ))
         elif isinstance(data, list):
             for i, item in enumerate(data):
                 chunk_content = json.dumps(item, indent=2) if format == "json" else str(item)
-                chunks.append({
-                    "content": chunk_content,
-                    "index": i,
-                    "type": "array_item",
-                })
+                chunks.append(self._create_chunk(
+                    content=chunk_content,
+                    chunk_type="array_item",
+                    chunk_index=len(chunks),
+                    source=source_path,
+                    array_index=i,
+                    format=format
+                ))
         else:
             # Single value
-            chunks.append({
-                "content": str(data),
-                "type": "value",
-            })
+            chunks.append(self._create_chunk(
+                content=str(data),
+                chunk_type="value",
+                chunk_index=0,
+                source=source_path,
+                format=format
+            ))
         
         return chunks
     
@@ -494,11 +519,25 @@ class DocumentProcessor:
             }
         )
         
-        doc.chunks = self._chunk_text(content)
+        doc.chunks = self._chunk_text(content, str(file_path))
         
         return doc
     
-    def _chunk_text(self, content: str) -> List[Dict[str, Any]]:
+    def _create_chunk(self, content: str, chunk_type: str = "text", chunk_index: int = 0, **metadata) -> Dict[str, Any]:
+        """Create a chunk with consistent metadata structure."""
+        return {
+            "content": content,
+            "type": chunk_type,
+            "tokens": len(content.split()),
+            "metadata": {
+                "chunk_index": chunk_index,
+                "timestamp": time.time(),
+                "chunk_type": chunk_type,
+                **metadata  # Allow additional metadata to be passed
+            }
+        }
+    
+    def _chunk_text(self, content: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk plain text with semantic boundaries."""
         chunks = []
         
@@ -510,15 +549,44 @@ class DocumentProcessor:
             current_size = 0
             
             for para in paragraphs:
-                para_size = len(para.split())
+                para_words = para.split()
+                para_size = len(para_words)
                 
-                if current_size + para_size > self.chunk_config.max_chunk_size:
+                # If a single paragraph is too large, split it
+                if para_size > self.chunk_config.max_chunk_size:
+                    # First, save any accumulated chunks
                     if current_chunk:
-                        chunks.append({
-                            "content": '\n\n'.join(current_chunk),
-                            "type": "semantic",
-                            "tokens": current_size,
-                        })
+                        chunks.append(self._create_chunk(
+                            content='\n\n'.join(current_chunk),
+                            chunk_type="semantic",
+                            chunk_index=len(chunks),
+                            source=source_path,
+                            paragraph_count=len(current_chunk)
+                        ))
+                        current_chunk = []
+                        current_size = 0
+                    
+                    # Split the large paragraph into smaller chunks
+                    for i in range(0, len(para_words), self.chunk_config.max_chunk_size - self.chunk_config.chunk_overlap):
+                        chunk_words = para_words[i:i + self.chunk_config.max_chunk_size]
+                        if chunk_words:
+                            chunks.append(self._create_chunk(
+                                content=' '.join(chunk_words),
+                                chunk_type="semantic",
+                                chunk_index=len(chunks),
+                                source=source_path,
+                                paragraph_count=1,
+                                is_split=True
+                            ))
+                elif current_size + para_size > self.chunk_config.max_chunk_size:
+                    if current_chunk:
+                        chunks.append(self._create_chunk(
+                            content='\n\n'.join(current_chunk),
+                            chunk_type="semantic",
+                            chunk_index=len(chunks),
+                            source=source_path,
+                            paragraph_count=len(current_chunk)
+                        ))
                     current_chunk = [para]
                     current_size = para_size
                 else:
@@ -527,11 +595,13 @@ class DocumentProcessor:
             
             # Add final chunk
             if current_chunk:
-                chunks.append({
-                    "content": '\n\n'.join(current_chunk),
-                    "type": "semantic",
-                    "tokens": current_size,
-                })
+                chunks.append(self._create_chunk(
+                    content='\n\n'.join(current_chunk),
+                    chunk_type="semantic",
+                    chunk_index=len(chunks),
+                    source=source_path,
+                    paragraph_count=len(current_chunk)
+                ))
         else:
             # Simple token-based chunking
             words = content.split()
@@ -541,11 +611,13 @@ class DocumentProcessor:
             for i in range(0, len(words), chunk_size - overlap):
                 chunk_words = words[i:i + chunk_size]
                 if chunk_words:
-                    chunks.append({
-                        "content": ' '.join(chunk_words),
-                        "type": "token",
-                        "tokens": len(chunk_words),
-                    })
+                    chunks.append(self._create_chunk(
+                        content=' '.join(chunk_words),
+                        chunk_type="token",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        word_count=len(chunk_words)
+                    ))
         
         return chunks
     

@@ -2,13 +2,15 @@
 
 This directory contains integration tests for the EOL RAG Context MCP server.
 
-## Important: Real Redis v8 Required
+## Important: Redis Stack or Redis with RediSearch Required
 
-All integration tests in this directory run against **real Redis v8 instances**, not mocks. This ensures that:
+All integration tests in this directory run against **real Redis with RediSearch module**, not mocks. This ensures that:
 - Vector search operations work correctly with Redis Stack
-- HNSW indexing performs as expected
+- HNSW indexing performs as expected (requires FT.CREATE command)
 - All tutorial code examples are validated against actual Redis
 - Performance metrics are realistic
+
+**Note:** Standard Redis without RediSearch will cause tests to skip/fail with "unknown command 'FT.CREATE'" error.
 
 ## Test Files
 

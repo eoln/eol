@@ -1,0 +1,14 @@
+This is a plain text file for testing document processing.
+
+It contains multiple paragraphs with various content that should be
+properly chunked and indexed by the RAG system.
+
+The system should handle:
+- Text extraction
+- Proper chunking
+- Metadata extraction
+- Hierarchical organization
+
+Each paragraph should be processed according to the configured
+chunking strategy, preserving semantic meaning while optimizing
+for the LLM context window.

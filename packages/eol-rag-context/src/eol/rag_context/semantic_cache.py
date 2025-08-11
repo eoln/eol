@@ -64,12 +64,12 @@ class SemanticCache:
         """Initialize cache index in Redis."""
         try:
             # Create dedicated cache index
-            await self.redis.redis.ft("cache_index").info()
+            await self.redis.async_redis.ft("cache_index").info()
             logger.info("Cache index already exists")
         except:
             # Create new cache index
             from redis.commands.search.field import VectorField, TextField, NumericField
-            from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+            from redis.commands.search.index_definition import IndexDefinition, IndexType
             
             schema = [
                 TextField("query"),
@@ -96,7 +96,7 @@ class SemanticCache:
                 index_type=IndexType.HASH
             )
             
-            await self.redis.redis.ft("cache_index").create_index(
+            await self.redis.async_redis.ft("cache_index").create_index(
                 fields=schema,
                 definition=definition
             )

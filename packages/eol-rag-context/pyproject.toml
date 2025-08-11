@@ -12,26 +12,176 @@ license = "GPL-3.0"
 authors = [
     { name = "eoln", email = "github@eoln.io" }
 ]
+
+# Core dependencies - all required for the package to function
 dependencies = [
+    # Redis and vector search
+    "redis>=5.0.0",
+    "numpy>=1.24.0",
+    
+    # Configuration and validation
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
+    
+    # MCP server
+    "fastmcp>=2.0.0",
+    
+    # Async support
     "aiofiles>=23.0.0",
-    "numpy>=1.24.0",
+    
+    # Document processing
+    "beautifulsoup4>=4.12.0",
+    "markdown>=3.5.0",
+    "pyyaml>=6.0",
+    "python-magic>=0.4.27",
+    "pypdf>=4.0.0",
+    "python-docx>=1.0.0",
+    "lxml>=4.9.0",
+    
+    # Code parsing
+    "tree-sitter>=0.20.0",
+    "tree-sitter-python>=0.20.0",
+    "tree-sitter-javascript>=0.20.0",
+    
+    # Graph and utilities
+    "networkx>=3.0",
+    "watchdog>=3.0.0",
+    "gitignore-parser>=0.1.0",
+    
+    # CLI (optional, but included for standalone usage)
+    "typer>=0.9.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
+# Development dependencies
 dev = [
-    "pytest>=7.0.0",
+    "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-mock>=3.11.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
-    "mypy>=1.0.0",
-    "types-redis>=4.0.0",
+    "mypy>=1.5.0",
+    "types-redis",
+    "types-pyyaml",
+    "types-markdown",
+    "ipython>=8.0.0",
 ]
+
+# Testing dependencies (subset of dev)
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
+]
+
+# Embedding providers (optional - users can choose their provider)
+embeddings-local = [
+    "sentence-transformers>=2.2.0",  # For local embeddings
+]
+
+embeddings-openai = [
+    "openai>=1.0.0",  # For OpenAI embeddings
+]
+
+# All optional dependencies
+all = [
+    "eol-rag-context[dev,embeddings-local,embeddings-openai]",
+]
+
+[project.urls]
+Homepage = "https://github.com/eoln/eol-rag-context"
+Repository = "https://github.com/eoln/eol-rag-context"
+Issues = "https://github.com/eoln/eol-rag-context/issues"
 
 [project.scripts]
 eol-rag-context = "eol.rag_context.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/eol"]
+
+# Testing configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow",
+    "redis: marks tests that require Redis",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+branch = true
+source = ["src/eol/rag_context"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "coverage/html"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"
+
+# Black formatting
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+include = '\.pyi?$'
+
+# Ruff linting
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.isort]
+known-first-party = ["eol"]
+
+# MyPy type checking
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true

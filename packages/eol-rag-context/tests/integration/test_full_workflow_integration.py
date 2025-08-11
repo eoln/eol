@@ -34,12 +34,6 @@ class TestFullWorkflowIntegration:
         query_embedding = await embedding_manager.get_embedding(query)
         assert query_embedding.shape == (384,)  # Using all-MiniLM-L6-v2
         
-        # Pad or truncate to 768 for Redis (if needed)
-        if query_embedding.shape[0] != 768:
-            padded_embedding = np.zeros(768)
-            padded_embedding[:min(384, 768)] = query_embedding[:min(384, 768)]
-            query_embedding = padded_embedding
-        
         # Step 3: Search for relevant documents
         results = await redis_store.vector_search(
             query_embedding=query_embedding,
@@ -239,12 +233,6 @@ class TestFullWorkflowIntegration:
         query = "test project features"
         query_embedding = await embedding_manager.get_embedding(query)
         
-        # Pad to 768 if needed
-        if query_embedding.shape[0] != 768:
-            padded = np.zeros(768)
-            padded[:min(query_embedding.shape[0], 768)] = query_embedding[:min(query_embedding.shape[0], 768)]
-            query_embedding = padded
-        
         # Search concepts (level 1)
         concepts = await redis_store.vector_search(
             query_embedding=query_embedding,
@@ -299,7 +287,9 @@ class TestFullWorkflowIntegration:
             return await semantic_cache_instance.get(query)
         
         async def search_operation():
-            embedding = np.random.randn(768)
+            # Use real embedding for search
+            query = f"search query {np.random.randint(100)}"
+            embedding = await embedding_manager.get_embedding(query)
             return await redis_store.vector_search(embedding, k=5)
         
         # Run operations concurrently
@@ -348,7 +338,8 @@ class TestFullWorkflowIntegration:
         print(f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)")
         
         # Measure search speed
-        query_embedding = np.random.randn(768)
+        query = "performance test query"
+        query_embedding = await embedding_manager.get_embedding(query)
         
         start_time = time.time()
         for _ in range(10):

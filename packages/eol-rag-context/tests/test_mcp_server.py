@@ -10,6 +10,7 @@ from pathlib import Path
 
 from eol.rag_context.server import EOLRAGContextServer
 from eol.rag_context.config import RAGConfig
+from fastmcp import FastMCP
 
 
 class TestMCPServer:
@@ -18,7 +19,13 @@ class TestMCPServer:
     @pytest.fixture
     async def server(self, test_config):
         """Create MCP server instance."""
-        server = EOLRAGContextServer(test_config)
+        # Create server but prevent auto-registration
+        server = object.__new__(EOLRAGContextServer)
+        server.config = test_config
+        server.mcp = FastMCP(
+            name=test_config.server_name,
+            version=test_config.server_version
+        )
         
         # Mock components to avoid Redis dependency
         server.redis_store = AsyncMock()
@@ -65,6 +72,11 @@ class TestMCPServer:
         server.file_watcher.unwatch = AsyncMock(return_value=True)
         server.file_watcher.get_stats = Mock(return_value={"watched_sources": 0})
         
+        # Now register tools/resources/prompts with mocked components in place
+        server._setup_resources()
+        server._setup_tools()
+        server._setup_prompts()
+        
         return server
     
     @pytest.mark.asyncio
@@ -79,12 +91,12 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_index_directory_tool(self, server):
         """Test index_directory MCP tool."""
-        # Get the tool function
-        tools = server.mcp._tools
+        # Get the tool function using public API
+        tools = await server.mcp.get_tools()
         index_tool = None
-        for tool in tools.values():
-            if tool.name == "index_directory":
-                index_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "index_directory":
+                index_tool = tool_func
                 break
         
         assert index_tool is not None
@@ -97,7 +109,10 @@ class TestMCPServer:
             watch=False
         )
         
-        result = await index_tool.function(request, Mock())
+        # FunctionTool objects have a run method that needs context
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await index_tool.run(request)
         
         assert result["source_id"] == "test_source"
         assert result["file_count"] == 10
@@ -107,11 +122,11 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_search_context_tool(self, server):
         """Test search_context MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         search_tool = None
-        for tool in tools.values():
-            if tool.name == "search_context":
-                search_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "search_context":
+                search_tool = tool_func
                 break
         
         assert search_tool is not None
@@ -123,7 +138,9 @@ class TestMCPServer:
             min_relevance=0.7
         )
         
-        result = await search_tool.function(request, Mock())
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await search_tool.run(request)
         
         assert len(result) > 0
         assert result[0]["score"] >= request.min_relevance
@@ -132,11 +149,11 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_query_knowledge_graph_tool(self, server):
         """Test query_knowledge_graph MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         kg_tool = None
-        for tool in tools.values():
-            if tool.name == "query_knowledge_graph":
-                kg_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "query_knowledge_graph":
+                kg_tool = tool_func
                 break
         
         assert kg_tool is not None
@@ -148,7 +165,9 @@ class TestMCPServer:
             max_entities=10
         )
         
-        result = await kg_tool.function(request, Mock())
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await kg_tool.run(request)
         
         assert "entities" in result
         assert "relationships" in result
@@ -158,11 +177,11 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_watch_directory_tool(self, server):
         """Test watch_directory MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         watch_tool = None
-        for tool in tools.values():
-            if tool.name == "watch_directory":
-                watch_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "watch_directory":
+                watch_tool = tool_func
                 break
         
         assert watch_tool is not None
@@ -173,7 +192,9 @@ class TestMCPServer:
             recursive=True
         )
         
-        result = await watch_tool.function(request, Mock())
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await watch_tool.run(request)
         
         assert result["source_id"] == "source_123"
         assert result["status"] == "watching"
@@ -182,17 +203,21 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_get_context_resource(self, server):
         """Test context retrieval resource."""
-        resources = server.mcp._resources
+        resources = await server.mcp.get_resources()
         context_resource = None
-        for resource in resources.values():
-            if "query" in resource.uri:
-                context_resource = resource
+        for resource_uri, resource_func in resources.items():
+            if "query" in resource_uri:
+                context_resource = resource_func
                 break
         
         assert context_resource is not None
         
         # Test with no cache hit
-        result = await context_resource.function("test query")
+        # Resources are FunctionResource objects with read method
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        # Resources take a uri parameter
+        result = await context_resource.read("context://query/test query")
         
         assert result["query"] == "test query"
         assert "context" in result
@@ -203,16 +228,18 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_list_sources_resource(self, server):
         """Test list sources resource."""
-        resources = server.mcp._resources
+        resources = await server.mcp.get_resources()
         sources_resource = None
-        for resource in resources.values():
-            if "sources" in resource.uri:
-                sources_resource = resource
+        for resource_uri, resource_func in resources.items():
+            if "sources" in resource_uri:
+                sources_resource = resource_func
                 break
         
         assert sources_resource is not None
         
-        result = await sources_resource.function()
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await sources_resource.read("context://sources")
         
         assert isinstance(result, list)
         server.indexer.list_sources.assert_called_once()
@@ -220,16 +247,18 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_stats_resource(self, server):
         """Test statistics resource."""
-        resources = server.mcp._resources
+        resources = await server.mcp.get_resources()
         stats_resource = None
-        for resource in resources.values():
-            if resource.uri == "context://stats":
-                stats_resource = resource
+        for resource_uri, resource_func in resources.items():
+            if resource_uri == "context://stats":
+                stats_resource = resource_func
                 break
         
         assert stats_resource is not None
         
-        result = await stats_resource.function()
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await stats_resource.read("context://stats")
         
         assert "indexer" in result
         assert "cache" in result
@@ -240,16 +269,19 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_structured_query_prompt(self, server):
         """Test structured query prompt."""
-        prompts = server.mcp._prompts
+        prompts = await server.mcp.get_prompts()
         query_prompt = None
-        for prompt in prompts.values():
-            if prompt.name == "structured_query":
-                query_prompt = prompt
+        for prompt_name, prompt_func in prompts.items():
+            if prompt_name == "structured_query":
+                query_prompt = prompt_func
                 break
         
         assert query_prompt is not None
         
-        result = await query_prompt.function()
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        # Prompts use render method
+        result = await query_prompt.render({})
         
         assert "Main Intent" in result
         assert "Key Entities" in result
@@ -258,11 +290,11 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_optimize_context_tool(self, server):
         """Test optimize_context MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         optimize_tool = None
-        for tool in tools.values():
-            if tool.name == "optimize_context":
-                optimize_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "optimize_context":
+                optimize_tool = tool_func
                 break
         
         assert optimize_tool is not None
@@ -274,7 +306,9 @@ class TestMCPServer:
             strategy="hierarchical"
         )
         
-        result = await optimize_tool.function(request, Mock())
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await optimize_tool.run(request)
         
         assert "optimized_context" in result
         assert result["query"] == "test query"
@@ -298,6 +332,28 @@ class TestMCPServerIntegration:
             mock_redis.close = AsyncMock()
             mock_redis.create_hierarchical_indexes = Mock()
             
+            # Mock async_redis with proper ft() method
+            mock_redis.async_redis = AsyncMock()
+            mock_ft = AsyncMock()
+            mock_ft.info = AsyncMock(side_effect=Exception("Index not found"))
+            mock_ft.create_index = AsyncMock()
+            mock_redis.async_redis.ft = Mock(return_value=mock_ft)
+            mock_redis.async_redis.scan = AsyncMock(return_value=(0, []))
+            mock_redis.async_redis.delete = AsyncMock()
+            
+            # Mock redis (sync) for semantic cache
+            mock_redis.redis = Mock()
+            mock_redis.redis.hgetall = AsyncMock(return_value={})
+            mock_redis.redis.hset = AsyncMock()
+            mock_redis.redis.expire = AsyncMock()
+            mock_redis.redis.scan = AsyncMock(return_value=(0, []))
+            mock_redis.redis.delete = AsyncMock()
+            mock_redis.redis.hincrby = AsyncMock()
+            mock_redis.redis.hget = AsyncMock(return_value=None)
+            mock_ft_sync = AsyncMock()
+            mock_ft_sync.search = AsyncMock(return_value=Mock(docs=[]))
+            mock_redis.redis.ft = Mock(return_value=mock_ft_sync)
+            
             # Initialize
             await server.initialize()
             
@@ -313,16 +369,19 @@ class TestMCPServerIntegration:
     @pytest.mark.asyncio
     async def test_clear_cache_tool(self, server):
         """Test clear_cache MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         clear_tool = None
-        for tool in tools.values():
-            if tool.name == "clear_cache":
-                clear_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "clear_cache":
+                clear_tool = tool_func
                 break
         
         assert clear_tool is not None
         
-        result = await clear_tool.function(Mock())
+        # For tools with no parameters
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        result = await clear_tool.run({})
         
         assert result["semantic_cache"] == "cleared"
         assert result["embedding_cache"] == "cleared"
@@ -332,18 +391,22 @@ class TestMCPServerIntegration:
     @pytest.mark.asyncio
     async def test_remove_source_tool(self, server):
         """Test remove_source MCP tool."""
-        tools = server.mcp._tools
+        tools = await server.mcp.get_tools()
         remove_tool = None
-        for tool in tools.values():
-            if tool.name == "remove_source":
-                remove_tool = tool
+        for tool_name, tool_func in tools.items():
+            if tool_name == "remove_source":
+                remove_tool = tool_func
                 break
         
         assert remove_tool is not None
         
-        server.indexer.remove_source = AsyncMock(return_value=True)
+        # Already mocked in conftest, just ensure it returns True
+        server.indexer.remove_source.return_value = True
         
-        result = await remove_tool.function("source_123", Mock())
+        from fastmcp.server.context import _current_context, Context
+        _current_context.set(Context(fastmcp=server.mcp))
+        # Pass source_id as a proper argument dict
+        result = await remove_tool.run({"source_id": "source_123"})
         
         assert result["source_id"] == "source_123"
         assert result["removed"] is True

@@ -47,7 +47,9 @@ class TestFolderScanner:
         
         assert len(files) > 0
         assert all(f.exists() for f in files)
-        assert sample_documents["markdown"] in files
+        # Resolve paths for comparison
+        resolved_files = [f.resolve() for f in files]
+        assert sample_documents["markdown"].resolve() in resolved_files
     
     @pytest.mark.asyncio
     async def test_scan_with_patterns(self, scanner, sample_documents):

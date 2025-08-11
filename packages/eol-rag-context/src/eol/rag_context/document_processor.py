@@ -925,7 +925,7 @@ class DocumentProcessor:
                         start = (
                             end - self.chunk_config.chunk_overlap if end < len(para_text) else end
                         )
-                        
+
                         # Ensure we make progress even if overlap is large
                         if start <= end - self.chunk_config.max_chunk_size:
                             start = end

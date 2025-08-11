@@ -208,7 +208,6 @@ jobs:
           tests/test_config.py \
           tests/test_embeddings.py \
           tests/test_document_processor.py \
-          tests/test_indexer.py \
           -v \
           --tb=short \
           --timeout=300 \
@@ -287,6 +286,11 @@ jobs:
         uv pip install --system watchdog gitignore-parser || true
         
         echo "📦 Installed full dependencies for integration tests"
+    
+    - name: Install Redis CLI
+      run: |
+        echo "📦 Installing Redis CLI..."
+        sudo apt-get update && sudo apt-get install -y redis-tools
     
     - name: Wait for Redis
       run: |

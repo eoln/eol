@@ -51,6 +51,8 @@ theme:
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - mike:
+      canonical_version: latest
   - mkdocstrings:
       handlers:
         python:
@@ -170,7 +172,8 @@ nav:
 extra:
   version:
     provider: mike
-    default: stable
+    default: latest
+    alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/eoln/eol

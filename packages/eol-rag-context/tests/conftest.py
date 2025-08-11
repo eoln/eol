@@ -72,15 +72,17 @@ def redis_store() -> Mock:
 
     # Create sync redis mock (some code uses self.redis.redis)
     store.redis = Mock()
-    store.redis.hgetall = AsyncMock(return_value={})
-    store.redis.hset = AsyncMock()
-    store.redis.hget = AsyncMock(return_value=None)
-    store.redis.delete = AsyncMock()
-    store.redis.keys = AsyncMock(return_value=[])
-    store.redis.ping = Mock(return_value=True)
-    store.redis.expire = AsyncMock()
-    store.redis.scan = AsyncMock(return_value=(0, []))
-    store.redis.hincrby = AsyncMock()
+    # Create nested redis attribute for sync operations
+    store.redis.redis = Mock()
+    store.redis.redis.hgetall = Mock(return_value={})
+    store.redis.redis.hset = Mock()
+    store.redis.redis.hget = Mock(return_value=None)
+    store.redis.redis.delete = Mock()
+    store.redis.redis.keys = Mock(return_value=[])
+    store.redis.redis.ping = Mock(return_value=True)
+    store.redis.redis.expire = Mock()
+    store.redis.redis.scan = Mock(return_value=(0, []))
+    store.redis.redis.hincrby = Mock()
 
     # Store methods
     store.store_document = AsyncMock()

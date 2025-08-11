@@ -29,7 +29,7 @@ class TestSentenceTransformerProvider:
         )
 
         # Mock the import to raise ImportError during provider initialization
-        with patch.dict('sys.modules', {'sentence_transformers': None}):
+        with patch.dict("sys.modules", {"sentence_transformers": None}):
             provider = SentenceTransformerProvider(config)
             # Should have None model (import failed)
             assert provider.model is None
@@ -43,9 +43,9 @@ class TestSentenceTransformerProvider:
     async def test_batch_embeddings(self):
         """Test batch embedding generation."""
         config = EmbeddingConfig(model_name="test-model", dimension=64, batch_size=2)
-        
+
         # Mock sentence_transformers import to force mock embeddings
-        with patch.dict('sys.modules', {'sentence_transformers': None}):
+        with patch.dict("sys.modules", {"sentence_transformers": None}):
             provider = SentenceTransformerProvider(config)
 
             texts = ["text1", "text2", "text3", "text4"]

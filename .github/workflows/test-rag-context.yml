@@ -35,7 +35,7 @@ jobs:
         python-version: '3.11'
     
     - name: Cache pip packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('packages/eol-rag-context/pyproject.toml') }}
@@ -107,7 +107,7 @@ jobs:
         echo "::endgroup::"
     
     - name: Upload Coverage Reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: coverage-reports

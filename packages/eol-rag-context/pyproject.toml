@@ -68,6 +68,12 @@ dev = [
     "types-pyyaml",
     "types-markdown",
     "ipython>=8.0.0",
+    # Documentation tools
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.6.0",
+    "mkdocstrings[python]>=0.30.0",
+    "pydocstyle>=6.3.0",
+    "docformatter>=1.7.0",
 ]
 
 # Testing dependencies (subset of dev)
@@ -185,3 +191,18 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 check_untyped_defs = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = false  # Can be noisy in some cases
+strict_equality = true
+
+# Docformatter configuration
+[tool.docformatter]
+wrap-summaries = 79
+wrap-descriptions = 79
+make-summary-multi-line = false
+close-quotes-on-newline = true
+force-wrap = false
+tab-width = 4
+pre-summary-newline = false
+pre-summary-space = false

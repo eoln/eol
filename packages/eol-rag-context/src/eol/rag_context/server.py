@@ -75,7 +75,56 @@ class WatchDirectoryRequest(BaseModel):
 
 
 class EOLRAGContextServer:
-    """MCP server for intelligent RAG-based context management."""
+    """MCP server for intelligent RAG-based context management.
+    
+    This server implements the Model Context Protocol (MCP) to provide dynamic,
+    intelligent context retrieval using Redis-backed vector storage. It replaces
+    static documentation with semantic search across hierarchically indexed
+    documents.
+    
+    The server provides:
+    - Hierarchical document indexing (concepts → sections → chunks)
+    - Vector similarity search with Redis Stack
+    - Knowledge graph construction and querying
+    - Real-time file watching and automatic reindexing
+    - Semantic caching with adaptive hit rate optimization
+    - Multi-format document processing (code, markdown, PDFs, etc.)
+    
+    Attributes:
+        config: Configuration settings for the server.
+        mcp: FastMCP server instance for protocol handling.
+        redis_store: Vector storage backend using Redis Stack.
+        embedding_manager: Handles embedding generation and caching.
+        document_processor: Processes documents into structured chunks.
+        indexer: Manages document indexing and hierarchical organization.
+        semantic_cache: Caches query results for improved performance.
+        knowledge_graph: Builds and queries entity relationship graphs.
+        file_watcher: Monitors file changes for automatic reindexing.
+    
+    Example:
+        Basic server setup:
+        
+        >>> from eol.rag_context import EOLRAGContextServer
+        >>> from eol.rag_context.config import RAGConfig
+        >>> 
+        >>> # Initialize with default configuration
+        >>> server = EOLRAGContextServer()
+        >>> await server.initialize()
+        >>> 
+        >>> # Index documents
+        >>> result = await server.index_directory("/path/to/docs")
+        >>> print(f"Indexed {result['indexed_files']} files")
+        
+        Custom configuration:
+        
+        >>> config = RAGConfig(
+        ...     redis_host="localhost",
+        ...     embedding_provider="sentence-transformers",
+        ...     cache_enabled=True
+        ... )
+        >>> server = EOLRAGContextServer(config)
+        >>> await server.initialize()
+    """
 
     def __init__(self, config: Optional[RAGConfig] = None):
         self.config = config or RAGConfig()
@@ -96,7 +145,33 @@ class EOLRAGContextServer:
         self._setup_prompts()
 
     async def initialize(self) -> None:
-        """Initialize server components."""
+        """Initialize all server components in proper dependency order.
+        
+        This method sets up the complete RAG pipeline including Redis connection,
+        embedding providers, document processing, indexing, caching, knowledge graph,
+        and file watching capabilities. Components are initialized in dependency order
+        to ensure proper functionality.
+        
+        The initialization process:
+        1. Establishes Redis connection and creates vector indexes
+        2. Initializes embedding manager with configured provider
+        3. Sets up document processor for multi-format support
+        4. Creates document indexer with hierarchical organization
+        5. Initializes semantic cache for query optimization
+        6. Sets up knowledge graph builder for entity relationships
+        7. Starts file watcher for real-time updates
+        
+        Raises:
+            RedisConnectionError: If unable to connect to Redis Stack.
+            EmbeddingProviderError: If embedding provider initialization fails.
+            ConfigurationError: If required configuration is missing or invalid.
+            
+        Example:
+            >>> server = EOLRAGContextServer()
+            >>> await server.initialize()
+            >>> print("Server ready for indexing and search")
+            Server ready for indexing and search
+        """
         logger.info(f"Initializing {self.config.server_name} v{self.config.server_version}")
 
         # Initialize Redis
@@ -134,7 +209,28 @@ class EOLRAGContextServer:
         logger.info("Server initialization complete")
 
     async def shutdown(self) -> None:
-        """Shutdown server components."""
+        """Shutdown all server components gracefully.
+        
+        This method ensures all active components are properly closed and cleaned up,
+        preventing resource leaks and ensuring data integrity. Components are shutdown
+        in reverse dependency order to avoid errors.
+        
+        The shutdown process:
+        1. Stop file watcher to prevent new indexing requests
+        2. Close Redis connections and connection pools
+        3. Clean up any remaining background tasks
+        
+        Raises:
+            Exception: If critical shutdown operations fail. Non-critical failures
+                are logged but don't prevent shutdown completion.
+        
+        Example:
+            >>> server = EOLRAGContextServer()
+            >>> await server.initialize()
+            >>> # ... use server ...
+            >>> await server.shutdown()
+            Server shutdown complete
+        """
         logger.info("Shutting down server")
 
         if self.file_watcher:
@@ -146,11 +242,38 @@ class EOLRAGContextServer:
         logger.info("Server shutdown complete")
 
     def _setup_resources(self) -> None:
-        """Setup MCP resources."""
+        """Configure MCP resources for dynamic context retrieval.
+        
+        Sets up MCP resource endpoints that provide dynamic access to context data.
+        Resources are URI-based and allow clients to fetch specific information
+        without requiring tool calls.
+        
+        Configured resources:
+        - context://query/{query}: Get optimized context for a specific query
+        - context://sources: List all indexed sources with metadata
+        - context://stats: Get comprehensive server statistics
+        - context://knowledge-graph/stats: Get knowledge graph statistics
+        
+        Note:
+            This method should only be called during server initialization.
+            Resources are automatically registered with the MCP server instance.
+        """
 
         @self.mcp.resource("context://query/{query}")
         async def get_context_for_query(query: str) -> Dict[str, Any]:
-            """Get optimized context for a query."""
+            """Get optimized context for a query using semantic cache and hierarchical search.
+            
+            Args:
+                query: The search query string.
+                
+            Returns:
+                Dictionary containing:
+                - query: The original query string
+                - context: The retrieved context text
+                - cached: Whether result came from cache
+                - source: Data source (semantic_cache or hierarchical_search)
+                - results: Number of results found (if not cached)
+            """
             # Check cache first
             cached = await self.semantic_cache.get(query)
             if cached:
@@ -188,7 +311,17 @@ class EOLRAGContextServer:
 
         @self.mcp.resource("context://sources")
         async def list_indexed_sources() -> List[Dict[str, Any]]:
-            """List all indexed sources."""
+            """List all indexed sources with their metadata and statistics.
+            
+            Returns:
+                List of dictionaries, each containing:
+                - source_id: Unique identifier for the source
+                - path: Filesystem path to the indexed directory/file
+                - indexed_at: ISO timestamp of when indexing completed
+                - file_count: Number of files in this source
+                - total_chunks: Total chunks created from this source
+                - metadata: Additional source-specific metadata
+            """
             sources = await self.indexer.list_sources()
             return [
                 {
@@ -204,7 +337,16 @@ class EOLRAGContextServer:
 
         @self.mcp.resource("context://stats")
         async def get_statistics() -> Dict[str, Any]:
-            """Get server statistics."""
+            """Get comprehensive server statistics from all components.
+            
+            Returns:
+                Dictionary containing statistics from:
+                - indexer: Document indexing metrics
+                - cache: Semantic cache performance metrics
+                - embeddings: Embedding generation and cache statistics
+                - watcher: File watching activity metrics
+                - knowledge_graph: Graph construction and query statistics
+            """
             return {
                 "indexer": self.indexer.get_stats(),
                 "cache": self.semantic_cache.get_stats(),
@@ -215,15 +357,66 @@ class EOLRAGContextServer:
 
         @self.mcp.resource("context://knowledge-graph/stats")
         async def get_knowledge_graph_stats() -> Dict[str, Any]:
-            """Get knowledge graph statistics."""
+            """Get detailed knowledge graph statistics and metrics.
+            
+            Returns:
+                Dictionary containing:
+                - nodes: Total number of entities in the graph
+                - edges: Total number of relationships
+                - node_types: Distribution of entity types
+                - relationship_types: Distribution of relationship types
+                - centrality_metrics: Key centrality measurements
+                - community_stats: Community detection results
+            """
             return self.knowledge_graph.get_graph_stats()
 
     def _setup_tools(self) -> None:
-        """Setup MCP tools."""
+        """Configure MCP tools for interactive operations.
+        
+        Sets up MCP tool endpoints that allow clients to perform operations
+        like indexing, searching, and managing the RAG system. Each tool
+        accepts structured parameters and returns formatted results.
+        
+        Configured tools:
+        - index_directory: Index documents in a directory
+        - search_context: Search for relevant context
+        - query_knowledge_graph: Query entity relationships
+        - optimize_context: Optimize context for LLM consumption
+        - watch_directory: Start file watching
+        - unwatch_directory: Stop file watching
+        - clear_cache: Clear all caches
+        - remove_source: Remove indexed source
+        
+        Note:
+            This method should only be called during server initialization.
+            Tools are automatically registered with the MCP server instance.
+        """
 
         @self.mcp.tool()
         async def index_directory(request: IndexDirectoryRequest, ctx: Context) -> Dict[str, Any]:
-            """Index a directory of documents."""
+            """Index all documents in a directory with hierarchical organization.
+            
+            Processes all supported files in the specified directory, creating embeddings
+            and storing them in Redis with hierarchical structure. Optionally builds
+            knowledge graph and starts file watching.
+            
+            Args:
+                request: IndexDirectoryRequest containing:
+                    - path: Directory path to index
+                    - recursive: Whether to process subdirectories
+                    - file_patterns: Optional glob patterns for file filtering
+                    - watch: Whether to start file watching after indexing
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - source_id: Unique identifier for this indexed source
+                - path: Absolute path to the indexed directory
+                - indexed_at: ISO timestamp of indexing completion
+                - file_count: Number of files successfully processed
+                - total_chunks: Total chunks created across all files
+                - watching: Whether file watching was started
+            """
             path = Path(request.path)
 
             # Index the directory
@@ -253,7 +446,28 @@ class EOLRAGContextServer:
         async def search_context(
             request: SearchContextRequest, ctx: Context
         ) -> List[Dict[str, Any]]:
-            """Search for relevant context."""
+            """Search for relevant context using vector similarity.
+            
+            Performs vector similarity search against indexed documents, supporting
+            both hierarchical search across all levels and targeted search at
+            specific hierarchy levels.
+            
+            Args:
+                request: SearchContextRequest containing:
+                    - query: Search query string
+                    - max_results: Maximum number of results to return
+                    - min_relevance: Minimum similarity score threshold
+                    - hierarchy_level: Optional specific level (1=concept, 2=section, 3=chunk)
+                    - source_filter: Optional source ID to filter results
+                ctx: MCP context for the request
+                
+            Returns:
+                List of dictionaries, each containing:
+                - id: Document/chunk identifier
+                - score: Similarity score (0.0 to 1.0)
+                - content: The retrieved content text
+                - metadata: Document metadata including source, hierarchy info
+            """
             # Get query embedding
             query_embedding = await self.embedding_manager.get_embedding(request.query)
 
@@ -288,7 +502,27 @@ class EOLRAGContextServer:
         async def query_knowledge_graph(
             request: QueryKnowledgeGraphRequest, ctx: Context
         ) -> Dict[str, Any]:
-            """Query the knowledge graph."""
+            """Query the knowledge graph for entity relationships.
+            
+            Searches the knowledge graph for entities matching the query and returns
+            a subgraph containing related entities and their relationships within
+            the specified depth limit.
+            
+            Args:
+                request: QueryKnowledgeGraphRequest containing:
+                    - query: Entity name or description to search for
+                    - max_depth: Maximum relationship traversal depth
+                    - max_entities: Maximum number of entities to return
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - query: The original query string
+                - entities: List of matching entities with properties
+                - relationships: List of relationships between entities
+                - central_entities: Most connected entities in the subgraph
+                - metadata: Additional subgraph statistics
+            """
             subgraph = await self.knowledge_graph.query_subgraph(
                 request.query, max_depth=request.max_depth, max_entities=request.max_entities
             )
@@ -320,7 +554,28 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def optimize_context(request: OptimizeContextRequest, ctx: Context) -> Dict[str, Any]:
-            """Optimize context for LLM consumption."""
+            """Optimize context for LLM consumption following best practices.
+            
+            Retrieves relevant context and formats it optimally for LLM processing,
+            including hierarchical organization, token management, and structured
+            presentation following 2024 LLM context best practices.
+            
+            Args:
+                request: OptimizeContextRequest containing:
+                    - query: User query for context retrieval
+                    - current_context: Optional existing context to optimize
+                    - max_tokens: Maximum token limit for output context
+                    - strategy: Context organization strategy
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - query: The original query string
+                - optimized_context: Formatted context text ready for LLM
+                - total_results: Number of source results used
+                - strategy: Strategy used for optimization
+                - estimated_tokens: Approximate token count of output
+            """
             # Get relevant context
             query_embedding = await self.embedding_manager.get_embedding(request.query)
 
@@ -374,7 +629,26 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def watch_directory(request: WatchDirectoryRequest, ctx: Context) -> Dict[str, Any]:
-            """Start watching a directory for changes."""
+            """Start watching a directory for file changes.
+            
+            Begins monitoring the specified directory for file changes, automatically
+            reindexing modified files and updating the knowledge graph as needed.
+            
+            Args:
+                request: WatchDirectoryRequest containing:
+                    - path: Directory path to watch
+                    - recursive: Whether to watch subdirectories
+                    - file_patterns: Optional glob patterns for file filtering
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - source_id: Unique identifier for the watch session
+                - path: Absolute path being watched
+                - recursive: Whether subdirectories are included
+                - patterns: File patterns being monitored
+                - status: Current watching status
+            """
             path = Path(request.path)
 
             source_id = await self.file_watcher.watch(
@@ -391,7 +665,21 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def unwatch_directory(source_id: str, ctx: Context) -> Dict[str, Any]:
-            """Stop watching a directory."""
+            """Stop watching a directory for changes.
+            
+            Stops the file watcher for the specified source, preventing further
+            automatic reindexing of changes in that directory.
+            
+            Args:
+                source_id: Unique identifier of the watch session to stop
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - source_id: The watch session identifier
+                - unwatched: Whether the operation was successful
+                - status: Final status (stopped or not_found)
+            """
             success = await self.file_watcher.unwatch(source_id)
 
             return {
@@ -402,7 +690,20 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def clear_cache(ctx: Context) -> Dict[str, Any]:
-            """Clear all caches."""
+            """Clear all caches to force fresh data retrieval.
+            
+            Clears both semantic cache and embedding cache, forcing all subsequent
+            queries to regenerate embeddings and retrieve fresh context data.
+            
+            Args:
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - semantic_cache: Clearance status
+                - embedding_cache: Clearance status
+                - timestamp: ISO timestamp of operation
+            """
             # Clear semantic cache
             await self.semantic_cache.clear()
 
@@ -417,7 +718,22 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def remove_source(source_id: str, ctx: Context) -> Dict[str, Any]:
-            """Remove an indexed source."""
+            """Remove an indexed source and all its data.
+            
+            Completely removes all indexed data for the specified source,
+            including documents, embeddings, knowledge graph entities,
+            and stops any active file watching.
+            
+            Args:
+                source_id: Unique identifier of the source to remove
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing:
+                - source_id: The source identifier
+                - removed: Whether the operation was successful
+                - status: Final status (removed or not_found)
+            """
             # Stop watching if active
             await self.file_watcher.unwatch(source_id)
 
@@ -431,11 +747,33 @@ class EOLRAGContextServer:
             }
 
     def _setup_prompts(self) -> None:
-        """Setup MCP prompts."""
+        """Configure MCP prompts for structured LLM interactions.
+        
+        Sets up prompt templates that help LLMs interact more effectively
+        with the RAG system by providing structured formats for queries,
+        context synthesis, and knowledge exploration.
+        
+        Configured prompts:
+        - structured_query: Transform user queries for optimal RAG retrieval
+        - context_synthesis: Synthesize multiple context sections effectively
+        - knowledge_exploration: Explore knowledge graphs for insights
+        
+        Note:
+            This method should only be called during server initialization.
+            Prompts are automatically registered with the MCP server instance.
+        """
 
         @self.mcp.prompt("structured_query")
         async def structured_query_prompt() -> str:
-            """Generate a structured query for RAG retrieval."""
+            """Generate a structured query format for optimal RAG retrieval.
+            
+            Provides a template for transforming user queries into structured
+            formats that improve RAG retrieval effectiveness by identifying
+            intent, entities, required depth, and output format.
+            
+            Returns:
+                Structured query template with examples.
+            """
             return """Transform the user query into a structured format for optimal RAG retrieval:
 
 1. Main Intent: [What is the user trying to achieve?]
@@ -455,7 +793,15 @@ User: "How does the authentication system work?"
 
         @self.mcp.prompt("context_synthesis")
         async def context_synthesis_prompt() -> str:
-            """Synthesize multiple context sections."""
+            """Synthesize multiple context sections into coherent responses.
+            
+            Provides guidelines for effectively combining multiple retrieved
+            context sections, resolving contradictions, and organizing
+            information hierarchically for optimal LLM understanding.
+            
+            Returns:
+                Context synthesis template with formatting guidelines.
+            """
             return """Given the retrieved context sections, synthesize them effectively:
 
 1. Identify Common Themes: Find recurring concepts across sections
@@ -480,7 +826,15 @@ Output Format:
 
         @self.mcp.prompt("knowledge_exploration")
         async def knowledge_exploration_prompt() -> str:
-            """Explore knowledge graph for insights."""
+            """Explore knowledge graphs to discover insights and patterns.
+            
+            Provides structured approach for analyzing knowledge graphs,
+            including entity analysis, relationship patterns, community
+            detection, and path analysis to uncover hidden insights.
+            
+            Returns:
+                Knowledge exploration template with analysis framework.
+            """
             return """Explore the knowledge graph to discover insights:
 
 1. Entity Analysis:
@@ -508,10 +862,64 @@ Output Format:
    - What documentation gaps exist?
    - What refactoring opportunities are evident?"""
 
-    # API compatibility methods for tests and external usage
+        # API compatibility methods for tests and external usage
 
     async def index_directory(self, path: str, **kwargs) -> Dict[str, Any]:
-        """Index a directory (alias for index_folder with dict return)."""
+        """Index all documents in a directory with hierarchical organization.
+        
+        This method recursively processes all supported files in the specified directory,
+        creating a hierarchical index structure with concepts, sections, and chunks.
+        The indexing process extracts metadata, creates vector embeddings, and stores
+        everything in Redis for fast similarity search.
+        
+        Supported file formats:
+        - Source code: .py, .js, .ts, .java, .cpp, .c, .h
+        - Documentation: .md, .rst, .txt
+        - Structured data: .json, .yaml, .xml
+        - Documents: .pdf, .docx (if available)
+        
+        Args:
+            path: Directory path to index. Can be absolute or relative.
+            **kwargs: Additional indexing options:
+                recursive (bool): Process subdirectories. Defaults to True.
+                force_reindex (bool): Reindex even if unchanged. Defaults to False.
+                file_patterns (List[str]): Glob patterns for files to include.
+                    Defaults to common code and doc formats.
+                
+        Returns:
+            Dictionary containing indexing results with keys:
+            - status: "success" or "error"
+            - source_id: Unique identifier for this indexed source
+            - indexed_files: Number of files successfully processed
+            - total_chunks: Total chunks created across all files
+            - file_count: Total files discovered (including skipped)
+            - path: Absolute path to the indexed directory
+            - message: Error message if status is "error"
+            
+        Raises:
+            FileNotFoundError: If the specified directory doesn't exist.
+            PermissionError: If unable to read files in the directory.
+            DocumentProcessingError: If critical files cannot be processed.
+            
+        Example:
+            Basic directory indexing:
+            
+            >>> result = await server.index_directory("/path/to/project")
+            >>> print(f"Indexed {result['indexed_files']} files")
+            >>> print(f"Created {result['total_chunks']} chunks")
+            Indexed 25 files
+            Created 1247 chunks
+            
+            With custom file patterns:
+            
+            >>> result = await server.index_directory(
+            ...     "/path/to/docs",
+            ...     recursive=True,
+            ...     file_patterns=["*.md", "*.py"]
+            ... )
+            >>> print(f"Source ID: {result['source_id']}")
+            Source ID: docs_md_py_20241211_143022
+        """
         if not self.indexer:
             return {"status": "error", "message": "Indexer not initialized"}
 
@@ -537,7 +945,26 @@ Output Format:
             return {"status": "error", "message": str(e)}
 
     async def index_file(self, path: str, **kwargs) -> Dict[str, Any]:
-        """Index a single file with dict return for compatibility."""
+        """Index a single file with dict return for API compatibility.
+        
+        Processes a single file, extracting content, creating chunks, generating
+        embeddings, and storing in Redis. This method provides backward
+        compatibility with previous API versions.
+        
+        Args:
+            path: Filesystem path to the file to index
+            **kwargs: Additional indexing options (currently unused)
+            
+        Returns:
+            Dictionary containing:
+            - status: "success" or "error"
+            - source_id: Unique identifier for this indexed file
+            - chunks: Number of chunks created from this file
+            - total_chunks: Same as chunks (for consistency)
+            - files: Number of files processed (always 1)
+            - errors: List of any errors encountered
+            - message: Error message if status is "error"
+        """
         if not self.indexer:
             return {"status": "error", "message": "Indexer not initialized"}
 
@@ -557,7 +984,21 @@ Output Format:
             return {"status": "error", "message": str(e)}
 
     async def watch_directory(self, path: str, **kwargs) -> Dict[str, Any]:
-        """Watch a directory for changes."""
+        """Watch a directory for changes with dict return for API compatibility.
+        
+        Starts monitoring the specified directory for file changes, automatically
+        triggering reindexing when files are modified, added, or deleted.
+        
+        Args:
+            path: Directory path to watch
+            **kwargs: Additional watching options (currently unused)
+            
+        Returns:
+            Dictionary containing:
+            - status: "success" or "error"
+            - path: The directory path being watched
+            - message: Success or error message
+        """
         if not self.file_watcher:
             return {"status": "error", "message": "File watcher not initialized"}
 
@@ -573,7 +1014,19 @@ Output Format:
             return {"status": "error", "message": str(e)}
 
     async def run(self) -> None:
-        """Run the MCP server."""
+        """Run the MCP server with full initialization and cleanup.
+        
+        Initializes all server components, starts the MCP server, and ensures
+        proper shutdown when the server stops. This is the main entry point
+        for running the server as a standalone application.
+        
+        Raises:
+            Exception: If server initialization or startup fails.
+            
+        Note:
+            This method runs indefinitely until the server is stopped.
+            Use Ctrl+C or send SIGTERM to gracefully shutdown.
+        """
         await self.initialize()
 
         try:
@@ -584,7 +1037,25 @@ Output Format:
 
 
 async def main():
-    """Main entry point for the server."""
+    """Main entry point for the EOL RAG Context MCP server.
+    
+    Configures logging, loads configuration from command line arguments,
+    creates the server instance, and runs it with proper error handling.
+    
+    Command line usage:
+        python -m eol.rag_context.server [config.json]
+        
+    Args:
+        sys.argv[1] (optional): Path to configuration file. If not provided,
+            uses default configuration.
+    
+    Example:
+        Run with default configuration:
+        $ python -m eol.rag_context.server
+        
+        Run with custom configuration:
+        $ python -m eol.rag_context.server /path/to/config.json
+    """
     import sys
 
     # Setup logging

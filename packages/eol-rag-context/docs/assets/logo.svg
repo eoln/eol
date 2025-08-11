@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="#2196F3" opacity="0.1"/>
+  
+  <!-- Main logo design - EOL letters stylized -->
+  <g transform="translate(100, 100)">
+    <!-- E -->
+    <path d="M -60 -30 L -60 30 M -60 -30 L -35 -30 M -60 0 L -40 0 M -60 30 L -35 30" 
+          stroke="#2196F3" stroke-width="6" fill="none" stroke-linecap="round"/>
+    
+    <!-- O -->
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#1976D2" stroke-width="6"/>
+    
+    <!-- L -->
+    <path d="M 35 -30 L 35 30 L 60 30" 
+          stroke="#0D47A1" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Decorative dots representing RAG context -->
+  <circle cx="50" cy="150" r="4" fill="#FF5722"/>
+  <circle cx="100" cy="160" r="4" fill="#4CAF50"/>
+  <circle cx="150" cy="150" r="4" fill="#FFC107"/>
+  
+  <!-- Connecting lines representing context flow -->
+  <path d="M 50 150 Q 75 140 100 160 Q 125 140 150 150" 
+        stroke="#9E9E9E" stroke-width="1" fill="none" opacity="0.5"/>
+</svg>

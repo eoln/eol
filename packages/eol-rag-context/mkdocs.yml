@@ -45,14 +45,14 @@ theme:
   icon:
     repo: fontawesome/brands/github
   favicon: assets/favicon.ico
-  logo: assets/logo.png
+  logo: assets/logo.svg
 
 # Plugins
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
-  - mike:
-      canonical_version: latest
+  # - mike:  # Uncomment when mike is installed for versioning
+  #     canonical_version: latest
   - mkdocstrings:
       handlers:
         python:
@@ -170,10 +170,10 @@ nav:
 
 # Extra
 extra:
-  version:
-    provider: mike
-    default: latest
-    alias: true
+  # version:  # Uncomment when mike is installed
+  #   provider: mike
+  #   default: latest
+  #   alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/eoln/eol
@@ -193,4 +193,4 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 # Copyright
-copyright: Copyright &copy; 2024 EOL Framework Contributors
+copyright: Copyright &copy; 2025 EOLN.EU

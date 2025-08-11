@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="4" fill="#2196F3"/>
+  
+  <!-- E -->
+  <path d="M 6 10 L 6 22 M 6 10 L 11 10 M 6 16 L 10 16 M 6 22 L 11 22" 
+        stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Small dot to represent RAG -->
+  <circle cx="26" cy="26" r="2" fill="#FFC107"/>
+</svg>

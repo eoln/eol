@@ -1,5 +1,41 @@
-"""
-Redis 8 client with vector capabilities for EOL RAG Context.
+"""Redis Stack 8 client with vector capabilities for EOL RAG Context.
+
+This module provides a comprehensive Redis Stack vector storage client that supports
+hierarchical document indexing, vector similarity search, and document management.
+It integrates with Redis Search and RedisJSON modules to provide fast, scalable
+vector operations with HNSW (Hierarchical Navigable Small World) indexing.
+
+Key Features:
+    - Hierarchical vector indexing (concepts → sections → chunks)
+    - HNSW algorithm for efficient similarity search
+    - Async/sync connection support with connection pooling
+    - Multi-level document organization with parent-child relationships
+    - Optimized vector storage and retrieval operations
+    - Redis Search integration with filtering capabilities
+
+Example:
+    Basic usage:
+    
+    >>> from eol.rag_context.redis_client import RedisVectorStore
+    >>> from eol.rag_context.config import RedisConfig, IndexConfig
+    >>> 
+    >>> # Initialize store
+    >>> redis_config = RedisConfig(host="localhost")
+    >>> index_config = IndexConfig()
+    >>> store = RedisVectorStore(redis_config, index_config)
+    >>> 
+    >>> # Connect and create indexes
+    >>> await store.connect_async()
+    >>> store.create_hierarchical_indexes(embedding_dim=384)
+    >>> 
+    >>> # Store document
+    >>> doc = VectorDocument(
+    ...     id="doc1", 
+    ...     content="Sample content",
+    ...     embedding=np.random.rand(384),
+    ...     hierarchy_level=3
+    ... )
+    >>> await store.store_document(doc)
 """
 
 import asyncio
@@ -36,7 +72,36 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class VectorDocument:
-    """Document with vector embedding."""
+    """Document with vector embedding for hierarchical storage.
+    
+    Represents a document or document fragment with its vector embedding and
+    hierarchical metadata. Documents can be organized in a three-level hierarchy:
+    concepts (level 1), sections (level 2), and chunks (level 3).
+    
+    Attributes:
+        id: Unique identifier for the document.
+        content: Text content of the document.
+        embedding: Vector embedding as numpy array (typically float32).
+        metadata: Additional metadata as key-value pairs.
+        hierarchy_level: Level in hierarchy (1=concept, 2=section, 3=chunk).
+        parent_id: Optional ID of parent document in hierarchy.
+        children_ids: List of child document IDs.
+        
+    Example:
+        Creating a chunk-level document:
+        
+        >>> import numpy as np
+        >>> doc = VectorDocument(
+        ...     id="chunk_001",
+        ...     content="This is a text chunk.",
+        ...     embedding=np.random.rand(384).astype(np.float32),
+        ...     hierarchy_level=3,
+        ...     parent_id="section_001",
+        ...     metadata={"source": "doc.md", "position": 0}
+        ... )
+        >>> print(f"Document level: {doc.hierarchy_level}")
+        Document level: 3
+    """
 
     id: str
     content: str
@@ -48,18 +113,96 @@ class VectorDocument:
 
 
 class RedisVectorStore:
-    """Redis 8 vector store with hierarchical indexing."""
+    """Redis Stack vector store with hierarchical indexing and HNSW search.
+    
+    Provides comprehensive vector storage and retrieval using Redis Stack with
+    vector search capabilities. Supports hierarchical document organization,
+    efficient similarity search using HNSW algorithm, and both synchronous
+    and asynchronous operations.
+    
+    The store organizes documents in a three-level hierarchy:
+    1. Concepts: High-level topics and themes
+    2. Sections: Mid-level document sections
+    3. Chunks: Fine-grained text chunks
+    
+    Each level has optimized index settings for different query patterns:
+    - Concepts: High precision for topic discovery
+    - Sections: Balanced precision/recall for context retrieval  
+    - Chunks: High recall for detailed information
+    
+    Attributes:
+        redis_config: Redis connection configuration.
+        index_config: Vector index configuration parameters.
+        redis: Synchronous Redis client instance.
+        async_redis: Asynchronous Redis client instance.
+        
+    Example:
+        Basic setup and usage:
+        
+        >>> from eol.rag_context.config import RedisConfig, IndexConfig
+        >>> 
+        >>> # Configure connections
+        >>> redis_config = RedisConfig(
+        ...     host="localhost",
+        ...     port=6379,
+        ...     max_connections=50
+        ... )
+        >>> index_config = IndexConfig(
+        ...     algorithm="HNSW",
+        ...     distance_metric="COSINE",
+        ...     m=16
+        ... )
+        >>> 
+        >>> # Initialize store
+        >>> store = RedisVectorStore(redis_config, index_config)
+        >>> await store.connect_async()
+        >>> 
+        >>> # Create hierarchical indexes
+        >>> store.create_hierarchical_indexes(embedding_dim=384)
+        >>> print("Indexes created successfully")
+        Indexes created successfully
+    """
 
     def __init__(self, redis_config: RedisConfig, index_config: IndexConfig):
+        """Initialize Redis vector store with configuration.
+        
+        Args:
+            redis_config: Redis connection configuration including host, port,
+                authentication, and connection pooling settings.
+            index_config: Vector index configuration including algorithm settings,
+                distance metrics, and hierarchical prefixes.
+        """
         self.redis_config = redis_config
         self.index_config = index_config
         self.redis: Optional[Redis] = None
         self.async_redis: Optional[AsyncRedis] = None
 
     def connect(self) -> None:
-        """Establish Redis connection."""
-        # Build connection kwargs
-        kwargs = {
+        """Establish synchronous Redis connection with optimized settings.
+        
+        Creates a synchronous Redis connection using connection pooling for
+        optimal performance. Configures platform-specific socket options and
+        validates connectivity with a ping test.
+        
+        The connection uses the following optimizations:
+        - Connection pooling for reduced overhead
+        - TCP keepalive for connection health (non-macOS)
+        - Binary mode for vector data preservation
+        - Configurable authentication and database selection
+        
+        Raises:
+            redis.ConnectionError: If unable to connect to Redis server.
+            redis.AuthenticationError: If authentication fails.
+            redis.RedisError: For other Redis-related connection issues.
+            
+        Example:
+            >>> store = RedisVectorStore(redis_config, index_config)
+            >>> store.connect()
+            >>> print("Connected successfully")
+            Connected successfully
+        """
+        # Build connection parameters for sync Redis client
+        connection_kwargs = {
             "host": self.redis_config.host,
             "port": self.redis_config.port,
             "db": self.redis_config.db,
@@ -68,17 +211,17 @@ class RedisVectorStore:
             "max_connections": self.redis_config.max_connections,
         }
 
-        # Skip socket options on macOS
+        # Add platform-specific socket keepalive options (skip on macOS)
         import platform
 
         if platform.system() != "Darwin":
             if self.redis_config.socket_keepalive:
-                kwargs["socket_keepalive"] = True
-                kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
+                connection_kwargs["socket_keepalive"] = True
+                connection_kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
 
-        self.redis = Redis(**kwargs)
+        self.redis = Redis(**connection_kwargs)
 
-        # Test connection
+        # Validate connection with ping test
         try:
             self.redis.ping()
             logger.info(f"Connected to Redis at {self.redis_config.host}:{self.redis_config.port}")
@@ -87,9 +230,31 @@ class RedisVectorStore:
             raise
 
     async def connect_async(self) -> None:
-        """Establish async Redis connection."""
-        # Build connection kwargs
-        kwargs = {
+        """Establish asynchronous Redis connection with connection pooling.
+        
+        Creates an asynchronous Redis connection optimized for high-throughput
+        vector operations. Uses connection pooling and platform-specific
+        optimizations for best performance in async environments.
+        
+        The async connection provides:
+        - Non-blocking I/O for concurrent operations
+        - Connection pooling for optimal resource usage
+        - Automatic reconnection handling
+        - Platform-specific socket optimizations (excluding macOS)
+        
+        Raises:
+            redis.ConnectionError: If unable to establish async connection.
+            redis.AuthenticationError: If Redis authentication fails.
+            redis.RedisError: For other async Redis connection issues.
+            
+        Example:
+            >>> store = RedisVectorStore(redis_config, index_config)
+            >>> await store.connect_async()
+            >>> print("Async connection established")
+            Async connection established
+        """
+        # Build connection parameters for async Redis client
+        async_connection_kwargs = {
             "host": self.redis_config.host,
             "port": self.redis_config.port,
             "db": self.redis_config.db,
@@ -98,18 +263,18 @@ class RedisVectorStore:
             "max_connections": self.redis_config.max_connections,
         }
 
-        # Only add socket options if they're not causing issues
+        # Configure socket keepalive for non-macOS platforms only
         if self.redis_config.socket_keepalive:
-            kwargs["socket_keepalive"] = True
+            async_connection_kwargs["socket_keepalive"] = True
             # Skip socket_keepalive_options on macOS as they can cause issues
             import platform
 
             if platform.system() != "Darwin":
-                kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
+                async_connection_kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
 
-        self.async_redis = await AsyncRedis(**kwargs)
+        self.async_redis = AsyncRedis(**async_connection_kwargs)
 
-        # Test connection
+        # Validate async connection with ping test
         try:
             await self.async_redis.ping()
             logger.info(

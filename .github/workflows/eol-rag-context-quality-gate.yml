@@ -190,6 +190,7 @@ jobs:
         # Application dependencies (minimal for unit tests)
         uv pip install --system pydantic pydantic-settings aiofiles
         uv pip install --system numpy redis aioredis python-magic pypdf python-docx
+        uv pip install --system beautifulsoup4 markdown networkx
         
         # Note: unittest.mock is part of Python standard library (no install needed)
         
@@ -396,7 +397,7 @@ jobs:
         pip install uv
         uv pip install --system pytest pytest-asyncio pytest-benchmark
         uv pip install --system redis numpy pydantic sentence-transformers python-magic
-        uv pip install --system networkx aiofiles pypdf python-docx
+        uv pip install --system networkx aiofiles pypdf python-docx beautifulsoup4 markdown
     
     - name: Run performance tests
       working-directory: ${{ env.PACKAGE_PATH }}

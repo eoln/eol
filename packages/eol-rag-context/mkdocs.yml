@@ -68,13 +68,12 @@ plugins:
             show_category_heading: true
             # Type annotations
             show_signature_annotations: true
-            show_return_annotation: true
             # Rendering options
             heading_level: 2
             members_order: source
             group_by_category: true
             show_submodules: false
-          import:
+          inventories:
             - https://docs.python.org/3/objects.inv
             - https://numpy.org/doc/stable/objects.inv
             - https://docs.pydantic.dev/latest/objects.inv

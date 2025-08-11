@@ -232,10 +232,8 @@ class SemanticCache:
             logger.info("Cache index already exists")
         except:
             # Create new cache index
-            from redis.commands.search.field import (NumericField, TextField,
-                                                     VectorField)
-            from redis.commands.search.index_definition import (
-                IndexDefinition, IndexType)
+            from redis.commands.search.field import NumericField, TextField, VectorField
+            from redis.commands.search.index_definition import IndexDefinition, IndexType
 
             schema = [
                 TextField("query"),

@@ -4,6 +4,7 @@ Embeddings management for EOL RAG Context.
 
 import asyncio
 import hashlib
+
 # from sentence_transformers import SentenceTransformer  # Optional dependency
 import logging
 import time

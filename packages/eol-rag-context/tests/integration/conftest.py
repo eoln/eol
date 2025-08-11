@@ -102,9 +102,17 @@ mock_openai.OpenAI.return_value = mock_openai_client
 sys.modules["openai"] = mock_openai
 
 # Now import our modules - Redis will use real implementation
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 
 @pytest.fixture(scope="function")

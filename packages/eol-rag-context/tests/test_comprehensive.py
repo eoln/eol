@@ -16,8 +16,7 @@ from dataclasses import asdict, fields
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from unittest.mock import (ANY, AsyncMock, MagicMock, Mock, PropertyMock, call,
-                           mock_open, patch)
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock, PropertyMock, call, mock_open, patch
 
 import numpy as np
 import pytest
@@ -83,9 +82,18 @@ for name, mock in MOCK_MODULES.items():
         sys.modules[name] = mock
 
 # Import modules after mocking
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph, main,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    main,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 # =============================================================================
 # CONFIG MODULE TESTS (92% -> 100%)

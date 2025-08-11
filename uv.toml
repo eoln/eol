@@ -1,0 +1,28 @@
+# UV Configuration File
+# https://docs.astral.sh/uv/configuration/
+
+[tool]
+# Use system Python if available
+python-preference = "system"
+
+# Development mode by default
+dev-dependencies = true
+
+# Package index configuration
+index-url = "https://pypi.org/simple"
+extra-index-url = []
+
+# Cache configuration
+cache-dir = ".uv-cache"
+pip-cache-dir = ".pip-cache"
+
+# Compile Python files
+compile-bytecode = true
+
+# Resolution strategy
+resolution = "highest"  # Use highest compatible version
+prerelease = "disallow"  # Don't allow prerelease versions
+
+# Virtual environment settings
+venv = ".venv"
+venv-seed = true  # Seed venv with pip, setuptools, wheel

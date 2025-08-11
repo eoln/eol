@@ -7,8 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from eol.rag_context.indexer import (DocumentIndexer, DocumentMetadata,
-                                     FolderScanner)
+from eol.rag_context.indexer import DocumentIndexer, DocumentMetadata, FolderScanner
 
 
 class TestFolderScanner:

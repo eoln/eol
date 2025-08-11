@@ -11,8 +11,11 @@ import numpy as np
 import pytest
 
 from eol.rag_context.config import EmbeddingConfig
-from eol.rag_context.embeddings import (EmbeddingManager, EmbeddingProvider,
-                                        SentenceTransformerProvider)
+from eol.rag_context.embeddings import (
+    EmbeddingManager,
+    EmbeddingProvider,
+    SentenceTransformerProvider,
+)
 
 
 class TestSentenceTransformerProvider:

@@ -8,9 +8,9 @@ version = "0.1.0"
 description = "Intelligent RAG-based context management MCP server for EOL Framework"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "GPL-3.0"
+license = { text = "GPL-3.0" }
 authors = [
-    { name = "eoln", email = "github@eoln.io" }
+    { name = "EOLN.EU", email = "dev@eoln.eu" }
 ]
 
 # Core dependencies - all required for the package to function
@@ -206,3 +206,24 @@ force-wrap = false
 tab-width = 4
 pre-summary-newline = false
 pre-summary-space = false
+
+# UV Package Configuration
+[tool.uv]
+# This package is part of the EOL workspace
+workspace = true
+
+# Package-specific UV settings
+dev-dependencies = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+# Internal workspace dependencies
+[tool.uv.sources]
+# When other packages are ready, add them here:
+# eol-core = { workspace = true }
+# eol-cli = { workspace = true }

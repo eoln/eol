@@ -41,8 +41,7 @@ for module in [
 ]:
     sys.modules[module] = MagicMock()
 
-from eol.rag_context import (config, document_processor, knowledge_graph,
-                             redis_client, server)
+from eol.rag_context import config, document_processor, knowledge_graph, redis_client, server
 
 
 @pytest.mark.asyncio

@@ -12,8 +12,7 @@ from unittest.mock import AsyncMock, Mock
 import numpy as np
 import pytest
 
-from eol.rag_context.config import (EmbeddingConfig, IndexConfig, RAGConfig,
-                                    RedisConfig)
+from eol.rag_context.config import EmbeddingConfig, IndexConfig, RAGConfig, RedisConfig
 from eol.rag_context.document_processor import DocumentProcessor
 from eol.rag_context.embeddings import EmbeddingManager
 

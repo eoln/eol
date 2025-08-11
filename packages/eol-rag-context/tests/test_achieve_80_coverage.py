@@ -66,9 +66,18 @@ for module in [
     sys.modules[module] = mock_modules[module]
 
 # Import our modules after mocking
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph, main,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    main,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 
 class TestRedisClient80:

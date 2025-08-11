@@ -10,8 +10,7 @@ import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
-from unittest.mock import (ANY, AsyncMock, MagicMock, PropertyMock, mock_open,
-                           patch)
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, mock_open, patch
 
 import numpy as np
 import pytest
@@ -67,9 +66,18 @@ for lang in [
 ]:
     sys.modules[f"tree_sitter_{lang}"] = MagicMock()
 
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph, main,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    main,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 
 class TestRedisClient80Coverage:

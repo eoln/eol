@@ -36,17 +36,17 @@ for module in mock_modules:
 
 # Now import our modules
 from eol.rag_context.config import EmbeddingConfig, RAGConfig, RedisConfig
-from eol.rag_context.document_processor import (DocumentProcessor,
-                                                ProcessedDocument)
-from eol.rag_context.embeddings import (EmbeddingManager,
-                                        SentenceTransformerProvider)
-from eol.rag_context.file_watcher import (ChangeType, FileChange, FileWatcher,
-                                          WatchedSource)
-from eol.rag_context.indexer import (DocumentIndexer, DocumentMetadata,
-                                     FolderScanner, IndexedSource)
-from eol.rag_context.knowledge_graph import (Entity, EntityType,
-                                             KnowledgeGraphBuilder,
-                                             Relationship, RelationType)
+from eol.rag_context.document_processor import DocumentProcessor, ProcessedDocument
+from eol.rag_context.embeddings import EmbeddingManager, SentenceTransformerProvider
+from eol.rag_context.file_watcher import ChangeType, FileChange, FileWatcher, WatchedSource
+from eol.rag_context.indexer import DocumentIndexer, DocumentMetadata, FolderScanner, IndexedSource
+from eol.rag_context.knowledge_graph import (
+    Entity,
+    EntityType,
+    KnowledgeGraphBuilder,
+    Relationship,
+    RelationType,
+)
 from eol.rag_context.redis_client import RedisVectorStore, VectorDocument
 from eol.rag_context.semantic_cache import CachedQuery, SemanticCache
 

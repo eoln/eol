@@ -4,6 +4,7 @@ Integration test configuration and fixtures.
 
 import asyncio
 import os
+
 # Only mock what's absolutely necessary for missing packages
 import sys
 import tempfile
@@ -42,9 +43,17 @@ for module in mock_modules:
     if module not in sys.modules:
         sys.modules[module] = MagicMock()
 
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 
 @pytest.fixture(scope="session")

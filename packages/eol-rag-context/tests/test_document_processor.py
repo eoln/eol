@@ -7,8 +7,7 @@ from pathlib import Path
 import pytest
 
 from eol.rag_context.config import ChunkingConfig, DocumentConfig
-from eol.rag_context.document_processor import (DocumentProcessor,
-                                                ProcessedDocument)
+from eol.rag_context.document_processor import DocumentProcessor, ProcessedDocument
 
 
 class TestDocumentProcessor:

@@ -1,0 +1,18 @@
+# Core dependencies shared across all EOL packages
+# These are fundamental dependencies used by multiple packages
+
+# Core Python utilities
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+typer>=0.9.0
+rich>=13.0.0
+
+# Async support
+aiofiles>=23.0.0
+
+# Data processing
+numpy>=1.24.0
+pyyaml>=6.0
+
+# File monitoring
+watchdog>=3.0.0

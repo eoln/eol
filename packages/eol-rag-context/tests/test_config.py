@@ -6,9 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from eol.rag_context.config import (CacheConfig, ChunkingConfig, ContextConfig,
-                                    DocumentConfig, EmbeddingConfig,
-                                    IndexConfig, RAGConfig, RedisConfig)
+from eol.rag_context.config import (
+    CacheConfig,
+    ChunkingConfig,
+    ContextConfig,
+    DocumentConfig,
+    EmbeddingConfig,
+    IndexConfig,
+    RAGConfig,
+    RedisConfig,
+)
 
 
 class TestRedisConfig:

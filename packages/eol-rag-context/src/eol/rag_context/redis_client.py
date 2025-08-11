@@ -49,10 +49,8 @@ import numpy as np
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
-    from redis.commands.search.field import (NumericField, TagField, TextField,
-                                             VectorField)
-    from redis.commands.search.index_definition import (IndexDefinition,
-                                                        IndexType)
+    from redis.commands.search.field import NumericField, TagField, TextField, VectorField
+    from redis.commands.search.index_definition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
 except ImportError:
     # Fallback for testing without redis-py[search]

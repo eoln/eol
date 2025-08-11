@@ -61,9 +61,18 @@ for module in [
     sys.modules[module] = MagicMock()
 
 # Import after mocking
-from eol.rag_context import (config, document_processor, embeddings,
-                             file_watcher, indexer, knowledge_graph, main,
-                             redis_client, semantic_cache, server)
+from eol.rag_context import (
+    config,
+    document_processor,
+    embeddings,
+    file_watcher,
+    indexer,
+    knowledge_graph,
+    main,
+    redis_client,
+    semantic_cache,
+    server,
+)
 
 
 @pytest.mark.asyncio

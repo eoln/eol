@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eol-cli"
+version = "0.1.0"
+description = "Command-line interface for the EOL AI Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0" }
+authors = [
+    { name = "EOLN.EU", email = "dev@eoln.eu" }
+]
+
+# Core dependencies
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+    # Internal dependencies
+    "eol-core>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/eoln/eol"
+Repository = "https://github.com/eoln/eol"
+
+[project.scripts]
+eol = "eol.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eol"]
+
+# UV Package Configuration
+[tool.uv]
+workspace = true
+
+[tool.uv.sources]
+# Workspace dependencies
+eol-core = { workspace = true }
+eol-rag-context = { workspace = true }

@@ -50,6 +50,7 @@ sys.modules["gitignore_parser"] = MagicMock()
 
 import eol.rag_context.file_watcher as file_watcher
 import eol.rag_context.knowledge_graph as knowledge_graph
+
 # Now import the modules
 import eol.rag_context.main as main
 import eol.rag_context.redis_client as redis_client

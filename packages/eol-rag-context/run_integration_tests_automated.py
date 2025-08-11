@@ -12,84 +12,80 @@ import signal
 import atexit
 from pathlib import Path
 
+
 # Check if we're in a virtual environment
 def in_virtualenv():
-    return hasattr(sys, 'real_prefix') or (
-        hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
+    return hasattr(sys, "real_prefix") or (
+        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
     )
 
+
 # Activate virtual environment if it exists and we're not in one
-venv_path = Path(__file__).parent / '.venv'
+venv_path = Path(__file__).parent / ".venv"
 if venv_path.exists() and not in_virtualenv():
-    activate_script = venv_path / 'bin' / 'activate_this.py'
+    activate_script = venv_path / "bin" / "activate_this.py"
     if activate_script.exists():
-        exec(open(activate_script).read(), {'__file__': str(activate_script)})
+        exec(open(activate_script).read(), {"__file__": str(activate_script)})
     else:
         # Use the venv's Python directly
-        venv_python = venv_path / 'bin' / 'python'
+        venv_python = venv_path / "bin" / "python"
         if venv_python.exists():
             os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
 
 class IntegrationTestRunner:
     def __init__(self):
         self.redis_process = None
         self.redis_container = None
         self.exit_code = 0
-        
+
     def check_docker(self):
         """Check if Docker is available and running."""
         try:
-            result = subprocess.run(
-                ["docker", "info"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            result = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
-    
+
     def check_redis_native(self):
         """Check if Redis is installed locally."""
         try:
-            result = subprocess.run(
-                ["redis-server", "--version"],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["redis-server", "--version"], capture_output=True, text=True)
             return result.returncode == 0
         except FileNotFoundError:
             return False
-    
+
     def start_redis_docker(self):
         """Start Redis using Docker."""
         print("Starting Redis with Docker...")
-        
+
         # Stop any existing container
         subprocess.run(
-            ["docker", "rm", "-f", "eol-test-redis"],
-            capture_output=True,
-            stderr=subprocess.DEVNULL
+            ["docker", "rm", "-f", "eol-test-redis"], capture_output=True, stderr=subprocess.DEVNULL
         )
-        
+
         # Start Redis container
         result = subprocess.run(
             [
-                "docker", "run", "-d",
-                "--name", "eol-test-redis",
-                "-p", "6379:6379",
-                "redis/redis-stack:latest"
+                "docker",
+                "run",
+                "-d",
+                "--name",
+                "eol-test-redis",
+                "-p",
+                "6379:6379",
+                "redis/redis-stack:latest",
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
-        
+
         if result.returncode != 0:
             print(f"Failed to start Redis container: {result.stderr}")
             return False
-        
+
         self.redis_container = result.stdout.strip()
-        
+
         # Wait for Redis to be ready
         for i in range(30):
             try:
@@ -97,77 +93,78 @@ class IntegrationTestRunner:
                     ["docker", "exec", "eol-test-redis", "redis-cli", "ping"],
                     capture_output=True,
                     text=True,
-                    timeout=2
+                    timeout=2,
                 )
                 if "PONG" in result.stdout:
                     print("Redis is ready!")
                     return True
             except subprocess.SubprocessError:
                 pass
-            
+
             time.sleep(1)
             if i % 5 == 0:
                 print(f"Waiting for Redis... ({i}/30)")
-        
+
         print("Redis failed to start within timeout")
         return False
-    
+
     def start_redis_native(self):
         """Start Redis natively."""
         print("Starting Redis natively...")
-        
+
         # Create temp directory for Redis data
         redis_dir = Path("/tmp/eol-test-redis")
         redis_dir.mkdir(exist_ok=True)
-        
+
         # Start Redis server
         self.redis_process = subprocess.Popen(
             [
                 "redis-server",
-                "--port", "6379",
-                "--dir", str(redis_dir),
-                "--save", "",  # Disable persistence for tests
-                "--appendonly", "no"
+                "--port",
+                "6379",
+                "--dir",
+                str(redis_dir),
+                "--save",
+                "",  # Disable persistence for tests
+                "--appendonly",
+                "no",
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
-        
+
         # Wait for Redis to be ready
         for i in range(30):
             try:
                 result = subprocess.run(
-                    ["redis-cli", "ping"],
-                    capture_output=True,
-                    text=True,
-                    timeout=2
+                    ["redis-cli", "ping"], capture_output=True, text=True, timeout=2
                 )
                 if "PONG" in result.stdout:
                     print("Redis is ready!")
                     return True
             except subprocess.SubprocessError:
                 pass
-            
+
             time.sleep(0.5)
             if i % 10 == 0:
                 print(f"Waiting for Redis... ({i}/30)")
-        
+
         print("Redis failed to start within timeout")
         return False
-    
+
     def stop_redis(self):
         """Stop Redis."""
         print("\nStopping Redis...")
-        
+
         if self.redis_container:
             # Stop Docker container
             subprocess.run(
                 ["docker", "rm", "-f", "eol-test-redis"],
                 capture_output=True,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
             print("Redis container stopped")
-        
+
         if self.redis_process:
             # Stop native Redis
             self.redis_process.terminate()
@@ -177,11 +174,11 @@ class IntegrationTestRunner:
                 self.redis_process.kill()
                 self.redis_process.wait()
             print("Redis process stopped")
-    
+
     def install_dependencies(self):
         """Install required Python dependencies."""
         print("Checking Python dependencies...")
-        
+
         required_packages = [
             "redis",
             "aioredis",
@@ -198,9 +195,9 @@ class IntegrationTestRunner:
             "pyyaml",
             "networkx",
             "watchdog",
-            "gitignore-parser"
+            "gitignore-parser",
         ]
-        
+
         # Check which packages are missing
         missing = []
         for package in required_packages:
@@ -208,97 +205,102 @@ class IntegrationTestRunner:
                 __import__(package.replace("-", "_"))
             except ImportError:
                 missing.append(package)
-        
+
         if missing:
             print(f"Installing missing packages: {', '.join(missing)}")
             result = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "-q"] + missing,
                 capture_output=True,
-                text=True
+                text=True,
             )
             if result.returncode != 0:
                 print(f"Warning: Some packages failed to install: {result.stderr}")
         else:
             print("All dependencies are installed")
-    
+
     def run_tests(self):
         """Run the integration tests."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("Running Integration Tests")
-        print("="*60 + "\n")
-        
+        print("=" * 60 + "\n")
+
         # Set environment variables
         env = os.environ.copy()
         env["REDIS_HOST"] = "localhost"
         env["REDIS_PORT"] = "6379"
         env["PYTHONPATH"] = f"{Path.cwd()}/src:{env.get('PYTHONPATH', '')}"
-        
+
         # Run pytest with coverage
         result = subprocess.run(
             [
-                sys.executable, "-m", "pytest",
+                sys.executable,
+                "-m",
+                "pytest",
                 "tests/integration/",
                 "-xvs",
                 "--cov=eol.rag_context",
                 "--cov-report=term",
                 "--cov-report=html:coverage/html",
                 "--tb=short",
-                "-m", "integration"
+                "-m",
+                "integration",
             ],
             env=env,
             capture_output=False,  # Show output in real-time
-            text=True
+            text=True,
         )
-        
+
         self.exit_code = result.returncode
-        
+
         # Also run combined unit + integration for total coverage
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("Combined Coverage Report (Unit + Integration)")
-        print("="*60 + "\n")
-        
+        print("=" * 60 + "\n")
+
         result = subprocess.run(
             [
-                sys.executable, "-m", "pytest",
+                sys.executable,
+                "-m",
+                "pytest",
                 "tests/",
                 "--cov=eol.rag_context",
                 "--cov-report=term:skip-covered",
                 "--quiet",
-                "--no-header"
+                "--no-header",
             ],
             env=env,
             capture_output=True,
-            text=True
+            text=True,
         )
-        
+
         # Extract and display coverage summary
-        for line in result.stdout.split('\n'):
-            if 'TOTAL' in line or 'Name' in line:
+        for line in result.stdout.split("\n"):
+            if "TOTAL" in line or "Name" in line:
                 print(line)
-        
+
         return self.exit_code == 0
-    
+
     def cleanup(self):
         """Clean up resources."""
         self.stop_redis()
-    
+
     def run(self):
         """Main execution flow."""
-        print("="*60)
+        print("=" * 60)
         print("EOL RAG Context - Automated Integration Tests")
-        print("="*60 + "\n")
-        
+        print("=" * 60 + "\n")
+
         # Register cleanup
         atexit.register(self.cleanup)
         signal.signal(signal.SIGINT, lambda s, f: sys.exit(1))
         signal.signal(signal.SIGTERM, lambda s, f: sys.exit(1))
-        
+
         # Install dependencies
         self.install_dependencies()
-        
+
         # Start Redis
         redis_started = False
-        
+
         if self.check_docker():
             print("Docker is available")
             redis_started = self.start_redis_docker()
@@ -309,25 +311,25 @@ class IntegrationTestRunner:
             print("Error: Neither Docker nor Redis is available")
             print("Please install either Docker or Redis to run integration tests")
             return 1
-        
+
         if not redis_started:
             print("Failed to start Redis")
             return 1
-        
+
         # Run tests
         success = self.run_tests()
-        
+
         # Clean up
         self.cleanup()
-        
+
         # Report results
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         if success:
             print("✅ All integration tests passed!")
         else:
             print(f"❌ Some tests failed (exit code: {self.exit_code})")
-        print("="*60)
-        
+        print("=" * 60)
+
         return self.exit_code
 
 

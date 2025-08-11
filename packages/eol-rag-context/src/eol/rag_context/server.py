@@ -543,6 +543,72 @@ Output Format:
    - What documentation gaps exist?
    - What refactoring opportunities are evident?"""
     
+    # API compatibility methods for tests and external usage
+    
+    async def index_directory(self, path: str, **kwargs) -> Dict[str, Any]:
+        """Index a directory (alias for index_folder with dict return)."""
+        if not self.indexer:
+            return {"status": "error", "message": "Indexer not initialized"}
+        
+        # Extract supported parameters
+        recursive = kwargs.get("recursive", True)
+        force_reindex = kwargs.get("force_reindex", False)
+        
+        try:
+            result = await self.indexer.index_folder(
+                path,
+                recursive=recursive,
+                force_reindex=force_reindex
+            )
+            
+            # Convert IndexedSource to dict for compatibility
+            return {
+                "status": "success",
+                "source_id": result.source_id,
+                "indexed_files": result.indexed_files,
+                "total_chunks": result.total_chunks,
+                "file_count": result.file_count,
+                "path": str(result.path)
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    
+    async def index_file(self, path: str, **kwargs) -> Dict[str, Any]:
+        """Index a single file with dict return for compatibility."""
+        if not self.indexer:
+            return {"status": "error", "message": "Indexer not initialized"}
+        
+        try:
+            result = await self.indexer.index_file(path)
+            
+            # Convert IndexResult to dict for compatibility
+            return {
+                "status": "success",
+                "source_id": result.source_id,
+                "chunks": result.chunks,
+                "total_chunks": result.total_chunks,
+                "files": result.files,
+                "errors": result.errors if result.errors else []
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    
+    async def watch_directory(self, path: str, **kwargs) -> Dict[str, Any]:
+        """Watch a directory for changes."""
+        if not self.file_watcher:
+            return {"status": "error", "message": "File watcher not initialized"}
+        
+        try:
+            # Start watching the directory
+            await self.file_watcher.start_watching(Path(path))
+            return {
+                "status": "success",
+                "path": path,
+                "message": f"Now watching {path} for changes"
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    
     async def run(self) -> None:
         """Run the MCP server."""
         await self.initialize()

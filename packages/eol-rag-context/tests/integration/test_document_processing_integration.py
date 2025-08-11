@@ -186,7 +186,7 @@ if __name__ == "__main__":
                     assert "content" in chunk
                     assert "metadata" in chunk
                     metadata = chunk.get("metadata", {})
-                    assert metadata.get("format") == "json"
+                    assert metadata.get("format") == "structured"  # JSON files are processed as structured data
             finally:
                 Path(f.name).unlink()
     

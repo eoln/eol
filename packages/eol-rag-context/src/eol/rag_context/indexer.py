@@ -888,4 +888,43 @@ class DocumentIndexer:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get indexing statistics."""
-        return self.stats.copy()
+        stats = self.stats.copy()
+        # Add required fields for compatibility
+        stats["total_documents"] = stats.get("documents_indexed", 0)
+        stats["total_chunks"] = stats.get("chunks_created", 0)
+        
+        # Count sources
+        try:
+            # Simple approximation - count unique source keys in Redis
+            cursor = 0
+            source_count = 0
+            while True:
+                cursor, keys = self.redis.redis.scan(cursor, match="source:*", count=100)
+                source_count += len(keys)
+                if cursor == 0:
+                    break
+            stats["sources"] = source_count
+        except:
+            stats["sources"] = 0
+        
+        return stats
+    
+    async def index_file_dict(
+        self,
+        file_path: Path | str,
+        source_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Index a file and return dict for compatibility.
+        This is a wrapper for tests that expect dict format.
+        """
+        result = await self.index_file(file_path, source_id)
+        return {
+            "status": "success",
+            "source_id": result.source_id,
+            "chunks": result.chunks,
+            "total_chunks": result.total_chunks,
+            "files": result.files,
+            "errors": result.errors,
+            "metadata": result.metadata
+        }

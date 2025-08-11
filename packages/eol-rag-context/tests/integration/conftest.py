@@ -215,9 +215,21 @@ async def knowledge_graph_instance(redis_store, embedding_manager):
 @pytest.fixture
 async def file_watcher_instance(indexer_instance):
     """Create a file watcher for testing."""
-    # FileWatcher doesn't have a simple constructor - skip for now
-    # The file_watcher module uses watchdog which we've mocked
-    return None  # FileWatcher tests will be skipped
+    from eol.rag_context.file_watcher import FileWatcher
+    
+    # Create file watcher with test-friendly settings
+    watcher = FileWatcher(
+        indexer=indexer_instance,
+        graph_builder=None,  # No graph builder for simple tests
+        debounce_seconds=0.5,  # Short debounce for testing
+        batch_size=5,
+        use_polling=True  # Use polling to avoid watchdog dependencies
+    )
+    
+    yield watcher
+    
+    # Cleanup
+    await watcher.stop_all()
 
 
 @pytest.fixture

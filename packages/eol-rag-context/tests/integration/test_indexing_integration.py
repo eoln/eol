@@ -118,7 +118,7 @@ class TestIndexingIntegration:
         
         # Verify removal
         sources_after = await indexer_instance.list_sources()
-        source_ids_after = [s.get("source_id") for s in sources_after]
+        source_ids_after = [s.source_id for s in sources_after]
         assert source_id not in source_ids_after
     
     @pytest.mark.asyncio

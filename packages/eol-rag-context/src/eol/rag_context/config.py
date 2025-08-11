@@ -11,14 +11,14 @@ class that can be customized independently.
 
 Example:
     Basic usage with default settings:
-    
+
     >>> from eol.rag_context.config import RAGConfig
     >>> config = RAGConfig()
     >>> print(f"Redis host: {config.redis.host}")
     Redis host: localhost
-    
+
     Custom configuration from file:
-    
+
     >>> config = RAGConfig.from_file(Path("config.yaml"))
     >>> config.embedding.model_name = "all-mpnet-base-v2"
     >>> config.redis.host = "redis.example.com"
@@ -32,13 +32,13 @@ from pathlib import Path
 
 class RedisConfig(BaseSettings):
     """Redis connection and pool configuration for vector storage.
-    
+
     Configures Redis connection parameters including host, port, authentication,
     and connection pooling options. Supports both standalone and clustered Redis
     deployments with optimized settings for vector operations.
-    
+
     Environment variables can be prefixed with REDIS_ (e.g., REDIS_HOST=localhost).
-    
+
     Attributes:
         host: Redis server hostname or IP address.
         port: Redis server port number.
@@ -49,7 +49,7 @@ class RedisConfig(BaseSettings):
         max_connections: Maximum number of connections in the pool.
         socket_keepalive: Enable TCP socket keepalive.
         socket_keepalive_options: TCP keepalive parameters for connection health.
-    
+
     Example:
         >>> redis_config = RedisConfig(
         ...     host="redis.example.com",
@@ -80,13 +80,13 @@ class RedisConfig(BaseSettings):
     @property
     def url(self) -> str:
         """Generate Redis connection URL from configuration components.
-        
+
         Constructs a Redis URL in the format redis://[password@]host:port/db
         suitable for use with Redis clients and connection libraries.
-        
+
         Returns:
             Complete Redis connection URL string.
-            
+
         Example:
             >>> config = RedisConfig(host="localhost", port=6379, password="secret")
             >>> config.url
@@ -98,13 +98,13 @@ class RedisConfig(BaseSettings):
 
 class EmbeddingConfig(BaseSettings):
     """Embedding model configuration and provider settings.
-    
+
     Configures embedding model providers, model selection, and generation parameters.
     Supports multiple providers including Sentence Transformers (local), OpenAI,
     and other cloud-based embedding services.
-    
+
     Environment variables can be prefixed with EMBEDDING_ (e.g., EMBEDDING_PROVIDER=openai).
-    
+
     Attributes:
         provider: Embedding provider name (sentence-transformers, openai).
         model_name: Specific model to use for embedding generation.
@@ -113,19 +113,19 @@ class EmbeddingConfig(BaseSettings):
         normalize: Whether to normalize embedding vectors to unit length.
         openai_api_key: API key for OpenAI embedding services.
         openai_model: OpenAI model name for embedding generation.
-    
+
     Example:
         Local embeddings:
-        
+
         >>> config = EmbeddingConfig(
         ...     provider="sentence-transformers",
         ...     model_name="all-mpnet-base-v2"
         ... )
         >>> print(f"Dimensions: {config.dimension}")
         Dimensions: 768
-        
+
         OpenAI embeddings:
-        
+
         >>> config = EmbeddingConfig(
         ...     provider="openai",
         ...     openai_api_key="sk-...",
@@ -149,21 +149,21 @@ class EmbeddingConfig(BaseSettings):
     @classmethod
     def validate_dimension(cls, v, info):
         """Validate and auto-correct embedding dimension based on model.
-        
+
         Automatically sets the correct dimension for known models to prevent
         configuration errors. Falls back to provided dimension for unknown models.
-        
+
         Args:
             v: The provided dimension value.
             info: Pydantic validation info containing other field values.
-            
+
         Returns:
             Corrected dimension value for the specified model.
-            
+
         Note:
             Known model dimensions:
             - all-MiniLM-L6-v2: 384
-            - all-mpnet-base-v2: 768  
+            - all-mpnet-base-v2: 768
             - text-embedding-3-small: 1536
             - text-embedding-3-large: 3072
         """
@@ -189,13 +189,13 @@ class EmbeddingConfig(BaseSettings):
 
 class IndexConfig(BaseSettings):
     """Vector index configuration for Redis Search with HNSW algorithm.
-    
+
     Configures vector index parameters for optimal search performance including
     HNSW (Hierarchical Navigable Small World) algorithm settings, distance metrics,
     and hierarchical organization for concepts, sections, and chunks.
-    
+
     Environment variables can be prefixed with INDEX_ (e.g., INDEX_ALGORITHM=HNSW).
-    
+
     Attributes:
         index_name: Base name for the vector index.
         prefix: Key prefix for all indexed documents.
@@ -209,7 +209,7 @@ class IndexConfig(BaseSettings):
         concept_prefix: Key prefix for concept-level documents.
         section_prefix: Key prefix for section-level documents.
         chunk_prefix: Key prefix for chunk-level documents.
-    
+
     Example:
         >>> index_config = IndexConfig(
         ...     index_name="project_context",
@@ -243,13 +243,13 @@ class IndexConfig(BaseSettings):
 
 class ChunkingConfig(BaseSettings):
     """Document chunking configuration for optimal content segmentation.
-    
+
     Configures how documents are split into chunks for embedding and indexing.
     Supports both token-based and semantic chunking strategies with special
     handling for different document types (code, markdown, plain text).
-    
+
     Environment variables can be prefixed with CHUNK_ (e.g., CHUNK_MAX_CHUNK_SIZE=1024).
-    
+
     Attributes:
         min_chunk_size: Minimum chunk size in tokens to avoid tiny fragments.
         max_chunk_size: Maximum chunk size in tokens to fit embedding context.
@@ -260,18 +260,18 @@ class ChunkingConfig(BaseSettings):
         code_max_lines: Maximum lines per code chunk regardless of token count.
         respect_document_structure: Whether to preserve document structure boundaries.
         markdown_split_headers: Whether to split markdown at header boundaries.
-    
+
     Example:
         Semantic chunking configuration:
-        
+
         >>> chunk_config = ChunkingConfig(
         ...     max_chunk_size=1024,
         ...     use_semantic_chunking=True,
         ...     semantic_threshold=0.8
         ... )
-        
+
         Code-optimized chunking:
-        
+
         >>> chunk_config = ChunkingConfig(
         ...     code_chunk_by_function=True,
         ...     code_max_lines=50,
@@ -301,13 +301,13 @@ class ChunkingConfig(BaseSettings):
 
 class CacheConfig(BaseSettings):
     """Semantic caching configuration for query result optimization.
-    
+
     Configures semantic caching to improve response times by storing and reusing
     results for similar queries. Uses embedding similarity to determine cache hits
     with adaptive threshold optimization to maintain target hit rates.
-    
+
     Environment variables can be prefixed with CACHE_ (e.g., CACHE_TTL_SECONDS=7200).
-    
+
     Attributes:
         enabled: Whether semantic caching is active.
         ttl_seconds: Time-to-live for cached entries in seconds.
@@ -315,18 +315,18 @@ class CacheConfig(BaseSettings):
         max_cache_size: Maximum number of entries to store in cache.
         target_hit_rate: Target cache hit rate for optimization (0-1).
         adaptive_threshold: Whether to automatically adjust similarity threshold.
-    
+
     Example:
         High-performance caching:
-        
+
         >>> cache_config = CacheConfig(
         ...     ttl_seconds=7200,  # 2 hours
         ...     similarity_threshold=0.95,  # Very similar queries only
         ...     target_hit_rate=0.4  # 40% hit rate target
         ... )
-        
+
         Aggressive caching:
-        
+
         >>> cache_config = CacheConfig(
         ...     similarity_threshold=0.9,  # Lower threshold
         ...     adaptive_threshold=True,  # Auto-optimize
@@ -348,13 +348,13 @@ class CacheConfig(BaseSettings):
 
 class ContextConfig(BaseSettings):
     """Context composition and retrieval configuration for LLM optimization.
-    
+
     Configures how context is retrieved, filtered, and composed for optimal LLM
     consumption. Manages token limits, relevance thresholds, and quality controls
     to provide the most useful context within model constraints.
-    
+
     Environment variables can be prefixed with CONTEXT_ (e.g., CONTEXT_MAX_CONTEXT_TOKENS=16000).
-    
+
     Attributes:
         max_context_tokens: Maximum tokens available for context in LLM requests.
         reserve_tokens_for_response: Tokens to reserve for LLM response generation.
@@ -364,18 +364,18 @@ class ContextConfig(BaseSettings):
         progressive_loading: Whether to load context progressively by relevance.
         remove_redundancy: Whether to filter out redundant/duplicate content.
         redundancy_threshold: Similarity threshold for identifying redundant content.
-    
+
     Example:
         Conservative context for accuracy:
-        
+
         >>> context_config = ContextConfig(
         ...     max_context_tokens=8000,
         ...     min_relevance_score=0.8,  # High relevance only
         ...     remove_redundancy=True
         ... )
-        
+
         Comprehensive context for coverage:
-        
+
         >>> context_config = ContextConfig(
         ...     default_top_k=20,
         ...     min_relevance_score=0.6,  # Lower threshold
@@ -404,14 +404,14 @@ class ContextConfig(BaseSettings):
 
 class DocumentConfig(BaseSettings):
     """Document processing configuration for multi-format support.
-    
+
     Configures document processing pipeline including supported file formats,
     metadata extraction, language detection, and content parsing options.
     Handles various document types from code files to PDFs with appropriate
     processing strategies.
-    
+
     Environment variables can be prefixed with DOC_ (e.g., DOC_MAX_FILE_SIZE_MB=50).
-    
+
     Attributes:
         file_patterns: List of glob patterns for supported file types.
         extract_metadata: Whether to extract file metadata (dates, authors, etc.).
@@ -419,18 +419,18 @@ class DocumentConfig(BaseSettings):
         parse_code_structure: Whether to parse code structure (functions, classes).
         max_file_size_mb: Maximum file size in MB to process.
         skip_binary_files: Whether to skip binary files automatically.
-    
+
     Example:
         Code-focused processing:
-        
+
         >>> doc_config = DocumentConfig(
         ...     file_patterns=["*.py", "*.js", "*.md"],
         ...     parse_code_structure=True,
         ...     extract_metadata=True
         ... )
-        
+
         Document-heavy processing:
-        
+
         >>> doc_config = DocumentConfig(
         ...     file_patterns=["*.pdf", "*.docx", "*.md", "*.txt"],
         ...     max_file_size_mb=200,
@@ -476,13 +476,13 @@ class DocumentConfig(BaseSettings):
 
 class RAGConfig(BaseSettings):
     """Main RAG configuration class aggregating all component configurations.
-    
+
     Central configuration class that combines all sub-configurations into a
     single, coherent configuration object. Supports loading from environment
     variables, .env files, and configuration files (JSON/YAML).
-    
+
     Environment variables can be prefixed with RAG_ (e.g., RAG_DEBUG=true).
-    
+
     Attributes:
         redis: Redis connection and pooling configuration.
         embedding: Embedding model and provider configuration.
@@ -496,22 +496,22 @@ class RAGConfig(BaseSettings):
         debug: Enable debug mode with verbose logging.
         data_dir: Directory for persistent data storage.
         index_dir: Directory for index files and metadata.
-    
+
     Example:
         Default configuration:
-        
+
         >>> config = RAGConfig()
         >>> config.redis.host = "localhost"
         >>> config.embedding.provider = "sentence-transformers"
-        
+
         Environment-based configuration:
-        
+
         >>> # Set RAG_DEBUG=true, REDIS_HOST=redis.prod.com
         >>> config = RAGConfig()
         >>> print(f"Debug: {config.debug}, Redis: {config.redis.host}")
-        
+
         File-based configuration:
-        
+
         >>> config = RAGConfig.from_file(Path("production.yaml"))
         >>> await server.initialize(config)
     """
@@ -540,17 +540,17 @@ class RAGConfig(BaseSettings):
     @classmethod
     def create_directories(cls, v):
         """Ensure required directories exist, creating them if necessary.
-        
+
         Automatically creates data and index directories with proper permissions
         during configuration validation. Prevents runtime errors from missing
         directories.
-        
+
         Args:
             v: Path object for the directory.
-            
+
         Returns:
             The validated Path object after ensuring directory exists.
-            
+
         Raises:
             PermissionError: If unable to create directory due to permissions.
             OSError: If directory creation fails for other reasons.
@@ -561,33 +561,33 @@ class RAGConfig(BaseSettings):
     @classmethod
     def from_file(cls, config_path: Path) -> "RAGConfig":
         """Load configuration from JSON or YAML file.
-        
+
         Supports both JSON and YAML configuration files with automatic format
         detection based on file extension. Provides a convenient way to manage
         complex configurations externally.
-        
+
         Args:
             config_path: Path to the configuration file (.json, .yaml, or .yml).
-            
+
         Returns:
             RAGConfig instance populated with values from the file.
-            
+
         Raises:
             ValueError: If file format is not supported (not .json, .yaml, .yml).
             FileNotFoundError: If configuration file doesn't exist.
             json.JSONDecodeError: If JSON file is malformed.
             yaml.YAMLError: If YAML file is malformed.
-            
+
         Example:
             JSON configuration:
-            
+
             >>> # config.json contains: {"debug": true, "redis": {"host": "prod-redis"}}
             >>> config = RAGConfig.from_file(Path("config.json"))
             >>> config.debug
             True
-            
+
             YAML configuration:
-            
+
             >>> # config.yaml contains:
             >>> # debug: true
             >>> # redis:

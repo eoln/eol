@@ -38,6 +38,7 @@ This document defines the documentation standards, tools, and practices for the 
 - **Pydantic Models**: Schema documentation with automatic validation
 - **GitHub Pages**: Automated deployment and hosting
 - **Pre-commit Hooks**: Automated docstring validation
+- **Black Code Formatter**: Consistent code formatting with docstring preservation
 
 ## Docstring Standards
 
@@ -242,6 +243,12 @@ Automated validation of documentation standards:
 ```yaml
 # .pre-commit-config.yaml
 repos:
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3.11
+  
   - repo: https://github.com/PyCQA/docformatter
     rev: v1.7.5
     hooks:
@@ -281,7 +288,10 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install mkdocs mkdocs-material mkdocstrings[python]
+          pip install mkdocs mkdocs-material mkdocstrings[python] black
+      
+      - name: Format code with Black
+        run: black --check --diff src/
       
       - name: Build documentation
         run: mkdocs build
@@ -396,12 +406,106 @@ async def async_operation(data: InputData) -> OutputData:
     """
 ```
 
+## Code Formatting Integration (Black)
+
+### Black Formatter Requirements
+
+The project uses **Black** code formatter to ensure consistent code style across all Python files. This is enforced in the GitHub Actions quality gate and should be used during development.
+
+**Key Black Configuration:**
+- **Line length**: 88 characters (Black's default)
+- **Target Python version**: 3.11+
+- **Docstring preservation**: Black maintains Google-style docstring formatting
+- **Multi-line docstring**: Proper indentation and line breaks preserved
+
+### Black and Documentation Compatibility
+
+Black is fully compatible with Google-style docstrings and enhances documentation quality:
+
+**Docstring Formatting:**
+```python
+def example_function(param1: str, param2: int = 42) -> dict:
+    """Example function with properly formatted docstring.
+    
+    Black preserves Google-style docstring structure while ensuring
+    consistent indentation and spacing throughout the codebase.
+    
+    Args:
+        param1: Description of the first parameter.
+        param2: Description with default value.
+        
+    Returns:
+        Dictionary containing processing results.
+        
+    Example:
+        >>> result = example_function("test", 100)
+        >>> print(result["status"])
+        'success'
+    """
+    return {"status": "success", "param1": param1, "param2": param2}
+```
+
+### Development Workflow with Black
+
+**Local Development:**
+```bash
+# Format all source files
+black src/
+
+# Check formatting without making changes
+black --check --diff src/
+
+# Format specific file
+black src/eol/rag_context/document_processor.py
+```
+
+**IDE Integration:**
+- **PyCharm**: Settings → Tools → External Tools → Add Black
+- **VS Code**: Install "Black Formatter" extension
+- **Vim/Neovim**: Use black plugin or ALE integration
+
+### Quality Gate Integration
+
+Black formatting is enforced in CI/CD pipeline:
+
+```yaml
+# GitHub Actions workflow includes:
+- name: Format code with Black
+  run: black --check --diff src/
+```
+
+**Enforcement Rules:**
+- All pull requests must pass Black formatting check
+- Code that doesn't conform to Black style will fail CI
+- Developers should run Black locally before pushing
+- Documentation builds only after formatting validation
+
+### Impact on Documentation Generation
+
+Black formatting improves documentation quality by:
+
+**Consistency:**
+- Uniform code style in docstring examples
+- Consistent indentation for better readability
+- Standardized spacing and line breaks
+
+**Readability:**
+- Code examples in docs are automatically well-formatted
+- Type hints remain readable after formatting
+- Multi-line parameter lists are properly aligned
+
+**Maintenance:**
+- Less time spent on style discussions during code review
+- Automated formatting reduces manual formatting errors
+- Consistent style improves AI assistant understanding
+
 ## Tools and Resources
 
 ### Development Tools
 - **IDE Extensions**: Python docstring generators (PyCharm, VSCode)
+- **Code Formatting**: Black for consistent Python code formatting
 - **Linting**: pydocstyle for docstring validation
-- **Formatting**: docformatter for consistent formatting
+- **Formatting**: docformatter for consistent docstring formatting
 - **Type Checking**: mypy for type hint validation
 
 ### Reference Materials
@@ -413,6 +517,7 @@ async def async_operation(data: InputData) -> OutputData:
 ### Quality Checklists
 
 **Before Merging Code:**
+- [ ] Code is formatted with Black (88-character line limit)
 - [ ] All public functions have Google-style docstrings
 - [ ] Type hints are comprehensive and accurate
 - [ ] Examples are tested and working

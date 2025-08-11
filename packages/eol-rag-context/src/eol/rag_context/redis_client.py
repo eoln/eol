@@ -15,22 +15,22 @@ Key Features:
 
 Example:
     Basic usage:
-    
+
     >>> from eol.rag_context.redis_client import RedisVectorStore
     >>> from eol.rag_context.config import RedisConfig, IndexConfig
-    >>> 
+    >>>
     >>> # Initialize store
     >>> redis_config = RedisConfig(host="localhost")
     >>> index_config = IndexConfig()
     >>> store = RedisVectorStore(redis_config, index_config)
-    >>> 
+    >>>
     >>> # Connect and create indexes
     >>> await store.connect_async()
     >>> store.create_hierarchical_indexes(embedding_dim=384)
-    >>> 
+    >>>
     >>> # Store document
     >>> doc = VectorDocument(
-    ...     id="doc1", 
+    ...     id="doc1",
     ...     content="Sample content",
     ...     embedding=np.random.rand(384),
     ...     hierarchy_level=3
@@ -73,11 +73,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class VectorDocument:
     """Document with vector embedding for hierarchical storage.
-    
+
     Represents a document or document fragment with its vector embedding and
     hierarchical metadata. Documents can be organized in a three-level hierarchy:
     concepts (level 1), sections (level 2), and chunks (level 3).
-    
+
     Attributes:
         id: Unique identifier for the document.
         content: Text content of the document.
@@ -86,10 +86,10 @@ class VectorDocument:
         hierarchy_level: Level in hierarchy (1=concept, 2=section, 3=chunk).
         parent_id: Optional ID of parent document in hierarchy.
         children_ids: List of child document IDs.
-        
+
     Example:
         Creating a chunk-level document:
-        
+
         >>> import numpy as np
         >>> doc = VectorDocument(
         ...     id="chunk_001",
@@ -114,33 +114,33 @@ class VectorDocument:
 
 class RedisVectorStore:
     """Redis Stack vector store with hierarchical indexing and HNSW search.
-    
+
     Provides comprehensive vector storage and retrieval using Redis Stack with
     vector search capabilities. Supports hierarchical document organization,
     efficient similarity search using HNSW algorithm, and both synchronous
     and asynchronous operations.
-    
+
     The store organizes documents in a three-level hierarchy:
     1. Concepts: High-level topics and themes
     2. Sections: Mid-level document sections
     3. Chunks: Fine-grained text chunks
-    
+
     Each level has optimized index settings for different query patterns:
     - Concepts: High precision for topic discovery
-    - Sections: Balanced precision/recall for context retrieval  
+    - Sections: Balanced precision/recall for context retrieval
     - Chunks: High recall for detailed information
-    
+
     Attributes:
         redis_config: Redis connection configuration.
         index_config: Vector index configuration parameters.
         redis: Synchronous Redis client instance.
         async_redis: Asynchronous Redis client instance.
-        
+
     Example:
         Basic setup and usage:
-        
+
         >>> from eol.rag_context.config import RedisConfig, IndexConfig
-        >>> 
+        >>>
         >>> # Configure connections
         >>> redis_config = RedisConfig(
         ...     host="localhost",
@@ -152,11 +152,11 @@ class RedisVectorStore:
         ...     distance_metric="COSINE",
         ...     m=16
         ... )
-        >>> 
+        >>>
         >>> # Initialize store
         >>> store = RedisVectorStore(redis_config, index_config)
         >>> await store.connect_async()
-        >>> 
+        >>>
         >>> # Create hierarchical indexes
         >>> store.create_hierarchical_indexes(embedding_dim=384)
         >>> print("Indexes created successfully")
@@ -165,7 +165,7 @@ class RedisVectorStore:
 
     def __init__(self, redis_config: RedisConfig, index_config: IndexConfig):
         """Initialize Redis vector store with configuration.
-        
+
         Args:
             redis_config: Redis connection configuration including host, port,
                 authentication, and connection pooling settings.
@@ -179,22 +179,22 @@ class RedisVectorStore:
 
     def connect(self) -> None:
         """Establish synchronous Redis connection with optimized settings.
-        
+
         Creates a synchronous Redis connection using connection pooling for
         optimal performance. Configures platform-specific socket options and
         validates connectivity with a ping test.
-        
+
         The connection uses the following optimizations:
         - Connection pooling for reduced overhead
         - TCP keepalive for connection health (non-macOS)
         - Binary mode for vector data preservation
         - Configurable authentication and database selection
-        
+
         Raises:
             redis.ConnectionError: If unable to connect to Redis server.
             redis.AuthenticationError: If authentication fails.
             redis.RedisError: For other Redis-related connection issues.
-            
+
         Example:
             >>> store = RedisVectorStore(redis_config, index_config)
             >>> store.connect()
@@ -217,7 +217,9 @@ class RedisVectorStore:
         if platform.system() != "Darwin":
             if self.redis_config.socket_keepalive:
                 connection_kwargs["socket_keepalive"] = True
-                connection_kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
+                connection_kwargs["socket_keepalive_options"] = (
+                    self.redis_config.socket_keepalive_options
+                )
 
         self.redis = Redis(**connection_kwargs)
 
@@ -231,22 +233,22 @@ class RedisVectorStore:
 
     async def connect_async(self) -> None:
         """Establish asynchronous Redis connection with connection pooling.
-        
+
         Creates an asynchronous Redis connection optimized for high-throughput
         vector operations. Uses connection pooling and platform-specific
         optimizations for best performance in async environments.
-        
+
         The async connection provides:
         - Non-blocking I/O for concurrent operations
         - Connection pooling for optimal resource usage
         - Automatic reconnection handling
         - Platform-specific socket optimizations (excluding macOS)
-        
+
         Raises:
             redis.ConnectionError: If unable to establish async connection.
             redis.AuthenticationError: If Redis authentication fails.
             redis.RedisError: For other async Redis connection issues.
-            
+
         Example:
             >>> store = RedisVectorStore(redis_config, index_config)
             >>> await store.connect_async()
@@ -270,7 +272,9 @@ class RedisVectorStore:
             import platform
 
             if platform.system() != "Darwin":
-                async_connection_kwargs["socket_keepalive_options"] = self.redis_config.socket_keepalive_options
+                async_connection_kwargs["socket_keepalive_options"] = (
+                    self.redis_config.socket_keepalive_options
+                )
 
         self.async_redis = AsyncRedis(**async_connection_kwargs)
 
@@ -286,34 +290,34 @@ class RedisVectorStore:
 
     def create_hierarchical_indexes(self, embedding_dim: int) -> None:
         """Create optimized vector indexes for each hierarchy level.
-        
+
         Creates three specialized vector indexes using HNSW algorithm, each optimized
         for different search patterns and document types:
-        
+
         1. Concept Index: High precision for topic discovery and concept mapping
         2. Section Index: Balanced precision/recall for contextual information
         3. Chunk Index: High recall using FLAT algorithm for detailed search
-        
+
         Each index uses different HNSW parameters tuned for the expected
         query patterns and document sizes at that hierarchy level.
-        
+
         Args:
             embedding_dim: Dimension of the vector embeddings (e.g., 384, 768, 1536).
-        
+
         Raises:
             redis.ResponseError: If index creation fails due to Redis configuration.
             ValueError: If embedding dimension is invalid or unsupported.
-            
+
         Example:
             >>> store = RedisVectorStore(redis_config, index_config)
             >>> store.connect()
             >>> store.create_hierarchical_indexes(embedding_dim=384)
             >>> print("All indexes created")
             All indexes created
-            
+
         Note:
             - Concepts use HNSW with M=16, EF_CONSTRUCTION=200 for precision
-            - Sections use HNSW with M=24, EF_CONSTRUCTION=300 for balance  
+            - Sections use HNSW with M=24, EF_CONSTRUCTION=300 for balance
             - Chunks use FLAT algorithm for exact nearest neighbor search
         """
 
@@ -405,29 +409,29 @@ class RedisVectorStore:
 
     async def store_document(self, doc: VectorDocument) -> None:
         """Store document with hierarchical metadata and vector embedding.
-        
+
         Stores a document in Redis with its vector embedding and hierarchical
         metadata. The document is stored in the appropriate index based on its
         hierarchy level, with optimized field structures for each level.
-        
+
         The storage format includes:
         - Vector embedding as binary float32 data
         - Full text content for retrieval
         - JSON-encoded metadata with timestamps
         - Parent-child relationship links
         - Level-specific fields (position, doc_type, language for chunks)
-        
+
         Args:
             doc: VectorDocument containing content, embedding, and metadata.
-        
+
         Raises:
             redis.ConnectionError: If not connected to Redis.
             redis.DataError: If document data is invalid or corrupted.
             ValueError: If hierarchy_level is not 1, 2, or 3.
-            
+
         Example:
             Storing a chunk document:
-            
+
             >>> import numpy as np
             >>> doc = VectorDocument(
             ...     id="chunk_123",
@@ -488,32 +492,32 @@ class RedisVectorStore:
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[Tuple[str, float, Dict[str, Any]]]:
         """Perform vector similarity search at specified hierarchy level.
-        
+
         Executes a vector similarity search using Redis Search with KNN queries.
         Searches within the specified hierarchy level using the appropriate index
         and returns ranked results by similarity score.
-        
+
         The search uses cosine similarity by default and supports filtering by
         metadata fields such as source, document type, or parent relationships.
-        
+
         Args:
             query_embedding: Query vector as numpy array (float32 recommended).
             hierarchy_level: Level to search (1=concept, 2=section, 3=chunk).
             k: Maximum number of results to return.
             filters: Optional filters as field-value pairs for TAG/NUMERIC fields.
-            
+
         Returns:
             List of tuples containing (document_id, similarity_score, document_data).
             Scores are sorted in ascending order (lower = more similar for cosine).
-            
+
         Raises:
             redis.ConnectionError: If not connected to Redis.
             redis.ResponseError: If search query is malformed.
             ValueError: If hierarchy_level is not 1, 2, or 3.
-            
+
         Example:
             Basic similarity search:
-            
+
             >>> import numpy as np
             >>> query_vec = np.random.rand(384).astype(np.float32)
             >>> results = await store.vector_search(
@@ -523,9 +527,9 @@ class RedisVectorStore:
             ... )
             >>> for doc_id, score, data in results:
             ...     print(f"{doc_id}: {score:.3f} - {data['content'][:50]}...")
-            
+
             Search with filters:
-            
+
             >>> results = await store.vector_search(
             ...     query_embedding=query_vec,
             ...     hierarchy_level=3,
@@ -594,24 +598,24 @@ class RedisVectorStore:
         self, query_embedding: np.ndarray, max_chunks: int = 10, strategy: str = "adaptive"
     ) -> List[Dict[str, Any]]:
         """Perform hierarchical search starting from concepts down to chunks.
-        
+
         Executes a multi-level search strategy that begins with concept-level
         similarity search, then drills down through sections to find the most
         relevant chunks. This approach provides better context-aware results
         by considering document structure and relationships.
-        
+
         The search process:
         1. Find top 3 relevant concepts using vector similarity
         2. Search for sections within those concepts
         3. Retrieve chunks from the most relevant sections
         4. Score results using weighted combination of level similarities
-        
+
         Args:
             query_embedding: Query vector as numpy array (float32 recommended).
             max_chunks: Maximum number of chunk results to return.
             strategy: Search strategy - "adaptive" for balanced results,
                 "detailed" for more chunk-level results.
-                
+
         Returns:
             List of dictionaries containing:
             - id: Document/chunk identifier
@@ -619,7 +623,7 @@ class RedisVectorStore:
             - content: Text content of the result
             - metadata: Document metadata and hierarchy info
             - hierarchy: Dict with concept/section/chunk IDs
-            
+
         Example:
             >>> import numpy as np
             >>> query_vec = np.random.rand(384).astype(np.float32)
@@ -633,7 +637,7 @@ class RedisVectorStore:
             ...     print(f"Content: {result['content'][:100]}...")
             ...     print(f"Hierarchy: {result['hierarchy']}")
             ...     print()
-        
+
         Note:
             This method provides fallback to direct chunk search if no
             concepts are found, ensuring robust retrieval in all scenarios.
@@ -704,19 +708,19 @@ class RedisVectorStore:
 
     async def get_document_tree(self, doc_id: str) -> Dict[str, Any]:
         """Get full document tree from any node in the hierarchy.
-        
+
         Recursively retrieves the complete document hierarchy starting from
         the specified document ID. Traverses both parent and child relationships
         to build a comprehensive tree structure showing the document's context
         within the overall hierarchy.
-        
+
         This method is useful for understanding document relationships,
         reconstructing original document structure, and providing contextual
         information for retrieved results.
-        
+
         Args:
             doc_id: Unique identifier of the document to start traversal from.
-            
+
         Returns:
             Dictionary containing:
             - id: The document identifier
@@ -726,7 +730,7 @@ class RedisVectorStore:
             - parent_data: Recursive parent tree structure
             - children: List of child document trees
             - error: Error message if document not found
-            
+
         Example:
             >>> tree = await store.get_document_tree("section_123")
             >>> print(f"Document: {tree['id']}")
@@ -734,7 +738,7 @@ class RedisVectorStore:
             >>> if 'parent_data' in tree:
             ...     print(f"Parent: {tree['parent_data']['id']}")
             >>> print(f"Children: {len(tree.get('children', []))}")
-            
+
         Note:
             This method searches across all hierarchy levels to locate the
             document, making it flexible but potentially slower for large trees.
@@ -779,12 +783,12 @@ class RedisVectorStore:
 
     async def close(self) -> None:
         """Close all Redis connections and clean up resources.
-        
+
         Properly closes both synchronous and asynchronous Redis connections,
         ensuring connection pools are cleaned up and no resources are leaked.
         Should be called during application shutdown or when the store is
         no longer needed.
-        
+
         Example:
             >>> store = RedisVectorStore(redis_config, index_config)
             >>> await store.connect_async()

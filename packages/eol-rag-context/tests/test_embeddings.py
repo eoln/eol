@@ -4,7 +4,8 @@ Test embeddings module.
 
 import pytest
 import numpy as np
-from unittest.mock import Mock, AsyncMock
+import sys
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from eol.rag_context.embeddings import (
     EmbeddingProvider,
     SentenceTransformerProvider,
@@ -25,26 +26,31 @@ class TestSentenceTransformerProvider:
             dimension=128,
         )
 
-        provider = SentenceTransformerProvider(config)
-        # Should have None model (not installed)
-        assert provider.model is None
+        # Mock the import to raise ImportError during provider initialization
+        with patch.dict('sys.modules', {'sentence_transformers': None}):
+            provider = SentenceTransformerProvider(config)
+            # Should have None model (import failed)
+            assert provider.model is None
 
-        # Should return mock embeddings
-        embeddings = await provider.embed("test text")
-        assert embeddings.shape == (1, 128)
-        assert embeddings.dtype == np.float32
+            # Should return mock embeddings
+            embeddings = await provider.embed("test text")
+            assert embeddings.shape == (1, 128)
+            assert embeddings.dtype == np.float32
 
     @pytest.mark.asyncio
     async def test_batch_embeddings(self):
         """Test batch embedding generation."""
         config = EmbeddingConfig(model_name="test-model", dimension=64, batch_size=2)
-        provider = SentenceTransformerProvider(config)
+        
+        # Mock sentence_transformers import to force mock embeddings
+        with patch.dict('sys.modules', {'sentence_transformers': None}):
+            provider = SentenceTransformerProvider(config)
 
-        texts = ["text1", "text2", "text3", "text4"]
-        embeddings = await provider.embed_batch(texts, batch_size=2)
+            texts = ["text1", "text2", "text3", "text4"]
+            embeddings = await provider.embed_batch(texts, batch_size=2)
 
-        assert embeddings.shape == (4, 64)
-        assert embeddings.dtype == np.float32
+            assert embeddings.shape == (4, 64)
+            assert embeddings.dtype == np.float32
 
 
 class TestEmbeddingManager:

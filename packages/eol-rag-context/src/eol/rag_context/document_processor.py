@@ -30,11 +30,11 @@ Chunking Strategies:
 
 Example:
     Basic document processing workflow:
-    
+
     >>> from eol.rag_context.document_processor import DocumentProcessor
     >>> from eol.rag_context.config import DocumentConfig, ChunkingConfig
     >>> from pathlib import Path
-    >>> 
+    >>>
     >>> # Configure processing
     >>> doc_config = DocumentConfig(
     ...     max_file_size_mb=50,
@@ -46,21 +46,21 @@ Example:
     ...     use_semantic_chunking=True,
     ...     code_chunk_by_function=True
     ... )
-    >>> 
+    >>>
     >>> # Initialize processor
     >>> processor = DocumentProcessor(doc_config, chunk_config)
-    >>> 
+    >>>
     >>> # Process different file types
     >>> python_doc = await processor.process_file(Path("main.py"))
     >>> print(f"Code document: {len(python_doc.chunks)} chunks")
-    >>> 
+    >>>
     >>> markdown_doc = await processor.process_file(Path("README.md"))
     >>> print(f"Markdown: {len(markdown_doc.chunks)} sections")
-    >>> 
+    >>>
     >>> # Process entire directory
     >>> documents = await processor.process_directory(Path("/project"))
     >>> print(f"Processed {len(documents)} documents")
-    >>> 
+    >>>
     >>> # Examine processing results
     >>> for doc in documents[:3]:
     ...     print(f"{doc.file_path}: {doc.doc_type} ({len(doc.chunks)} chunks)")
@@ -104,11 +104,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProcessedDocument:
     """Comprehensive document representation with content, metadata, and processing results.
-    
+
     Represents a fully processed document containing the original content,
     extracted metadata, intelligent chunks, and format-specific information.
     Used throughout the RAG system for indexing and retrieval operations.
-    
+
     Attributes:
         file_path: Path to the original source file.
         content: Full document content as extracted text.
@@ -116,21 +116,21 @@ class ProcessedDocument:
         metadata: Extracted document metadata (title, author, size, format-specific info).
         chunks: List of intelligently created content chunks for indexing.
         language: Programming language for code files (None for non-code documents).
-        
+
     Example:
         Accessing processed document information:
-        
+
         >>> doc = await processor.process_file(Path("example.py"))
         >>> print(f"File: {doc.file_path}")
         >>> print(f"Type: {doc.doc_type}, Language: {doc.language}")
         >>> print(f"Content length: {len(doc.content)} chars")
         >>> print(f"Chunks: {len(doc.chunks)}")
-        >>> 
+        >>>
         >>> # Examine metadata
         >>> metadata = doc.metadata
         >>> print(f"Lines: {metadata.get('lines', 'N/A')}")
         >>> print(f"Format: {metadata.get('format', 'unknown')}")
-        >>> 
+        >>>
         >>> # Analyze chunks
         >>> for i, chunk in enumerate(doc.chunks[:3]):
         ...     print(f"Chunk {i}: {chunk['type']} ({chunk['tokens']} tokens)")
@@ -147,18 +147,18 @@ class ProcessedDocument:
 
 class DocumentProcessor:
     """Advanced multi-format document processor with intelligent chunking for RAG systems.
-    
+
     Provides comprehensive document processing capabilities that handle various file
     formats and implement sophisticated chunking strategies optimized for retrieval
     and semantic search. Integrates with Tree-sitter for AST-based code parsing
     and uses format-specific heuristics for optimal content extraction.
-    
+
     Processing Pipeline:
     1. File type detection using MIME types and extensions
     2. Format-specific content extraction with metadata
     3. Intelligent chunking based on document structure
     4. Chunk metadata enrichment for enhanced search
-    
+
     Key Capabilities:
         - Multi-format processing with automatic type detection
         - Structure-aware chunking preserving semantic boundaries
@@ -166,18 +166,18 @@ class DocumentProcessor:
         - Metadata extraction for enhanced search and filtering
         - Configurable chunk sizes with overlap strategies
         - Error handling and graceful degradation
-    
+
     Attributes:
         doc_config: Document processing configuration settings.
         chunk_config: Chunking strategy and size configuration.
         mime: Magic library instance for MIME type detection.
         parsers: Dictionary of Tree-sitter parsers for code languages.
-        
+
     Example:
         Complete document processing setup:
-        
+
         >>> from eol.rag_context.config import DocumentConfig, ChunkingConfig
-        >>> 
+        >>>
         >>> # Configure for code-heavy projects
         >>> doc_config = DocumentConfig(
         ...     file_patterns=["*.py", "*.js", "*.md", "*.rst"],
@@ -185,7 +185,7 @@ class DocumentProcessor:
         ...     parse_code_structure=True,
         ...     extract_metadata=True
         ... )
-        >>> 
+        >>>
         >>> chunk_config = ChunkingConfig(
         ...     max_chunk_size=800,
         ...     chunk_overlap=100,
@@ -193,9 +193,9 @@ class DocumentProcessor:
         ...     code_chunk_by_function=True,
         ...     markdown_split_headers=True
         ... )
-        >>> 
+        >>>
         >>> processor = DocumentProcessor(doc_config, chunk_config)
-        >>> 
+        >>>
         >>> # Process with format-specific optimization
         >>> results = []
         >>> for file_path in source_files:
@@ -203,13 +203,13 @@ class DocumentProcessor:
         ...     if doc:
         ...         results.append(doc)
         ...         print(f"Processed {doc.doc_type}: {len(doc.chunks)} chunks")
-        >>> 
+        >>>
         >>> print(f"Total: {len(results)} documents processed")
     """
 
     def __init__(self, doc_config: DocumentConfig, chunk_config: ChunkingConfig):
         """Initialize document processor with configuration and parsing capabilities.
-        
+
         Args:
             doc_config: Document processing configuration including file patterns,
                 size limits, and processing options.
@@ -270,11 +270,11 @@ class DocumentProcessor:
 
     async def process_file(self, file_path: Path) -> Optional[ProcessedDocument]:
         """Process a single file using format-specific extraction and chunking strategies.
-        
+
         Automatically detects file type using MIME detection and file extensions,
         then routes to the appropriate format-specific processor. Handles various
         document types with optimized processing strategies for each format.
-        
+
         Processing Flow:
         1. Validates file existence and size limits
         2. Detects file type using MIME types and extensions
@@ -282,40 +282,40 @@ class DocumentProcessor:
         4. Extracts content and metadata
         5. Applies intelligent chunking strategies
         6. Returns structured document representation
-        
+
         Args:
             file_path: Path to the file to process. Must exist and be readable.
-            
+
         Returns:
             ProcessedDocument containing extracted content, metadata, and chunks.
             None if file cannot be processed (too large, unsupported format, errors).
-            
+
         Raises:
             IOError: If file cannot be read due to permissions or corruption.
-            
+
         Example:
             Process different document types:
-            
+
             >>> from pathlib import Path
-            >>> 
+            >>>
             >>> # Process Python code with AST chunking
             >>> python_doc = await processor.process_file(Path("main.py"))
             >>> if python_doc:
             ...     print(f"Language: {python_doc.language}")
             ...     print(f"Functions found: {len([c for c in python_doc.chunks if 'function' in c['type']]))}")
-            >>> 
+            >>>
             >>> # Process Markdown with header-based chunking
             >>> md_doc = await processor.process_file(Path("README.md"))
             >>> if md_doc:
             ...     headers = md_doc.metadata.get('headers', [])
             ...     print(f"Document structure: {len(headers)} headers")
-            >>> 
+            >>>
             >>> # Process PDF with page-based extraction
             >>> pdf_doc = await processor.process_file(Path("manual.pdf"))
             >>> if pdf_doc:
             ...     print(f"Pages: {pdf_doc.metadata.get('pages', 0)}")
             ...     print(f"Paragraphs: {len(pdf_doc.chunks)}")
-            
+
         Note:
             Files exceeding max_file_size_mb configuration are automatically
             skipped with a warning log message.
@@ -368,20 +368,20 @@ class DocumentProcessor:
 
     async def _process_markdown(self, file_path: Path) -> ProcessedDocument:
         """Process Markdown files with header-based structure preservation.
-        
+
         Processes Markdown files by parsing to HTML, extracting header structure,
         and creating chunks that respect document hierarchy. Can chunk by headers
         or use semantic text chunking based on configuration.
-        
+
         Features:
             - HTML parsing for structure extraction
             - Header hierarchy analysis
             - Header-based chunking (when enabled)
             - Metadata extraction including document structure
-        
+
         Args:
             file_path: Path to Markdown file to process.
-            
+
         Returns:
             ProcessedDocument with Markdown-specific structure and chunking.
         """
@@ -568,23 +568,23 @@ class DocumentProcessor:
 
     async def _process_code(self, file_path: Path) -> ProcessedDocument:
         """Process source code files with AST-based parsing and structure-aware chunking.
-        
+
         Processes source code files using Tree-sitter parsers when available for
         structure-aware chunking by functions, classes, and other code constructs.
         Falls back to line-based chunking if AST parsing is not available.
-        
+
         Features:
             - Language detection from file extensions
             - AST parsing for semantic boundaries (functions, classes)
             - Line-based fallback chunking with overlap
             - Comprehensive metadata extraction (lines, language, etc.)
-        
+
         Args:
             file_path: Path to source code file to process.
-            
+
         Returns:
             ProcessedDocument with language-specific chunking and metadata.
-            
+
         Note:
             AST parsing requires Tree-sitter languages to be installed.
             Without AST support, falls back to line-based chunking.
@@ -839,24 +839,24 @@ class DocumentProcessor:
 
     def _chunk_text(self, content: str, source_path: str = "") -> List[Dict[str, Any]]:
         """Chunk plain text using semantic boundaries and intelligent splitting.
-        
+
         Implements sophisticated text chunking that respects paragraph boundaries,
         handles variable-length content intelligently, and maintains semantic
         coherence while staying within size limits.
-        
+
         Chunking Strategies:
             - Semantic: Split by paragraphs, preserve boundaries
             - Size-aware: Handle both character and token limits
             - Overlap: Configurable overlap for context preservation
             - Boundary-aware: Split at natural language boundaries
-        
+
         Args:
             content: Text content to chunk.
             source_path: Source file path for metadata.
-            
+
         Returns:
             List of chunk dictionaries with content and metadata.
-            
+
         Note:
             Uses semantic_chunking configuration to choose between
             paragraph-aware and simple token-based chunking.
@@ -1008,40 +1008,40 @@ class DocumentProcessor:
 
     async def process_directory(self, directory: Path) -> List[ProcessedDocument]:
         """Process all matching files in a directory tree with parallel processing.
-        
+
         Recursively processes all files in the directory that match configured
         file patterns, applying appropriate processing strategies for each file type.
         Handles errors gracefully and continues processing remaining files.
-        
+
         Args:
             directory: Root directory path to process. Must exist and be readable.
-            
+
         Returns:
             List of ProcessedDocument objects for all successfully processed files.
             Failed files are logged but don't stop processing of other files.
-            
+
         Example:
             Process an entire project directory:
-            
+
             >>> from pathlib import Path
-            >>> 
+            >>>
             >>> # Process project with mixed file types
             >>> documents = await processor.process_directory(Path("/project"))
-            >>> 
+            >>>
             >>> # Analyze results by type
             >>> by_type = {}
             >>> for doc in documents:
             ...     doc_type = doc.doc_type
             ...     by_type[doc_type] = by_type.get(doc_type, 0) + 1
-            >>> 
+            >>>
             >>> print(f"Processed {len(documents)} files:")
             >>> for doc_type, count in by_type.items():
             ...     print(f"  {doc_type}: {count} files")
-            >>> 
+            >>>
             >>> # Find largest documents
             >>> sorted_docs = sorted(documents, key=lambda d: len(d.content), reverse=True)
             >>> print(f"Largest: {sorted_docs[0].file_path} ({len(sorted_docs[0].content)} chars)")
-            
+
         Note:
             Processing continues even if individual files fail. Check logs for
             specific file processing errors.

@@ -16,10 +16,10 @@ The indexer supports:
 
 Example:
     Basic document indexing:
-    
+
     >>> from eol.rag_context.indexer import DocumentIndexer
     >>> from eol.rag_context.config import RAGConfig
-    >>> 
+    >>>
     >>> config = RAGConfig()
     >>> indexer = DocumentIndexer(config, processor, embeddings, redis_store)
     >>> result = await indexer.index_folder("/path/to/docs")
@@ -49,10 +49,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IndexedSource:
     """Represents metadata for a completely indexed data source.
-    
+
     Tracks comprehensive information about an indexed source including
     file counts, chunk statistics, and associated metadata.
-    
+
     Attributes:
         source_id: Unique identifier for this indexed source.
         path: Filesystem path to the indexed directory or file.
@@ -61,7 +61,7 @@ class IndexedSource:
         total_chunks: Total number of chunks created from all files.
         metadata: Additional source-specific metadata (git info, patterns, etc.).
         indexed_files: Number of files successfully processed.
-    
+
     Example:
         >>> source = IndexedSource(
         ...     source_id="project_docs_abc123",
@@ -83,7 +83,7 @@ class IndexedSource:
 
     def __post_init__(self):
         """Ensure data consistency after initialization.
-        
+
         Sets indexed_files to match file_count if not explicitly provided,
         maintaining backward compatibility and data consistency.
         """
@@ -94,10 +94,10 @@ class IndexedSource:
 @dataclass
 class IndexResult:
     """Result object from single file or batch indexing operations.
-    
+
     Contains statistics and status information from indexing operations,
     including success metrics and any errors encountered during processing.
-    
+
     Attributes:
         source_id: Unique identifier for the source being indexed.
         chunks: Number of chunks created from this operation.
@@ -107,7 +107,7 @@ class IndexResult:
         file_count: Alias for files (compatibility).
         total_chunks: Alias for chunks (compatibility).
         indexed_files: Number of files successfully indexed.
-    
+
     Example:
         >>> result = IndexResult(
         ...     source_id="docs_abc123",
@@ -131,7 +131,7 @@ class IndexResult:
 
     def __post_init__(self):
         """Ensure consistency between field names for backward compatibility.
-        
+
         Synchronizes duplicate fields (file_count/files, total_chunks/chunks,
         indexed_files/files) to maintain API compatibility with different
         naming conventions used across the codebase.
@@ -147,11 +147,11 @@ class IndexResult:
 @dataclass
 class DocumentMetadata:
     """Comprehensive metadata for precise document and chunk tracking.
-    
+
     Stores detailed metadata for documents and chunks including source information,
     file properties, indexing details, hierarchical relationships, content metadata,
     location information, and version control data.
-    
+
     Attributes:
         source_path: Absolute filesystem path to the source file.
         source_id: Unique identifier for the containing source.
@@ -175,7 +175,7 @@ class DocumentMetadata:
         git_commit: Git commit hash when indexed (optional).
         git_branch: Git branch name when indexed (optional).
         git_remote: Git remote URL when indexed (optional).
-    
+
     Example:
         >>> metadata = DocumentMetadata(
         ...     source_path="/project/src/main.py",
@@ -231,20 +231,20 @@ class DocumentMetadata:
 
 class FolderScanner:
     """Intelligent folder scanner with gitignore support and filtering.
-    
+
     Provides comprehensive folder scanning capabilities with support for recursive
     traversal, gitignore parsing, file pattern matching, size filtering, and
     intelligent ignore patterns for development environments.
-    
+
     The scanner automatically excludes common development artifacts like
     .git directories, node_modules, __pycache__, build outputs, and other
     non-essential files while respecting .gitignore files when present.
-    
+
     Attributes:
         config: RAG configuration containing document processing settings.
         ignore_patterns: Set of glob patterns to ignore during scanning.
         scanned_sources: Cache of previously scanned source metadata.
-    
+
     Example:
         >>> scanner = FolderScanner(config)
         >>> files = await scanner.scan_folder(
@@ -257,7 +257,7 @@ class FolderScanner:
 
     def __init__(self, config: RAGConfig):
         """Initialize folder scanner with configuration and ignore patterns.
-        
+
         Args:
             config: RAG configuration containing document processing settings.
         """
@@ -267,13 +267,13 @@ class FolderScanner:
 
     def _default_ignore_patterns(self) -> Set[str]:
         """Generate default file and directory patterns to ignore during scanning.
-        
+
         Returns comprehensive ignore patterns for common development artifacts,
         version control directories, build outputs, caches, and temporary files.
-        
+
         Returns:
             Set of glob patterns that should be ignored during folder scanning.
-            
+
         Note:
             These patterns are applied in addition to .gitignore rules when
             gitignore support is enabled. Patterns use Python's pathlib.Path.match()
@@ -306,18 +306,18 @@ class FolderScanner:
 
     def _should_ignore(self, path: Path, gitignore_matcher=None) -> bool:
         """Determine whether a file or directory should be ignored during scanning.
-        
+
         Checks path against gitignore rules (if provided), default ignore patterns,
         and file size limits to determine if it should be excluded from indexing.
-        
+
         Args:
             path: Path to check for exclusion.
             gitignore_matcher: Optional gitignore matcher from gitignore-parser.
                 If provided, gitignore rules take precedence.
-                
+
         Returns:
             True if the path should be ignored, False if it should be processed.
-            
+
         Example:
             >>> scanner = FolderScanner(config)
             >>> should_skip = scanner._should_ignore(Path("node_modules/package.json"))
@@ -346,23 +346,23 @@ class FolderScanner:
 
     def _get_git_metadata(self, path: Path) -> Dict[str, Any]:
         """Extract Git repository metadata for version control tracking.
-        
+
         Attempts to extract Git metadata including repository root, current commit
         hash, branch name, and remote URL. Gracefully handles non-git directories
         and Git command failures.
-        
+
         Args:
             path: Path to check for Git metadata (file or directory).
-            
+
         Returns:
             Dictionary containing Git metadata:
             - git_root: Absolute path to Git repository root
             - git_commit: Current commit SHA hash
-            - git_branch: Current branch name  
+            - git_branch: Current branch name
             - git_remote: Origin remote URL
-            
+
             Returns empty dict if not in a Git repository or on Git command failure.
-            
+
         Example:
             >>> scanner = FolderScanner(config)
             >>> git_info = scanner._get_git_metadata(Path("/project/src"))
@@ -431,27 +431,27 @@ class FolderScanner:
         file_patterns: Optional[List[str]] = None,
     ) -> List[Path]:
         """Scan folder structure and return list of files suitable for indexing.
-        
+
         Performs comprehensive folder scanning with intelligent filtering based on
         file patterns, gitignore rules, size limits, and default ignore patterns.
         Returns deduplicated, sorted list of files ready for processing.
-        
+
         Args:
             folder_path: Root directory to scan (Path object or string path).
             recursive: Whether to scan subdirectories recursively.
             respect_gitignore: Whether to parse and respect .gitignore files.
             file_patterns: List of glob patterns to match. If None, uses patterns
                 from configuration (e.g., ["*.py", "*.md", "*.js"]).
-                
+
         Returns:
             Sorted list of Path objects for files that should be indexed.
-            
+
         Raises:
             ValueError: If folder_path doesn't exist or is not a directory.
-            
+
         Example:
             Scan Python and Markdown files:
-            
+
             >>> scanner = FolderScanner(config)
             >>> files = await scanner.scan_folder(
             ...     "/project",
@@ -459,9 +459,9 @@ class FolderScanner:
             ...     file_patterns=["*.py", "*.md"]
             ... )
             >>> print(f"Found {len(files)} files")
-            
+
             Respect gitignore in repository:
-            
+
             >>> files = await scanner.scan_folder(
             ...     "/repo",
             ...     recursive=True,
@@ -509,17 +509,17 @@ class FolderScanner:
 
     def generate_source_id(self, path: Path) -> str:
         """Generate deterministic unique identifier for a source path.
-        
+
         Creates a reproducible source ID based on the absolute path using MD5 hashing.
         The same path will always generate the same source ID, enabling reliable
         source tracking and incremental updates.
-        
+
         Args:
             path: Path object for which to generate source ID.
-            
+
         Returns:
             16-character hexadecimal string uniquely identifying the path.
-            
+
         Example:
             >>> scanner = FolderScanner(config)
             >>> source_id = scanner.generate_source_id(Path("/project/docs"))
@@ -532,17 +532,17 @@ class FolderScanner:
 
 class DocumentIndexer:
     """Comprehensive document indexer with hierarchical organization and metadata tracking.
-    
+
     Provides complete document indexing pipeline including document processing,
     hierarchical organization (concepts → sections → chunks), embedding generation,
     vector storage, and comprehensive metadata management. Supports incremental
     indexing with change detection and folder-level operations.
-    
+
     The indexer creates a three-level hierarchy:
     1. Concepts (level 1): High-level document summaries and main ideas
     2. Sections (level 2): Logical document sections (headers, functions, etc.)
     3. Chunks (level 3): Individual text segments for detailed search
-    
+
     Features:
     - Hierarchical document organization with parent-child relationships
     - Comprehensive metadata tracking including git information
@@ -550,7 +550,7 @@ class DocumentIndexer:
     - Progress callbacks for long-running operations
     - Statistical tracking and error handling
     - Source management and cleanup operations
-    
+
     Attributes:
         config: RAG configuration with indexing parameters.
         processor: Document processor for content extraction.
@@ -558,20 +558,20 @@ class DocumentIndexer:
         redis: Redis vector store for data persistence.
         scanner: Folder scanner for file discovery.
         stats: Indexing statistics and metrics.
-    
+
     Example:
         Basic indexing workflow:
-        
+
         >>> indexer = DocumentIndexer(config, processor, embeddings, redis_store)
-        >>> 
+        >>>
         >>> # Index entire folder
         >>> result = await indexer.index_folder("/project/docs")
         >>> print(f"Indexed {result.indexed_files} files")
-        >>> 
+        >>>
         >>> # Index single file
         >>> file_result = await indexer.index_file("/project/readme.md")
         >>> print(f"Created {file_result.chunks} chunks")
-        >>> 
+        >>>
         >>> # Get statistics
         >>> stats = indexer.get_stats()
         >>> print(f"Total documents: {stats['total_documents']}")
@@ -585,7 +585,7 @@ class DocumentIndexer:
         redis_store: RedisVectorStore,
     ):
         """Initialize document indexer with required components.
-        
+
         Args:
             config: RAG configuration with indexing parameters.
             document_processor: Document processor for content extraction.
@@ -617,11 +617,11 @@ class DocumentIndexer:
         progress_callback: Optional[callable] = None,
     ) -> IndexedSource:
         """Index all supported documents in a folder with hierarchical organization.
-        
+
         Performs comprehensive folder indexing including file discovery, document
         processing, hierarchical organization, embedding generation, and metadata
         tracking. Supports incremental indexing to skip unchanged files.
-        
+
         The indexing process:
         1. Scans folder for supported files using configured patterns
         2. Extracts Git metadata for version control tracking
@@ -630,7 +630,7 @@ class DocumentIndexer:
         5. Generates embeddings for all content levels
         6. Stores documents and metadata in Redis
         7. Updates source metadata and statistics
-        
+
         Args:
             folder_path: Directory to index (Path object or string path).
             source_id: Unique source identifier. If None, generated from path hash.
@@ -638,7 +638,7 @@ class DocumentIndexer:
             force_reindex: If True, reindex all files regardless of change status.
             progress_callback: Optional callback function for progress updates.
                 Called with (current_file_index, total_files, current_file_path).
-                
+
         Returns:
             IndexedSource object containing indexing results and metadata:
             - source_id: Unique identifier for this indexed source
@@ -648,13 +648,13 @@ class DocumentIndexer:
             - total_chunks: Total chunks created from all files
             - indexed_files: Number of files actually processed
             - metadata: Additional information (git info, patterns, etc.)
-            
+
         Example:
             Index entire project:
-            
+
             >>> def progress(current, total, file_path):
             ...     print(f"Processing {current}/{total}: {file_path.name}")
-            >>> 
+            >>>
             >>> result = await indexer.index_folder(
             ...     "/project",
             ...     recursive=True,
@@ -662,9 +662,9 @@ class DocumentIndexer:
             ... )
             >>> print(f"Indexed {result.indexed_files} files")
             >>> print(f"Created {result.total_chunks} chunks")
-            
+
             Force reindex with custom source ID:
-            
+
             >>> result = await indexer.index_folder(
             ...     "/docs",
             ...     source_id="docs_v2",
@@ -759,11 +759,11 @@ class DocumentIndexer:
         git_metadata: Optional[Dict[str, Any]] = None,
     ) -> IndexResult:
         """Index a single file with comprehensive hierarchical organization and metadata.
-        
+
         Processes a single file through the complete indexing pipeline including
         document processing, content extraction, hierarchical structuring,
         embedding generation, and storage with full metadata tracking.
-        
+
         The file indexing process:
         1. Processes file content using document processor
         2. Extracts file metadata (size, hash, modification time)
@@ -771,7 +771,7 @@ class DocumentIndexer:
         4. Generates embeddings for all content levels
         5. Stores documents with comprehensive metadata
         6. Updates file change tracking information
-        
+
         Args:
             file_path: Path to file to index (Path object or string path).
             source_id: Unique source identifier. If None, generated from parent path.
@@ -779,7 +779,7 @@ class DocumentIndexer:
                 uses file's parent directory.
             git_metadata: Pre-extracted Git metadata. If None, Git information
                 is not included in document metadata.
-                
+
         Returns:
             IndexResult object containing operation results:
             - source_id: Unique identifier for the source
@@ -787,18 +787,18 @@ class DocumentIndexer:
             - files: Number of files processed (always 1)
             - errors: List of any errors encountered
             - metadata: Additional file-specific information
-            
+
         Example:
             Index single file:
-            
+
             >>> result = await indexer.index_file("/project/readme.md")
             >>> if not result.errors:
             ...     print(f"Created {result.chunks} chunks")
             ... else:
             ...     print(f"Errors: {result.errors}")
-            
+
             Index with Git metadata:
-            
+
             >>> git_info = scanner._get_git_metadata(Path("/project"))
             >>> result = await indexer.index_file(
             ...     "/project/src/main.py",
@@ -894,15 +894,15 @@ class DocumentIndexer:
         self, doc: ProcessedDocument, base_metadata: DocumentMetadata
     ) -> List[VectorDocument]:
         """Extract high-level concepts from document for hierarchy level 1.
-        
+
         Creates concept-level documents that represent the main ideas and themes
         of the source document. Currently generates a single concept based on
         document summary, but can be extended for multiple concept extraction.
-        
+
         Args:
             doc: Processed document containing content and metadata.
             base_metadata: Base metadata template for the document.
-            
+
         Returns:
             List of VectorDocument objects representing document concepts.
             Each concept includes summary content, embeddings, and metadata.
@@ -949,18 +949,18 @@ class DocumentIndexer:
         concepts: List[VectorDocument],
     ) -> List[VectorDocument]:
         """Extract logical sections from document for hierarchy level 2.
-        
+
         Creates section-level documents by grouping related chunks based on
         document structure. Uses different strategies based on document type:
         - Markdown: Groups by header structure
         - Code: Groups by functions/classes
         - Other: Groups by chunk proximity
-        
+
         Args:
             doc: Processed document containing chunks and metadata.
             base_metadata: Base metadata template for the document.
             concepts: Parent concept documents for relationship linking.
-            
+
         Returns:
             List of VectorDocument objects representing document sections.
             Each section contains grouped content, embeddings, and parent links.
@@ -1045,16 +1045,16 @@ class DocumentIndexer:
         section_title: Optional[str],
     ) -> VectorDocument:
         """Create section-level document from grouped chunks.
-        
+
         Combines multiple related chunks into a section-level document with
         appropriate metadata, embeddings, and hierarchical relationships.
-        
+
         Args:
             chunks: List of chunk dictionaries to combine into section.
             base_metadata: Base metadata template for the section.
             parent_id: ID of parent concept document.
             section_title: Title or identifier for this section.
-            
+
         Returns:
             VectorDocument representing the section with combined content.
         """
@@ -1101,16 +1101,16 @@ class DocumentIndexer:
         sections: List[VectorDocument],
     ) -> int:
         """Index document chunks at hierarchy level 3 with comprehensive metadata.
-        
+
         Processes individual document chunks, generates embeddings, creates
         comprehensive metadata, establishes parent-child relationships with
         sections, and stores everything in Redis vector storage.
-        
+
         Args:
             doc: Processed document containing chunks to index.
             base_metadata: Base metadata template for all chunks.
             sections: Parent section documents for relationship linking.
-            
+
         Returns:
             Number of chunks successfully indexed.
         """
@@ -1181,14 +1181,14 @@ class DocumentIndexer:
 
     def _generate_summary(self, content: str) -> str:
         """Generate extractive summary of document content for concept creation.
-        
+
         Creates a concise summary by extracting the most meaningful lines from
         the beginning of the document content. Uses simple heuristics to select
         substantive content while avoiding very short or empty lines.
-        
+
         Args:
             content: Raw document content to summarize.
-            
+
         Returns:
             Summary string of approximately 500 characters containing key
             content from the document, or truncated content if extraction fails.
@@ -1207,14 +1207,14 @@ class DocumentIndexer:
 
     async def _is_file_current(self, file_path: Path) -> bool:
         """Check if file has been modified since last indexing for incremental updates.
-        
+
         Compares current file modification time with stored metadata to determine
         if the file needs reindexing. Supports incremental indexing by skipping
         unchanged files to improve performance on large document collections.
-        
+
         Args:
             file_path: Path to file to check for modifications.
-            
+
         Returns:
             True if file is current (not modified since last indexing),
             False if file needs reindexing or has no stored metadata.
@@ -1238,11 +1238,11 @@ class DocumentIndexer:
 
     async def _store_file_metadata(self, file_path: Path, file_hash: str, mtime: float) -> None:
         """Store file metadata in Redis for change detection and incremental indexing.
-        
+
         Persists file metadata including path, content hash, modification time,
         and indexing timestamp to enable efficient change detection for future
         indexing operations. Metadata expires after 30 days.
-        
+
         Args:
             file_path: Path to file being tracked.
             file_hash: SHA-256 hash of file content.
@@ -1265,14 +1265,14 @@ class DocumentIndexer:
 
     async def _get_indexed_source(self, source_id: str) -> Optional[IndexedSource]:
         """Retrieve indexed source metadata from Redis storage.
-        
+
         Fetches complete source metadata including statistics and configuration
         for the specified source ID. Used for incremental indexing and source
         management operations.
-        
+
         Args:
             source_id: Unique identifier of the source to retrieve.
-            
+
         Returns:
             IndexedSource object if found, None if source doesn't exist.
         """
@@ -1294,10 +1294,10 @@ class DocumentIndexer:
 
     async def _store_indexed_source(self, source: IndexedSource) -> None:
         """Persist indexed source metadata to Redis storage.
-        
+
         Stores complete source information including statistics, timestamps,
         and configuration metadata for source management and tracking.
-        
+
         Args:
             source: IndexedSource object containing metadata to persist.
         """
@@ -1317,10 +1317,10 @@ class DocumentIndexer:
 
     async def list_sources(self) -> List[IndexedSource]:
         """Retrieve list of all indexed sources with their metadata.
-        
+
         Scans Redis for all source metadata and returns complete IndexedSource
         objects with statistics and metadata for each indexed source.
-        
+
         Returns:
             List of IndexedSource objects containing:
             - source_id: Unique identifier
@@ -1330,7 +1330,7 @@ class DocumentIndexer:
             - total_chunks: Total chunks created
             - indexed_files: Files successfully processed
             - metadata: Additional source information
-            
+
         Example:
             >>> sources = await indexer.list_sources()
             >>> for source in sources:
@@ -1358,17 +1358,17 @@ class DocumentIndexer:
 
     async def remove_source(self, source_id: str) -> bool:
         """Completely remove an indexed source and all associated data.
-        
+
         Removes all documents, metadata, and tracking information for the specified
         source from Redis storage. This includes all hierarchy levels (concepts,
         sections, chunks) and file metadata used for change detection.
-        
+
         Args:
             source_id: Unique identifier of the source to remove.
-            
+
         Returns:
             True if any data was removed, False if source was not found.
-            
+
         Example:
             >>> success = await indexer.remove_source("docs_abc123")
             >>> if success:
@@ -1416,11 +1416,11 @@ class DocumentIndexer:
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive indexing statistics and metrics.
-        
+
         Returns detailed statistics about indexing operations including document
         counts, chunk statistics, hierarchy metrics, error counts, timing
         information, and source counts from Redis.
-        
+
         Returns:
             Dictionary containing indexing statistics:
             - documents_indexed: Total number of documents processed
@@ -1432,7 +1432,7 @@ class DocumentIndexer:
             - total_documents: Alias for documents_indexed (compatibility)
             - total_chunks: Alias for chunks_created (compatibility)
             - sources: Number of indexed sources in Redis
-            
+
         Example:
             >>> stats = indexer.get_stats()
             >>> print(f"Indexed {stats['total_documents']} documents")
@@ -1465,15 +1465,15 @@ class DocumentIndexer:
         self, file_path: Path | str, source_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Index a file and return results as dictionary for API compatibility.
-        
+
         Wrapper method that calls index_file() and converts the IndexResult
         to a dictionary format for backward compatibility with existing APIs
         and test suites that expect dictionary responses.
-        
+
         Args:
             file_path: Path to file to index (Path object or string path).
             source_id: Optional unique source identifier.
-            
+
         Returns:
             Dictionary containing indexing results:
             - status: "success" (always for this method)
@@ -1483,7 +1483,7 @@ class DocumentIndexer:
             - files: Number of files processed (always 1)
             - errors: List of any errors encountered
             - metadata: Additional file-specific information
-            
+
         Example:
             >>> result = await indexer.index_file_dict("/project/readme.md")
             >>> print(f"Status: {result['status']}")

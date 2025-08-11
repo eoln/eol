@@ -1,5 +1,7 @@
 """
 Test embeddings module.
+
+Tests cover both sentence-transformers and mock embedding providers.
 """
 
 import pytest

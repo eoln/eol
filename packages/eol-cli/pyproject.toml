@@ -42,8 +42,7 @@ eol = "eol.cli.main:app"
 packages = ["src/eol"]
 
 # UV Package Configuration
-[tool.uv]
-workspace = true
+# This package is part of the EOL workspace
 
 [tool.uv.sources]
 # Workspace dependencies

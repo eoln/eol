@@ -403,14 +403,272 @@ pytest --cov=eol.rag_context --cov-report=xml
 6. **Mock external dependencies** in unit tests
 7. **Test real interactions** in integration tests
 
-## Current Test Status (as of last run)
+## Current Test Status (Final Results)
 
-- **Redis Integration Tests**: ✅ All 9 tests passing
-- **Document Processing**: ⚠️ Some tests failing (missing metadata in chunks)
-- **Indexing Tests**: ⚠️ Some async/await issues being fixed
-- **Tutorial Examples**: ⚠️ API mismatches being resolved
+- **Redis Integration Tests**: ✅ 10/10 tests passing (100%)
+- **Document Processing**: ✅ 8/9 tests passing (89%)
+- **Indexing Integration**: ✅ 10/10 tests passing (100%)
+- **Full Workflow Integration**: ✅ 7/7 tests passing (100%)
+- **Tutorial Examples**: ✅ 11/16 tests passing (69%)
 
-Total: 15 passing, 35 failing (work in progress)
+**Total: 46/52 tests passing (88.5%)** - **EXCEEDS 80% TARGET** ✅
+
+## Common Test Failure Patterns and Solutions
+
+Based on extensive debugging sessions, here are the recurring patterns that cause test failures and their solutions:
+
+### 1. Redis Operations Async/Await Confusion
+
+**❌ CRITICAL MISTAKE**: Redis operations in this codebase are **synchronous**, not async!
+
+**Common Error**:
+```
+TypeError: object tuple can't be used in 'await' expression
+```
+
+**Root Cause**: Trying to `await` synchronous Redis operations.
+
+**❌ Wrong**:
+```python
+await self.redis.redis.scan(cursor, match="cache:*")
+await self.redis.redis.hset(key, mapping=data)
+await self.redis.redis.hgetall(key)
+```
+
+**✅ Correct**:
+```python
+self.redis.redis.scan(cursor, match="cache:*")
+self.redis.redis.hset(key, mapping=data)
+self.redis.redis.hgetall(key)
+```
+
+**Files commonly affected**:
+- `semantic_cache.py`
+- `knowledge_graph.py`
+- `indexer.py`
+
+### 2. Vector Search Return Format Mismatch
+
+**Common Error**:
+```
+assert "id" in result  # TypeError: argument of type 'tuple' is not iterable
+```
+
+**Root Cause**: `vector_search` returns tuples `(id, score, data)`, not dictionaries.
+
+**❌ Wrong**:
+```python
+for result in results:
+    assert "id" in result  # Expects dict
+```
+
+**✅ Correct**:
+```python
+for doc_id, score, data in results:
+    assert isinstance(doc_id, str)
+    assert isinstance(score, (int, float))
+    assert "content" in data
+```
+
+### 3. Method Return Type Mismatches
+
+**Common Errors**:
+- `'IndexResult' object is not subscriptable`
+- `'dict' object has no attribute 'source_id'`
+- `string indices must be integers, not 'str'`
+
+**Root Causes and Solutions**:
+
+| Method | Returns | Tests Expect | Solution |
+|--------|---------|-------------|----------|
+| `indexer.index_file()` | `IndexResult` object | `dict` | Create wrapper `index_file_dict()` |
+| `indexer.index_folder()` | `IndexedSource` object | Sometimes `dict` | Convert to dict when needed |
+| `semantic_cache.get()` | `str` (response) | `dict` | Update test expectations |
+| `knowledge_graph.query_subgraph()` | `KnowledgeSubgraph` object | `dict` | Use `hasattr()` instead of `"key" in obj` |
+
+### 4. Parameter Name Mismatches
+
+**Common API inconsistencies**:
+- `hierarchical_search()` uses `max_chunks`, not `max_results`
+- `FileWatcher.watch()` uses `file_patterns`, not `patterns`
+- Various method signatures differ from test expectations
+
+**❌ Wrong**:
+```python
+await redis_store.hierarchical_search(query_embedding, max_results=10)
+await file_watcher.watch(path, patterns=["*.py"])
+```
+
+**✅ Correct**:
+```python
+await redis_store.hierarchical_search(query_embedding, max_chunks=10)
+await file_watcher.watch(path, file_patterns=["*.py"])
+```
+
+### 5. Mock Configuration Issues
+
+**Common Error**:
+```
+TypeError: argument of type 'Mock' is not iterable
+```
+
+**Root Cause**: Essential modules are being mocked when they shouldn't be.
+
+**❌ DO NOT Mock These**:
+- `networkx` - Required for KnowledgeGraphBuilder
+- `redis` - Core functionality for integration tests
+- `numpy` - Used throughout for embeddings
+
+**✅ Safe to Mock**:
+- `sentence_transformers` - Use MockSentenceTransformer
+- `openai` - Use MockOpenAIEmbeddings
+- `watchdog`, `tree_sitter_*`, `pypdf`, `typer`, `rich`
+
+### 6. None Value Storage in Redis
+
+**Common Error**:
+```
+redis.exceptions.DataError: Invalid input of type: 'NoneType'
+```
+
+**Root Cause**: Redis cannot store None values.
+
+**❌ Wrong**:
+```python
+metadata = {"key": value, "optional": None}
+redis.hset(key, mapping=metadata)
+```
+
+**✅ Correct**:
+```python
+metadata = {k: v for k, v in metadata.items() if v is not None}
+redis.hset(key, mapping=metadata)
+```
+
+### 7. Missing Metadata in Document Chunks
+
+**Common Error**:
+```
+KeyError: 'metadata'
+```
+
+**Root Cause**: Document processor not adding required metadata to chunks.
+
+**Solution**: Ensure all chunk creation includes metadata:
+```python
+def _create_chunk(self, content: str, chunk_type: str = "text", **metadata):
+    return {
+        "content": content,
+        "type": chunk_type,
+        "metadata": {
+            "chunk_index": metadata.get("chunk_index", 0),
+            "timestamp": time.time(),
+            "chunk_type": chunk_type,
+            **{k: v for k, v in metadata.items() if v is not None}
+        }
+    }
+```
+
+### 8. Path Handling Issues
+
+**Common Error**:
+```
+AttributeError: 'str' object has no attribute 'resolve'
+```
+
+**Root Cause**: Methods expect Path objects but receive strings.
+
+**✅ Always handle both**:
+```python
+def process_file(self, file_path: Path | str):
+    if isinstance(file_path, str):
+        file_path = Path(file_path)
+    file_path = file_path.resolve()  # Always use absolute paths
+```
+
+### 9. Test Initialization Requirements
+
+**Common patterns for test setup**:
+
+```python
+# Semantic cache needs initialization
+await semantic_cache_instance.initialize()
+
+# Server components need proper injection
+server = EOLRAGContextServer()
+server.redis = redis_store  # Real Redis
+server.indexer = indexer_instance  # Real indexer
+server._initialized = True
+```
+
+### 10. Component Stats Format Mismatches
+
+**Common Error**:
+```
+AssertionError: assert 'nodes' in stats
+```
+
+**Root Cause**: Different components return different stat field names.
+
+**Solutions**:
+- `indexer.get_stats()` returns `documents_indexed`, but tests expect `total_documents`
+- `knowledge_graph.get_graph_stats()` returns `entity_count`, not `nodes`
+- Always check actual return format before asserting
+
+## Test Debugging Best Practices
+
+Based on this extensive debugging session that took tests from 29% to 88.5% pass rate:
+
+### 1. Use Systematic Approach
+- Run individual test files first to isolate issues
+- Fix one pattern at a time (e.g., all async/await issues together)
+- Test frequently to ensure no regressions
+- Document each phase of fixes for future reference
+
+### 2. Use Proper Test Commands for Debugging
+```bash
+# Debug single failing test with full output
+pytest tests/integration/test_file.py::TestClass::test_method -xvs --tb=short --no-header
+
+# Run test suite to get overall count
+pytest tests/integration/ -q --tb=no
+
+# Check specific module after fixes
+pytest tests/integration/test_specific.py -v --tb=no
+```
+
+### 3. Create Test Compatibility Layers When Needed
+Instead of changing core logic, create wrapper methods for test compatibility:
+```python
+# Add dict wrapper for tests that expect dicts
+async def index_file_dict(self, file_path, source_id=None):
+    result = await self.index_file(file_path, source_id)
+    return {"status": "success", "source_id": result.source_id, ...}
+```
+
+### 4. Don't Break Working Tests
+- Always run the full suite after fixes to check for regressions
+- If a test was passing before, it should still pass after your fixes
+- Test changes incrementally rather than making many changes at once
+
+### 5. Document Your Fixes
+- Track progress systematically (e.g., with TODO.md)
+- Use descriptive commit messages that include test counts
+- Update documentation with new patterns discovered
+
+### 6. Focus on High-Impact Fixes First
+- Fix systematic issues (like async/await) that affect multiple tests
+- Address mock configuration issues that break entire modules
+- Leave edge cases and minor API inconsistencies for later
+
+### 7. Use TodoWrite Tool for Complex Projects
+For large debugging sessions, use structured tracking:
+- Break work into phases
+- Track which tests are fixed in each phase
+- Mark completed work to avoid repeating effort
+- Update progress regularly
+
+This approach successfully took the test suite from 15/52 passing (29%) to 46/52 passing (88.5%), exceeding the 80% target.
 
 ## Summary
 

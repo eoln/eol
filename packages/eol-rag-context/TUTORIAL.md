@@ -165,9 +165,9 @@ from eol.rag_context import EOLRAGContextServer
 server = EOLRAGContextServer()
 await server.initialize()
 
-# Index a single file
-result = await server.index_directory("/path/to/file.py")
-print(f"Indexed {result['chunks']} chunks from {result['file']}")
+# Index a single file  
+result = await server.index_file("/path/to/file.py")
+print(f"Indexed {result['total_chunks']} chunks, source ID: {result['source_id']}")
 ```
 
 ### Index a Directory
@@ -177,8 +177,7 @@ print(f"Indexed {result['chunks']} chunks from {result['file']}")
 result = await server.index_directory(
     "/path/to/project",
     recursive=True,
-    patterns=["*.py", "*.md", "*.yaml"],
-    ignore=["__pycache__", ".git", "node_modules"]
+    file_patterns=["*.py", "*.md", "*.yaml"]
 )
 
 print(f"Indexed {result['indexed_files']} files")
@@ -192,14 +191,14 @@ print(f"Source ID: {result['source_id']}")
 # Start watching a directory for changes
 watch_result = await server.watch_directory(
     "/path/to/project",
-    patterns=["*.py", "*.md"],
-    auto_index=True
+    recursive=True,
+    file_patterns=["*.py", "*.md"]
 )
 
-print(f"Watching with ID: {watch_result['watch_id']}")
+print(f"Watching: {watch_result['message']}")
 
-# Stop watching
-await server.unwatch_directory(watch_result['watch_id'])
+# Stop watching (if needed)
+# await server.stop_watching("/path/to/project")
 ```
 
 ## Searching & Retrieval
@@ -207,16 +206,22 @@ await server.unwatch_directory(watch_result['watch_id'])
 ### Basic Search
 
 ```python
-# Search for relevant context
-results = await server.search_context(
-    "How to implement authentication?",
-    limit=5
+# Search for relevant context using the MCP tool
+# Note: This would normally be called via MCP, but can also be called directly
+from eol.rag_context.server import SearchContextRequest
+
+request = SearchContextRequest(
+    query="How to implement authentication?",
+    max_results=5,
+    min_relevance=0.7
 )
+
+results = await server.search_context(request, None)
 
 for result in results:
     print(f"Score: {result['score']:.2f}")
     print(f"Content: {result['content'][:200]}...")
-    print(f"Source: {result['metadata']['source']}")
+    print(f"Source: {result['metadata'].get('source', 'unknown')}")
     print("---")
 ```
 
@@ -224,35 +229,44 @@ for result in results:
 
 ```python
 # Search at different hierarchy levels
-results = await server.search_context(
-    "database connection",
+# Search concepts first
+from eol.rag_context.server import SearchContextRequest
+
+concept_request = SearchContextRequest(
+    query="database connection",
     hierarchy_level=1,  # Concepts only
-    limit=3
+    max_results=3
 )
+results = await server.search_context(concept_request, None)
 
 # Get more detailed sections
-for concept in results:
-    sections = await server.search_context(
-        "database connection",
-        hierarchy_level=2,
-        parent_id=concept['id'],
-        limit=5
-    )
+section_request = SearchContextRequest(
+    query="database connection",
+    hierarchy_level=2,
+    max_results=5
+)
+sections = await server.search_context(section_request, None)
 ```
 
 ### Using Filters
 
 ```python
 # Search with metadata filters
-results = await server.search_context(
-    "error handling",
-    filters={
-        "file_type": "python",
-        "module": "auth",
-        "last_modified": {"$gte": "2024-01-01"}
-    },
-    limit=10
+from eol.rag_context.server import SearchContextRequest
+
+request = SearchContextRequest(
+    query="error handling",
+    max_results=10,
+    hierarchy_level=3
 )
+
+results = await server.search_context(request, None)
+
+# Filter results manually if needed
+filtered_results = [
+    result for result in results
+    if result['metadata'].get('file_type') == 'python'
+]
 ```
 
 ## Advanced Features
@@ -260,11 +274,16 @@ results = await server.search_context(
 ### Knowledge Graph Queries
 
 ```python
-# Query the knowledge graph
-graph = await server.query_knowledge_graph(
-    entity="UserAuthentication",
-    max_depth=2
+# Query the knowledge graph using MCP tool
+from eol.rag_context.server import QueryKnowledgeGraphRequest
+
+request = QueryKnowledgeGraphRequest(
+    query="UserAuthentication",
+    max_depth=2,
+    max_entities=20
 )
+
+graph = await server.query_knowledge_graph(request, None)
 
 print(f"Found {len(graph['entities'])} entities")
 print(f"Found {len(graph['relationships'])} relationships")
@@ -277,37 +296,53 @@ for rel in graph['relationships']:
 ### Semantic Caching
 
 ```python
-# Enable semantic caching for repeated queries
-await server.optimize_context(target_hit_rate=0.31)
-
+# Semantic cache is enabled by default if configured
 # First query (cache miss)
 start = time.time()
-results1 = await server.search_context("user authentication flow")
+query1 = "user authentication flow"
+cached_response1 = await server.cache.get(query1)
+if cached_response1 is None:
+    embedding1 = await server.embedding_manager.get_embedding(query1)
+    results1 = await server.redis.vector_search(embedding1, hierarchy_level=3, k=5)
+    response1 = f"Found {len(results1)} results for authentication"
+    await server.cache.set(query1, response1)
+else:
+    response1 = cached_response1
 print(f"First query: {time.time() - start:.2f}s")
 
-# Similar query (cache hit)
+# Similar query (potential cache hit)
 start = time.time()
-results2 = await server.search_context("authentication process for users")
+query2 = "authentication process for users"
+cached_response2 = await server.cache.get(query2)
+if cached_response2 is None:
+    embedding2 = await server.embedding_manager.get_embedding(query2)
+    results2 = await server.redis.vector_search(embedding2, hierarchy_level=3, k=5)
+    response2 = f"Found {len(results2)} results for authentication"
+    await server.cache.set(query2, response2)
+else:
+    response2 = cached_response2
 print(f"Cached query: {time.time() - start:.2f}s")
 
 # Get cache statistics
-stats = await server.get_stats()
-print(f"Cache hit rate: {stats['cache']['hit_rate']:.2%}")
+stats = server.cache.get_stats()
+print(f"Cache hit rate: {stats.get('hit_rate', 0):.2%}")
 ```
 
 ### Context Windows Management
 
 ```python
 # Get optimized context for LLM
-context = await server.get_context(
-    "context://implement payment processing",
-    max_tokens=4000,
-    include_hierarchy=True
+query = "implement payment processing"
+query_embedding = await server.embedding_manager.get_embedding(query)
+context = await server.redis.hierarchical_search(
+    query_embedding=query_embedding,
+    max_chunks=10,
+    strategy="adaptive"
 )
 
 # Format for LLM consumption
 formatted = "\n\n".join([
-    f"## {doc['metadata'].get('header', 'Context')}\n{doc['content']}"
+    f"## {doc.get('metadata', {}).get('header', 'Context')}\n{doc.get('content', '')}"
     for doc in context
 ])
 ```
@@ -328,14 +363,21 @@ async def code_assistant():
     # Index your codebase
     await server.index_directory(
         "/path/to/project",
-        patterns=["*.py", "*.js", "*.md"]
+        recursive=True,
+        file_patterns=["*.py", "*.js", "*.md"]
     )
     
     # User query
     query = "How do I add a new API endpoint?"
     
-    # Get relevant context
-    context = await server.search_context(query, limit=5)
+    # Get relevant context using MCP search
+    from eol.rag_context.server import SearchContextRequest
+    request = SearchContextRequest(
+        query=query,
+        max_results=5,
+        hierarchy_level=3
+    )
+    context = await server.search_context(request, None)
     
     # Build prompt for LLM
     prompt = "Based on the following context, answer the question.\n\n"
@@ -360,18 +402,25 @@ async def search_docs(query: str):
     server = EOLRAGContextServer()
     await server.initialize()
     
-    # Search only markdown files
-    results = await server.search_context(
-        query,
-        filters={"file_type": "markdown"},
+    # Search documentation files
+    from eol.rag_context.server import SearchContextRequest
+    request = SearchContextRequest(
+        query=query,
         hierarchy_level=2,  # Section level
-        limit=10
+        max_results=10
     )
+    results = await server.search_context(request, None)
+    
+    # Filter for markdown files and group by document
+    markdown_results = [
+        result for result in results
+        if result['metadata'].get('file_type') == 'markdown'
+    ]
     
     # Group by document
     docs = {}
-    for result in results:
-        source = result['metadata']['source']
+    for result in markdown_results:
+        source = result['metadata'].get('source', 'unknown')
         if source not in docs:
             docs[source] = []
         docs[source].append(result)
@@ -392,24 +441,27 @@ async def live_context_system():
     await server.initialize()
     
     # Set up file watching
-    watch_id = await server.watch_directory(
+    watch_result = await server.watch_directory(
         "/path/to/active/project",
-        patterns=["*.py", "*.md"],
-        recursive=True
+        recursive=True,
+        file_patterns=["*.py", "*.md"]
     )
     
-    print(f"Watching for changes... (ID: {watch_id})")
+    print(f"Watching for changes... {watch_result['message']}")
     
     # Simulate ongoing work
     while True:
         # Get latest context for current file
         current_file = "/path/to/active/project/main.py"
+        query = f"functions in {current_file}"
         
-        context = await server.search_context(
-            f"functions in {current_file}",
-            filters={"source": current_file},
-            limit=10
+        from eol.rag_context.server import SearchContextRequest
+        request = SearchContextRequest(
+            query=query,
+            hierarchy_level=3,
+            max_results=10
         )
+        context = await server.search_context(request, None)
         
         print(f"Found {len(context)} relevant pieces")
         
@@ -522,26 +574,27 @@ async def smart_indexing(server, project_path):
     # 1. Index critical documentation first
     await server.index_directory(
         f"{project_path}/docs",
-        priority=1
+        recursive=True
     )
     
     # 2. Index main source code
     await server.index_directory(
         f"{project_path}/src",
-        priority=2,
-        patterns=["*.py", "*.js"]
+        recursive=True,
+        file_patterns=["*.py", "*.js"]
     )
     
     # 3. Index tests and examples
     await server.index_directory(
         f"{project_path}/tests",
-        priority=3
+        recursive=True
     )
     
     # 4. Watch for changes
     await server.watch_directory(
         project_path,
-        auto_index=True
+        recursive=True,
+        file_patterns=["*.py", "*.js", "*.md"]
     )
 ```
 
@@ -679,13 +732,17 @@ async def health_check():
     
     try:
         await server.initialize()
-        stats = await server.get_stats()
+        
+        # Get stats from individual components
+        indexer_stats = server.indexer.get_stats()
+        cache_stats = server.cache.get_stats()
+        # Note: graph stats may vary by implementation
         
         print("✅ Server Status: Healthy")
-        print(f"📊 Documents: {stats['indexer']['total_documents']}")
-        print(f"📦 Chunks: {stats['indexer']['total_chunks']}")
-        print(f"💾 Cache Hit Rate: {stats['cache']['hit_rate']:.1%}")
-        print(f"🔗 Graph Nodes: {stats['graph']['nodes']}")
+        print(f"📊 Documents: {indexer_stats.get('total_documents', 0)}")
+        print(f"📦 Chunks: {indexer_stats.get('total_chunks', 0)}")
+        print(f"💾 Cache Hit Rate: {cache_stats.get('hit_rate', 0):.1%}")
+        print(f"🔗 Graph available: {hasattr(server, 'graph') and server.graph is not None}")
         
     except Exception as e:
         print(f"❌ Health Check Failed: {e}")

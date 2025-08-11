@@ -551,9 +551,10 @@ class DocumentProcessor:
             for para in paragraphs:
                 para_words = para.split()
                 para_size = len(para_words)
+                para_char_size = len(para)
                 
-                # If a single paragraph is too large, split it
-                if para_size > self.chunk_config.max_chunk_size:
+                # If a single paragraph is too large (by characters), split it
+                if para_char_size > self.chunk_config.max_chunk_size:
                     # First, save any accumulated chunks
                     if current_chunk:
                         chunks.append(self._create_chunk(
@@ -566,19 +567,33 @@ class DocumentProcessor:
                         current_chunk = []
                         current_size = 0
                     
-                    # Split the large paragraph into smaller chunks
-                    for i in range(0, len(para_words), self.chunk_config.max_chunk_size - self.chunk_config.chunk_overlap):
-                        chunk_words = para_words[i:i + self.chunk_config.max_chunk_size]
-                        if chunk_words:
+                    # Split the large paragraph into smaller chunks by characters
+                    para_text = para
+                    start = 0
+                    while start < len(para_text):
+                        end = start + self.chunk_config.max_chunk_size
+                        if end >= len(para_text):
+                            chunk_content = para_text[start:]
+                        else:
+                            # Try to break at word boundary
+                            chunk_content = para_text[start:end]
+                            last_space = chunk_content.rfind(' ')
+                            if last_space > 0 and last_space > start + self.chunk_config.max_chunk_size // 2:
+                                chunk_content = para_text[start:start + last_space]
+                                end = start + last_space
+                        
+                        if chunk_content.strip():
                             chunks.append(self._create_chunk(
-                                content=' '.join(chunk_words),
+                                content=chunk_content.strip(),
                                 chunk_type="semantic",
                                 chunk_index=len(chunks),
                                 source=source_path,
                                 paragraph_count=1,
                                 is_split=True
                             ))
-                elif current_size + para_size > self.chunk_config.max_chunk_size:
+                        
+                        start = end - self.chunk_config.chunk_overlap if end < len(para_text) else end
+                elif current_size + para_char_size > self.chunk_config.max_chunk_size:
                     if current_chunk:
                         chunks.append(self._create_chunk(
                             content='\n\n'.join(current_chunk),
@@ -588,20 +603,47 @@ class DocumentProcessor:
                             paragraph_count=len(current_chunk)
                         ))
                     current_chunk = [para]
-                    current_size = para_size
+                    current_size = para_char_size
                 else:
                     current_chunk.append(para)
-                    current_size += para_size
+                    current_size += para_char_size
             
             # Add final chunk
             if current_chunk:
-                chunks.append(self._create_chunk(
-                    content='\n\n'.join(current_chunk),
-                    chunk_type="semantic",
-                    chunk_index=len(chunks),
-                    source=source_path,
-                    paragraph_count=len(current_chunk)
-                ))
+                final_content = '\n\n'.join(current_chunk)
+                # If final chunk is still too large, split it
+                if len(final_content) > self.chunk_config.max_chunk_size:
+                    start = 0
+                    while start < len(final_content):
+                        end = start + self.chunk_config.max_chunk_size
+                        if end >= len(final_content):
+                            chunk_content = final_content[start:]
+                        else:
+                            chunk_content = final_content[start:end]
+                            last_space = chunk_content.rfind(' ')
+                            if last_space > 0:
+                                chunk_content = final_content[start:start + last_space]
+                                end = start + last_space
+                        
+                        if chunk_content.strip():
+                            chunks.append(self._create_chunk(
+                                content=chunk_content.strip(),
+                                chunk_type="semantic",
+                                chunk_index=len(chunks),
+                                source=source_path,
+                                paragraph_count=len(current_chunk),
+                                is_split=True
+                            ))
+                        
+                        start = end - self.chunk_config.chunk_overlap if end < len(final_content) else end
+                else:
+                    chunks.append(self._create_chunk(
+                        content=final_content,
+                        chunk_type="semantic",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        paragraph_count=len(current_chunk)
+                    ))
         else:
             # Simple token-based chunking
             words = content.split()

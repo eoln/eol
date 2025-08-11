@@ -160,44 +160,45 @@ document:
 ## MCP Tools
 
 ### Index Directory
-Index a directory of documents with optional file watching:
+Index a directory of documents with hierarchical structure:
 
 ```typescript
 {
-  "tool": "index_directory",
+  "tool": "index_folder",
   "params": {
-    "path": "/path/to/docs",
+    "folder_path": "/path/to/docs",
     "recursive": true,
     "file_patterns": ["*.md", "*.py"],
-    "watch": true
+    "source_id": "optional_source_id"
   }
 }
 ```
 
 ### Search Context
-Search for relevant context:
+Search for relevant context using vector similarity:
 
 ```typescript
 {
-  "tool": "search_context",
+  "tool": "vector_search",
   "params": {
     "query": "How does authentication work?",
-    "max_results": 10,
-    "min_relevance": 0.7
+    "hierarchy_level": 3,
+    "k": 10,
+    "min_score": 0.7
   }
 }
 ```
 
 ### Query Knowledge Graph
-Explore the knowledge graph:
+Explore entity relationships:
 
 ```typescript
 {
-  "tool": "query_knowledge_graph",
+  "tool": "query_subgraph",
   "params": {
     "query": "authentication system",
     "max_depth": 2,
-    "max_entities": 20
+    "include_relationships": true
   }
 }
 ```
@@ -207,11 +208,12 @@ Monitor a directory for changes:
 
 ```typescript
 {
-  "tool": "watch_directory",
+  "tool": "watch_folder",
   "params": {
-    "path": "/path/to/project",
+    "folder_path": "/path/to/project",
     "recursive": true,
-    "file_patterns": ["*.py", "*.md"]
+    "file_patterns": ["*.py", "*.md"],
+    "debounce_seconds": 2
   }
 }
 ```
@@ -222,21 +224,21 @@ Monitor a directory for changes:
 Retrieve optimized context for a query:
 
 ```
-GET context://query/how%20does%20authentication%20work
+GET context://search/{query}
 ```
 
 ### List Sources
 List all indexed sources:
 
 ```
-GET context://sources
+GET sources://list
 ```
 
 ### Get Statistics
 Get server statistics:
 
 ```
-GET context://stats
+GET stats://server
 ```
 
 ## Architecture

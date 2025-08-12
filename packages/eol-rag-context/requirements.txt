@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # Core Python utilities
-pydantic>=2.0.0
+pydantic>=2.11.7
 pydantic-settings>=2.0.0
 typer>=0.15.2  # Required by fastmcp>=2.0.0
 rich>=13.0.0

@@ -4,6 +4,7 @@ Unit tests for document indexer.
 
 import hashlib
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -103,7 +104,8 @@ class TestDocumentIndexer:
 
         assert result.file_count > 0
         assert result.total_chunks > 0
-        assert result.path == folder
+        # Use resolve() to handle symlinks on macOS
+        assert result.path.resolve() == folder.resolve()
 
     @pytest.mark.asyncio
     async def test_extract_concepts(self, indexed_documents, sample_documents):
@@ -142,12 +144,12 @@ class TestDocumentIndexer:
         processor = DocumentProcessor(test_config.document, test_config.chunking)
         indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
 
-        # Index a file
-        py_file = sample_documents["python"]
-        await indexer.index_file(py_file)
+        # Index a folder (not just a file) to create a source
+        folder = sample_documents["python"].parent
+        await indexer.index_folder(folder, recursive=False)
 
         # Get source ID
-        source_id = indexer.scanner.generate_source_id(py_file.parent)
+        source_id = indexer.scanner.generate_source_id(folder)
 
         # Remove source
         success = await indexer.remove_source(source_id)
@@ -175,4 +177,5 @@ class TestDocumentIndexer:
         sources = await indexer.list_sources()
 
         assert len(sources) > 0
-        assert sources[0].path == folder
+        # Use resolve() to handle symlinks on macOS
+        assert sources[0].path.resolve() == folder.resolve()

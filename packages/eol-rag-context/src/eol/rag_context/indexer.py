@@ -1396,7 +1396,7 @@ class DocumentIndexer:
 
         # Delete source metadata
         source_key = f"source:{source_id}"
-        self.redis.redis.delete(source_key)
+        deleted += self.redis.redis.delete(source_key)
 
         # Delete file metadata
         cursor = 0

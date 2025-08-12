@@ -248,12 +248,12 @@ class DocumentProcessor:
             import tree_sitter_typescript
 
             languages = {
-                "python": Language(tree_sitter_python.language(), "python"),
-                "javascript": Language(tree_sitter_javascript.language(), "javascript"),
-                "typescript": Language(tree_sitter_typescript.language_typescript(), "typescript"),
-                "rust": Language(tree_sitter_rust.language(), "rust"),
-                "go": Language(tree_sitter_go.language(), "go"),
-                "java": Language(tree_sitter_java.language(), "java"),
+                "python": Language(tree_sitter_python.language()),
+                "javascript": Language(tree_sitter_javascript.language()),
+                "typescript": Language(tree_sitter_typescript.language_typescript()),
+                "rust": Language(tree_sitter_rust.language()),
+                "go": Language(tree_sitter_go.language()),
+                "java": Language(tree_sitter_java.language()),
             }
 
             for ext, lang in lang_map.items():

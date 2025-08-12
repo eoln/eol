@@ -24,7 +24,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     
     # MCP server
-    "fastmcp>=2.0.0",
+    "fastmcp[email]>=2.0.0",
     
     # Async support
     "aiofiles>=23.0.0",

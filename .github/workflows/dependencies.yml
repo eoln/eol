@@ -56,8 +56,10 @@ jobs:
           source .venv/bin/activate
           # Install dependencies directly with pip for now
           # TODO: Fix uv sync issue with fastmcp version resolution
+          # Install our requirements first to get correct versions
           pip install -r packages/eol-rag-context/requirements.txt
-          pip install -r requirements/dev.txt
+          # Then install dev dependencies without downgrading
+          pip install --upgrade -r requirements/dev.txt
       
       - name: Check dependency conflicts
         run: |

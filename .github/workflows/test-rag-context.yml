@@ -59,7 +59,7 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}/packages/eol-rag-context/src
       run: |
-        python -m pytest tests/test_config.py tests/test_embeddings.py tests/test_force_coverage.py \
+        python -m pytest tests/test_config.py tests/test_embeddings.py tests/test_document_processor.py tests/test_indexer.py \
           --cov=eol.rag_context \
           --cov-report=term \
           --cov-report=xml \

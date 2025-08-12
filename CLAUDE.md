@@ -235,6 +235,21 @@ async def health_check() -> Dict[str, Any]:
 - Use `eol --help` for CLI documentation
 - Refer to test files for usage examples
 
+## CI/CD Best Practices
+
+### Always Check PR Status After Pushing
+**IMPORTANT**: After pushing any changes, immediately check PR checks status to discover CI/CD failures ASAP:
+```bash
+gh pr checks <PR_NUMBER>  # Check status of all checks
+gh run list --branch <BRANCH>  # List recent workflow runs
+gh run view <RUN_ID> --log-failed  # View failed job logs
+```
+
+This allows you to:
+- Fix issues quickly before they block merges
+- Catch environment-specific problems (e.g., Python version differences)
+- Ensure tests pass in the CI environment, not just locally
+
 ## Contributing
 
 When contributing to EOL:
@@ -242,7 +257,8 @@ When contributing to EOL:
 2. Write tests for new features
 3. Update documentation
 4. Ensure CI passes
-5. Request review before merging
+5. **Check PR status immediately after pushing**
+6. Request review before merging
 
 ---
 

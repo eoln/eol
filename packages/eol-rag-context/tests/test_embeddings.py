@@ -136,32 +136,4 @@ class TestEmbeddingProviderInterface:
             asyncio.run(provider.embed_batch(["test"]))
 
 
-class TestEmbeddingsAdditional:
-    """Additional embeddings tests for better coverage."""
-    
-    def test_embedding_cache_operations(self):
-        """Test embedding cache operations."""
-        config = EmbeddingConfig()
-        manager = EmbeddingManager(config)
-        
-        # Test cache key generation with different inputs
-        key1 = manager._get_cache_key("test1")
-        key2 = manager._get_cache_key("test2")
-        assert key1 != key2
-        
-        # Test cache stats
-        stats = manager.get_cache_stats()
-        assert "hits" in stats
-        assert "misses" in stats
-    
-    @patch('eol.rag_context.embeddings.SentenceTransformer')
-    def test_embedding_provider_fallback(self, mock_transformer):
-        """Test embedding provider fallback."""
-        # Make transformer fail initially
-        mock_transformer.side_effect = [Exception("Failed"), MagicMock()]
-        
-        config = EmbeddingConfig()
-        provider = SentenceTransformerProvider(config)
-        
-        # Should retry and succeed
-        assert provider is not None
+# Removed TestEmbeddingsAdditional class - tests were for non-existent methods

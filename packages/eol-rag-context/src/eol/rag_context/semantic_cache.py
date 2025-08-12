@@ -49,7 +49,7 @@ import hashlib
 import json
 import logging
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -230,7 +230,7 @@ class SemanticCache:
             # Create dedicated cache index
             await self.redis.async_redis.ft("cache_index").info()
             logger.info("Cache index already exists")
-        except:
+        except Exception:
             # Create new cache index
             from redis.commands.search.field import NumericField, TextField, VectorField
             from redis.commands.search.index_definition import IndexDefinition, IndexType
@@ -409,7 +409,7 @@ class SemanticCache:
         # Set TTL
         self.redis.redis.expire(cache_key, self.config.ttl_seconds)
 
-        logger.debug(f"Cached response for query")
+        logger.debug("Cached response for query")
 
     async def _search_similar(
         self, query_embedding: np.ndarray, k: int = 5
@@ -581,7 +581,8 @@ class SemanticCache:
 
                 self.stats["threshold_adjustments"] += 1
                 logger.info(
-                    f"Adjusted cache threshold to {self.adaptive_threshold:.3f} (hit rate: {current_hit_rate:.3f})"
+                    f"Adjusted cache threshold to {self.adaptive_threshold:.3f} "
+                    f"(hit rate: {current_hit_rate:.3f})"
                 )
 
     def get_stats(self) -> Dict[str, Any]:
@@ -697,7 +698,8 @@ class SemanticCache:
 
         Example:
             >>> report = await cache.optimize()
-            >>> print(f"Hit rate: {report['current_hit_rate']:.1%} (target: {report['target_hit_rate']:.1%})")
+            >>> print(f"Hit rate: {report['current_hit_rate']:.1%} "
+            ...       f"(target: {report['target_hit_rate']:.1%})")
             >>> print(f"Current threshold: {report['current_threshold']:.3f}")
             >>> print(f"Recommended threshold: {report.get('recommended_threshold', 'N/A')}")
             >>>
@@ -740,7 +742,8 @@ class SemanticCache:
 
             if abs(recommended_threshold - self.adaptive_threshold) > 0.05:
                 report["recommendations"].append(
-                    f"Adjust threshold from {self.adaptive_threshold:.3f} to {recommended_threshold:.3f}"
+                    f"Adjust threshold from {self.adaptive_threshold:.3f} to "
+                    f"{recommended_threshold:.3f}"
                 )
 
         # Check cache size
@@ -749,7 +752,8 @@ class SemanticCache:
 
         if cache_size > self.config.max_cache_size * 0.9:
             report["recommendations"].append(
-                f"Cache near capacity ({cache_size}/{self.config.max_cache_size}), consider increasing max_cache_size"
+                f"Cache near capacity ({cache_size}/{self.config.max_cache_size}), "
+                f"consider increasing max_cache_size"
             )
 
         # Check TTL effectiveness

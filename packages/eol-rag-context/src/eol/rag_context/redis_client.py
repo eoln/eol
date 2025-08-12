@@ -38,7 +38,6 @@ Example:
     >>> await store.store_document(doc)
 """
 
-import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -418,7 +417,7 @@ class RedisVectorStore:
                 # Check if index exists
                 self.redis.ft(index_name).info()
                 logger.info(f"Index {index_name} already exists")
-            except:
+            except Exception:
                 # Create new index
                 definition = IndexDefinition(prefix=[schema["prefix"]], index_type=IndexType.HASH)
 
@@ -573,13 +572,13 @@ class RedisVectorStore:
         # Add filters if provided
         if filters:
             filter_clauses = []
-            for field, value in filters.items():
+            for field_name, value in filters.items():
                 if isinstance(value, str):
                     # For TAG fields, escape special characters properly
                     # Redis TAGs need values wrapped in { } with no escaping inside
-                    filter_clauses.append(f"@{field}:{{{value}}}")
+                    filter_clauses.append(f"@{field_name}:{{{value}}}")
                 elif isinstance(value, (int, float)):
-                    filter_clauses.append(f"@{field}:[{value} {value}]")
+                    filter_clauses.append(f"@{field_name}:[{value} {value}]")
 
             if filter_clauses:
                 query_str = f"({' '.join(filter_clauses)}) {query_str}"

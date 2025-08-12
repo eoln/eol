@@ -60,14 +60,13 @@ Example:
 
 import asyncio
 import hashlib
-import json
 import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 try:
     from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -1001,9 +1000,12 @@ class FileWatcher:
         Example:
             >>> stats = watcher.get_stats()
             >>> print(f"System Status: {stats['is_running']} ({stats['mode']} mode)")
-            >>> print(f"Activity: {stats['changes_processed']}/{stats['changes_detected']} changes processed")
-            >>> print(f"Performance: {stats['reindex_count']} reindex ops, {stats['errors']} errors")
-            >>> print(f"Current Load: {stats['pending_changes']} pending, {stats['watched_sources']} sources")
+            >>> print(f"Activity: {stats['changes_processed']}/"
+            ...       f"{stats['changes_detected']} changes processed")
+            >>> print(f"Performance: {stats['reindex_count']} reindex ops, "
+            ...       f"{stats['errors']} errors")
+            >>> print(f"Current Load: {stats['pending_changes']} pending, "
+            ...       f"{stats['watched_sources']} sources")
 
             >>> # Calculate success rate
             >>> if stats['changes_detected'] > 0:

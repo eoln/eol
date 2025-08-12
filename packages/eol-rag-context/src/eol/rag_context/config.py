@@ -25,7 +25,7 @@ Example:
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -164,11 +164,11 @@ class EmbeddingConfig(BaseSettings):
             - text-embedding-3-small: 1536
             - text-embedding-3-large: 3072
         """
-        provider = (
-            info.data.get("provider", "sentence-transformers")
-            if hasattr(info, "data")
-            else "sentence-transformers"
-        )
+        # provider = (
+        #     info.data.get("provider", "sentence-transformers")
+        #     if hasattr(info, "data")
+        #     else "sentence-transformers"
+        # )
         model = info.data.get("model_name", "") if hasattr(info, "data") else ""
 
         # Known model dimensions

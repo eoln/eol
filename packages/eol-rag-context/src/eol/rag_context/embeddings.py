@@ -7,7 +7,6 @@ import hashlib
 
 # from sentence_transformers import SentenceTransformer  # Optional dependency
 import logging
-import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Union
 

@@ -26,18 +26,15 @@ Example:
     >>> print(f"Indexed {result.indexed_files} files with {result.total_chunks} chunks")
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 import gitignore_parser
-import numpy as np
 
 from .config import RAGConfig
 from .document_processor import DocumentProcessor, ProcessedDocument
@@ -1457,7 +1454,7 @@ class DocumentIndexer:
                 if cursor == 0:
                     break
             stats["sources"] = source_count
-        except:
+        except Exception:
             stats["sources"] = 0
 
         return stats

@@ -47,14 +47,14 @@ Example:
     ...     print(f"Pattern: {pattern['pattern']} (support: {pattern['support']:.1%})")
 """
 
-import asyncio
 import hashlib
 import json
 import logging
+import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 import networkx as nx
 import numpy as np
@@ -267,7 +267,9 @@ class KnowledgeSubgraph:
         Processing a query subgraph:
 
         >>> subgraph = await kg_builder.query_subgraph("database connections")
-        >>> print(f"Found {len(subgraph.entities)} entities, {len(subgraph.relationships)} relationships")
+        >>> entities_count = len(subgraph.entities)
+        >>> relationships_count = len(subgraph.relationships)
+        >>> print(f"Found {entities_count} entities, {relationships_count} relationships")
         >>>
         >>> # Focus on central entities first
         >>> central = [e for e in subgraph.entities if e.id in subgraph.central_entities]
@@ -329,7 +331,9 @@ class KnowledgeGraphBuilder:
         >>>
         >>> # Get comprehensive statistics
         >>> stats = kg_builder.get_graph_stats()
-        >>> print(f"Graph: {stats['entity_count']} entities, {stats['relationship_count']} relationships")
+        >>> entities = stats['entity_count']
+        >>> relationships = stats['relationship_count']
+        >>> print(f"Graph: {entities} entities, {relationships} relationships")
         >>> print(f"Density: {stats['density']:.3f}, Components: {stats['connected_components']}")
         >>>
         >>> # Query for specific information
@@ -418,7 +422,8 @@ class KnowledgeGraphBuilder:
         await self._store_graph()
 
         logger.info(
-            f"Built knowledge graph with {len(self.entities)} entities and {len(self.relationships)} relationships"
+            f"Built knowledge graph with {len(self.entities)} entities and "
+            f"{len(self.relationships)} relationships"
         )
 
     async def _extract_document_entities(
@@ -530,11 +535,11 @@ class KnowledgeGraphBuilder:
         if language == "python":
             func_pattern = r"def\s+(\w+)\s*\("
             class_pattern = r"class\s+(\w+)\s*[\(:]"
-            import_pattern = r"(?:from\s+[\w.]+\s+)?import\s+([\w,\s]+)"
+            # import_pattern = r"(?:from\s+[\w.]+\s+)?import\s+([\w,\s]+)"
         elif language in ["javascript", "typescript"]:
             func_pattern = r"(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s+)?\(|\()"
             class_pattern = r"class\s+(\w+)"
-            import_pattern = r'import\s+.*from\s+[\'"](.+)[\'"]'
+            # import_pattern = r'import\s+.*from\s+[\'"](.+)[\'"]'
         else:
             return
 
@@ -677,7 +682,6 @@ class KnowledgeGraphBuilder:
     async def _extract_code_entities(self, source_id: Optional[str] = None) -> None:
         """Extract code-specific entities from indexed code files."""
         # This is handled in _extract_code_entities_from_content
-        pass
 
     async def _extract_conceptual_entities(self, source_id: Optional[str] = None) -> None:
         """Extract high-level conceptual entities."""
@@ -720,7 +724,6 @@ class KnowledgeGraphBuilder:
     async def _build_structural_relationships(self) -> None:
         """Build structural relationships (parent-child, contains, etc.)."""
         # Already built during entity extraction
-        pass
 
     async def _build_semantic_relationships(self) -> None:
         """Build semantic relationships using vector embedding similarity.
@@ -771,7 +774,7 @@ class KnowledgeGraphBuilder:
     async def _build_code_relationships(self) -> None:
         """Build code-specific relationships (calls, imports, etc.)."""
         # Analyze function and class relationships
-        functions = [e for e in self.entities.values() if e.type == EntityType.FUNCTION]
+        # functions = [e for e in self.entities.values() if e.type == EntityType.FUNCTION]
         classes = [e for e in self.entities.values() if e.type == EntityType.CLASS]
 
         # Build inheritance relationships (simplified)
@@ -974,7 +977,6 @@ class KnowledgeGraphBuilder:
             Scans all entities in Redis, which may be slow for large graphs.
             Could be optimized with dedicated vector search index.
         """
-        relevant = []
 
         # Search in stored entities
         pattern = "kg_entity:*"
@@ -1196,10 +1198,7 @@ class KnowledgeGraphBuilder:
                         "communities": dict(communities),
                     }
                 )
-            except:
+            except Exception:
                 pass  # Community detection not available
 
         return patterns
-
-
-import time  # Add this import at the top of the file

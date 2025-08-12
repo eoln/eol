@@ -3,7 +3,6 @@ EOL RAG Context MCP Server.
 """
 
 import asyncio
-import json
 import logging
 from datetime import datetime
 from pathlib import Path

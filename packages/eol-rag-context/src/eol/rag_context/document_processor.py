@@ -69,14 +69,12 @@ Example:
     ...     print(f"  Metadata: {list(doc.metadata.keys())}")
 """
 
-import asyncio
-import hashlib
 import json
 import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import aiofiles
 import magic
@@ -87,7 +85,6 @@ from docx import Document as DocxDocument
 
 # Optional tree-sitter for AST parsing
 try:
-    import tree_sitter
     from tree_sitter import Language, Parser
 
     TREE_SITTER_AVAILABLE = True
@@ -303,7 +300,8 @@ class DocumentProcessor:
             >>> python_doc = await processor.process_file(Path("main.py"))
             >>> if python_doc:
             ...     print(f"Language: {python_doc.language}")
-            ...     print(f"Functions found: {len([c for c in python_doc.chunks if 'function' in c['type']]))}")
+            ...     func_chunks = [c for c in python_doc.chunks if 'function' in c['type']]
+            ...     print(f"Functions found: {len(func_chunks)}")
             >>>
             >>> # Process Markdown with header-based chunking
             >>> md_doc = await processor.process_file(Path("README.md"))
@@ -873,7 +871,7 @@ class DocumentProcessor:
 
             for para in paragraphs:
                 para_words = para.split()
-                para_size = len(para_words)
+                len(para_words)
                 para_char_size = len(para)
 
                 # If a single paragraph is too large (by characters), split it

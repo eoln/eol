@@ -53,28 +53,30 @@ def redis_config() -> RedisConfig:
 @pytest.fixture
 def redis_store() -> Mock:
     """Create mock Redis store for unit tests."""
+
     # Use a class to hold the state
     class MockRedisState:
         def __init__(self):
             self.stored_data = {}
-    
+
     state = MockRedisState()
-    
+
     def mock_hset(key, mapping=None, **kwargs):
         """Mock hset to store data with byte keys."""
         if mapping:
             state.stored_data[key] = {
-                k.encode() if isinstance(k, str) else k: 
-                str(v).encode() if not isinstance(v, bytes) else v 
+                k.encode() if isinstance(k, str) else k: (
+                    str(v).encode() if not isinstance(v, bytes) else v
+                )
                 for k, v in mapping.items()
             }
         return 1
-    
+
     def mock_hgetall(key):
         """Mock hgetall to return stored data."""
         result = state.stored_data.get(key, {})
         return result
-    
+
     def mock_delete(*keys):
         """Mock delete to remove keys."""
         deleted = 0
@@ -83,25 +85,25 @@ def redis_store() -> Mock:
                 del state.stored_data[key]
                 deleted += 1
         return deleted
-    
+
     def mock_keys(pattern):
         """Mock keys to return matching keys."""
-        prefix = pattern.replace('*', '')
+        prefix = pattern.replace("*", "")
         matching = [k for k in state.stored_data.keys() if k.startswith(prefix)]
         # Always return byte-encoded keys
         return [k.encode() if isinstance(k, str) else k for k in matching]
-    
+
     def mock_scan(cursor=0, match=None, count=100):
         """Mock scan to return matching keys."""
         if match:
-            prefix = match.replace('*', '')
+            prefix = match.replace("*", "")
             matching_keys = [k for k in state.stored_data.keys() if k.startswith(prefix)]
         else:
             matching_keys = list(state.stored_data.keys())
         # Always return byte-encoded keys in scan results
         encoded_keys = [k.encode() if isinstance(k, str) else k for k in matching_keys]
         return (0, encoded_keys)  # Return cursor 0 to indicate end
-    
+
     store = Mock()
     store.connect = Mock()
     store.connect_async = AsyncMock()
@@ -134,7 +136,7 @@ def redis_store() -> Mock:
     redis_client_mock.expire = Mock()
     redis_client_mock.scan = Mock(side_effect=mock_scan)
     redis_client_mock.hincrby = Mock()
-    
+
     store.redis = redis_client_mock
 
     # Store methods

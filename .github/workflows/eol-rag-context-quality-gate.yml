@@ -6,6 +6,11 @@ on:
     paths:
       - 'packages/eol-rag-context/**'
       - '.github/workflows/eol-rag-context-quality-gate.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/eol-rag-context/**'
+      - '.github/workflows/eol-rag-context-quality-gate.yml'
 
 env:
   PACKAGE_PATH: packages/eol-rag-context

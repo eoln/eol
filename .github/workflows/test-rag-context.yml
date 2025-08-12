@@ -6,6 +6,11 @@ on:
     paths:
       - 'packages/eol-rag-context/**'
       - '.github/workflows/test-rag-context.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'packages/eol-rag-context/**'
+      - '.github/workflows/test-rag-context.yml'
 
 jobs:
   test:

@@ -258,8 +258,7 @@ class DocumentProcessor:
 
             for ext, lang in lang_map.items():
                 if lang in languages:
-                    parser = Parser()
-                    parser.set_language(languages[lang])
+                    parser = Parser(languages[lang])
                     parsers[ext] = parser
         except ImportError as e:
             logger.warning(f"Some tree-sitter languages not available: {e}")

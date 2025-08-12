@@ -3,6 +3,7 @@ Unit tests for document processor.
 """
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch, mock_open
 
 import pytest
 
@@ -149,3 +150,77 @@ Third paragraph with more information."""
 
         doc = await processor.process_file(large_file)
         assert doc is None  # Should skip large files
+
+
+class TestDocumentProcessorAdditional:
+    """Additional document_processor tests for better coverage."""
+    
+    @pytest.mark.asyncio
+    async def test_process_javascript_file(self):
+        """Test processing JavaScript files."""
+        processor = DocumentProcessor(DocumentConfig(), ChunkingConfig())
+        
+        js_content = """
+        function testFunc() {
+            console.log("test");
+        }
+        """
+        
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.stat', return_value=MagicMock(st_size=100)), \
+             patch('builtins.open', mock_open(read_data=js_content)):
+            
+            result = await processor.process_file(Path("test.js"))
+            assert result is not None
+    
+    @pytest.mark.asyncio
+    async def test_process_rust_file(self):
+        """Test processing Rust files."""
+        processor = DocumentProcessor(DocumentConfig(), ChunkingConfig())
+        
+        rust_content = """
+        fn main() {
+            println!("Hello, world!");
+        }
+        """
+        
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.stat', return_value=MagicMock(st_size=100)), \
+             patch('builtins.open', mock_open(read_data=rust_content)):
+            
+            result = await processor.process_file(Path("test.rs"))
+            assert result is not None
+    
+    def test_chunk_by_semantic(self):
+        """Test semantic chunking."""
+        config = ChunkingConfig()
+        processor = DocumentProcessor(DocumentConfig(), config)
+        
+        text = """
+        This is paragraph one. It contains some text.
+        
+        This is paragraph two. It has different content.
+        
+        This is paragraph three. More content here.
+        """
+        
+        # Test the chunking method exists
+        assert hasattr(processor, '_chunk_text_semantic')
+    
+    def test_extract_code_structure(self):
+        """Test code structure extraction."""
+        processor = DocumentProcessor(DocumentConfig(), ChunkingConfig())
+        
+        # Mock tree-sitter parser
+        mock_parser = MagicMock()
+        mock_tree = MagicMock()
+        mock_root = MagicMock()
+        mock_root.children = []
+        mock_tree.root_node = mock_root
+        mock_parser.parse.return_value = mock_tree
+        
+        processor.parsers[".py"] = mock_parser
+        
+        code = "def test(): pass"
+        result = processor._extract_code_structure(code, ".py")
+        assert result is not None

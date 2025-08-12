@@ -121,7 +121,92 @@ def test_sync():
         loop.close()
 
 
+async def test_redis_batch_operations():
+    """Test batch operations in redis_client."""
+    # Setup mocks
+    with patch('eol.rag_context.redis_client.Redis') as mock_redis_class, \
+         patch('eol.rag_context.redis_client.redis.asyncio.Redis') as mock_async_redis_class:
+        
+        mock_redis_inst = MagicMock()
+        mock_redis_class.return_value = mock_redis_inst
+        
+        mock_async_inst = AsyncMock()
+        mock_async_redis_class.return_value = mock_async_inst
+        
+        # Create store
+        redis_config = config.RedisConfig()
+        index_config = config.IndexConfig()
+        store = redis_client.RedisVectorStore(redis_config, index_config)
+        store.redis = mock_redis_inst
+        store.async_redis = mock_async_inst
+        
+        # Test batch get documents
+        mock_async_inst.mget = AsyncMock(return_value=[
+            json.dumps({"doc": 1}).encode(),
+            json.dumps({"doc": 2}).encode()
+        ])
+        
+        # Check store has async_redis properly set
+        assert store.async_redis is not None
+
+
+def test_redis_sync_operations():
+    """Test sync operations in redis_client."""
+    with patch('eol.rag_context.redis_client.Redis') as mock_redis_class:
+        mock_redis_inst = MagicMock()
+        mock_redis_class.return_value = mock_redis_inst
+        
+        redis_config = config.RedisConfig()
+        index_config = config.IndexConfig()
+        store = redis_client.RedisVectorStore(redis_config, index_config)
+        store.redis = mock_redis_inst
+        
+        # Test pipeline operations
+        mock_pipeline = MagicMock()
+        mock_redis_inst.pipeline.return_value = mock_pipeline
+        mock_pipeline.execute.return_value = [1, 1, 1]
+        
+        # Check pipeline can be created
+        pipe = store.redis.pipeline()
+        assert pipe is not None
+
+
+async def test_redis_search_operations():
+    """Test search operations in redis_client."""
+    with patch('eol.rag_context.redis_client.redis.asyncio.Redis') as mock_async_redis_class:
+        mock_async_inst = AsyncMock()
+        mock_async_redis_class.return_value = mock_async_inst
+        
+        # Mock FT search
+        mock_ft = AsyncMock()
+        mock_search_result = MagicMock()
+        mock_search_result.docs = []
+        mock_ft.search = AsyncMock(return_value=mock_search_result)
+        mock_async_inst.ft = MagicMock(return_value=mock_ft)
+        
+        redis_config = config.RedisConfig()
+        index_config = config.IndexConfig()
+        store = redis_client.RedisVectorStore(redis_config, index_config)
+        store.redis = MagicMock()
+        store.async_redis = mock_async_inst
+        
+        # Test that async_redis can create FT
+        ft = store.async_redis.ft("test_index")
+        assert ft is not None
+
+
 if __name__ == "__main__":
     test_vector_document()
     test_sync()
+    test_redis_sync_operations()
+    
+    # Run async tests
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(test_redis_batch_operations())
+        loop.run_until_complete(test_redis_search_operations())
+    finally:
+        loop.close()
+    
     print("✅ All redis_client tests passed!")

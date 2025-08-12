@@ -15,10 +15,11 @@ import pytest
 from eol.rag_context.file_watcher import (
     ChangeType,
     FileChange,
-    FileChangeHandler,
     FileWatcher,
     WatchedSource,
 )
+# Import separately to avoid mocking issues
+from eol.rag_context.file_watcher import FileChangeHandler
 
 
 class TestChangeType:

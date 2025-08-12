@@ -3,10 +3,10 @@
 # Generated: 2025-08-11
 
 # Core dependencies
-pydantic==2.5.3
-pydantic-settings==2.1.0
-typer==0.9.0
-rich==13.7.0
+pydantic>=2.11.7
+pydantic-settings>=2.1.0
+typer>=0.15.2
+rich>=13.9.4
 aiofiles==23.2.1
 numpy==1.24.4
 pyyaml==6.0.1

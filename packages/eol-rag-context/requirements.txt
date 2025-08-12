@@ -21,7 +21,7 @@ watchdog>=3.0.0
 redis>=5.0.0
 
 # MCP server
-fastmcp>=2.0.0
+fastmcp[email]>=2.0.0
 
 # Document processing
 beautifulsoup4>=4.12.0

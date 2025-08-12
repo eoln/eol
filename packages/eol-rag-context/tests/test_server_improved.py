@@ -72,9 +72,9 @@ async def test_server_initialize_method():
         patch("eol.rag_context.server.EmbeddingManager") as MockEmb,
         patch("eol.rag_context.server.DocumentProcessor") as MockProc,
         patch("eol.rag_context.server.DocumentIndexer") as MockIdx,
-        patch("eol.rag_context.server.SemanticCache") as MockCache,
-        patch("eol.rag_context.server.KnowledgeGraphBuilder") as MockGraph,
-        patch("eol.rag_context.server.FileWatcher") as MockWatcher,
+        patch("eol.rag_context.server.SemanticCache"),
+        patch("eol.rag_context.server.KnowledgeGraphBuilder"),
+        patch("eol.rag_context.server.FileWatcher"),
     ):
 
         mock_mcp = MagicMock()
@@ -481,7 +481,7 @@ async def test_request_models():
         path="/test/dir", watch=True, ignore_patterns=["*.pyc", "__pycache__"]
     )
     assert req.path == "/test/dir"
-    assert req.watch == True
+    assert req.watch is True
     assert len(req.ignore_patterns) == 2
 
     # Test SearchContextRequest
@@ -505,4 +505,4 @@ async def test_request_models():
         path="/test", patterns=["*.py"], ignore=["*.pyc"], recursive=True
     )
     assert req.path == "/test"
-    assert req.recursive == True
+    assert req.recursive is True

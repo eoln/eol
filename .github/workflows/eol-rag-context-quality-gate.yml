@@ -342,21 +342,21 @@ jobs:
         
         if [ -f integration-test-results.xml ]; then
           python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('integration-test-results.xml')
-          root = tree.getroot()
-          tests = int(root.get('tests', 0))
-          failures = int(root.get('failures', 0))
-          errors = int(root.get('errors', 0))
-          passed = tests - failures - errors
-          
-          print(f'📊 Integration Tests: {passed}/{tests} passed ({passed/tests*100:.1f}%)')
-          
-          if failures > 0 or errors > 0:
-              print(f'❌ {failures} failures, {errors} errors')
-          else:
-              print('✅ All integration tests passed!')
-          "
+import xml.etree.ElementTree as ET
+tree = ET.parse('integration-test-results.xml')
+root = tree.getroot()
+tests = int(root.get('tests', 0))
+failures = int(root.get('failures', 0))
+errors = int(root.get('errors', 0))
+passed = tests - failures - errors
+
+print(f'📊 Integration Tests: {passed}/{tests} passed ({passed/tests*100:.1f}%)')
+
+if failures > 0 or errors > 0:
+    print(f'❌ {failures} failures, {errors} errors')
+else:
+    print('✅ All integration tests passed!')
+"
         fi
     
     - name: Upload integration test results
@@ -481,6 +481,11 @@ jobs:
         uv pip install --system pytest pytest-asyncio pytest-cov
         uv pip install --system -r requirements.txt
         uv pip install --system sentence-transformers aioredis  # Additional for coverage tests
+    
+    - name: Install Redis CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y redis-tools
     
     - name: Wait for Redis
       run: |

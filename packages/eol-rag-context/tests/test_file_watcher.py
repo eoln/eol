@@ -359,7 +359,8 @@ class TestFileWatcher:
             assert source_id in file_watcher.watched_sources
             
             watched = file_watcher.watched_sources[source_id]
-            assert watched.path == path
+            # Handle macOS symlink resolution (/var -> /private/var)
+            assert watched.path.resolve() == path.resolve()
             assert watched.recursive is True
             assert watched.file_patterns == ["*.py"]
             
@@ -490,8 +491,8 @@ class TestFileWatcher:
             change_type=ChangeType.DELETED
         )
         
-        # Mock Redis scan for cleanup
-        mock_indexer.redis.redis.scan = MagicMock(
+        # Mock Redis scan for cleanup - needs to be AsyncMock since it's awaited
+        mock_indexer.redis.redis.scan = AsyncMock(
             side_effect=[(0, [b"chunk:abc123", b"chunk:def456"])]
         )
         mock_indexer.redis.redis.delete = AsyncMock()

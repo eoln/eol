@@ -188,33 +188,37 @@ class TestKnowledgeGraphBuilder:
     @pytest.mark.asyncio
     async def test_extract_markdown_entities(self, kg_builder):
         """Test markdown entity extraction."""
-        markdown_content = """
-        # Main Section
-        This is a main section about authentication.
+        markdown_content = """# Main Section
+This is a main section about authentication.
+
+## Authentication Methods
+We support multiple methods:
+- OAuth2
+- JWT tokens
+
+```python
+def authenticate(user):
+    return validate_token(user.token)
+```
+
+See [documentation](https://example.com/docs) for more details.
+"""
         
-        ## Authentication Methods
-        We support multiple methods:
-        - OAuth2
-        - JWT tokens
+        # Mock document scanning - method modifies kg_builder state
+        await kg_builder._extract_markdown_entities(markdown_content, "doc1", {"source_id": "test_source"})
         
-        ```python
-        def authenticate(user):
-            return validate_token(user.token)
-        ```
+        # Should extract topics from headers - check in kg_builder.entities
+        topic_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TOPIC]
+        assert len(topic_entities) >= 2  # Should have "Main Section" and "Authentication Methods"
         
-        See [documentation](https://example.com/docs) for more details.
-        """
-        
-        # Mock document scanning
-        entities = await kg_builder._extract_markdown_entities(markdown_content, "doc1", {})
-        
-        # Should extract topics from headers
-        topic_entities = [e for e in entities if e.type == EntityType.TOPIC]
-        assert len(topic_entities) > 0
+        # Verify specific headers were extracted
+        topic_names = [e.name for e in topic_entities]
+        assert any("Main Section" in name for name in topic_names)
+        assert any("Authentication Methods" in name for name in topic_names)
         
         # Should extract code blocks as API entities
-        api_entities = [e for e in entities if e.type == EntityType.API]
-        assert len(api_entities) > 0
+        api_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.API]
+        assert len(api_entities) >= 1  # Should have the python code block
 
     @pytest.mark.asyncio
     async def test_extract_code_entities_python(self, kg_builder):
@@ -248,17 +252,18 @@ class TestKnowledgeGraphBuilder:
             cleanup_session(session_id)
         """
         
-        entities = await kg_builder._extract_code_entities_from_content(
-            python_code, "auth_module", {"language": "python", "file_type": "code"}
+        # Method modifies kg_builder state, doesn't return entities
+        await kg_builder._extract_code_entities_from_content(
+            python_code, "auth_module", {"language": "python", "file_type": "code", "source_id": "test_source"}
         )
         
-        # Should extract class entities
-        class_entities = [e for e in entities if e.type == EntityType.CLASS]
+        # Should extract class entities - check in kg_builder.entities
+        class_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.CLASS]
         assert len(class_entities) >= 1
         assert any("AuthenticationManager" in e.name for e in class_entities)
         
         # Should extract function entities
-        function_entities = [e for e in entities if e.type == EntityType.FUNCTION]
+        function_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.FUNCTION]
         assert len(function_entities) >= 2  # authenticate, create_session, logout, etc.
 
     @pytest.mark.asyncio
@@ -271,14 +276,15 @@ class TestKnowledgeGraphBuilder:
         Python Library includes utilities for data processing.
         """
         
-        entities = await kg_builder._extract_text_entities(text_content, "doc1", {})
+        # Method modifies kg_builder state, doesn't return entities
+        await kg_builder._extract_text_entities(text_content, "doc1", {"source_id": "test_source"})
         
-        # Should extract technology entities
-        tech_entities = [e for e in entities if e.type == EntityType.TECHNOLOGY]
+        # Should extract technology entities - check in kg_builder.entities
+        tech_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TECHNOLOGY]
         assert len(tech_entities) > 0
         
         # Should extract term entities
-        term_entities = [e for e in entities if e.type == EntityType.TERM]
+        term_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TERM]
         assert len(term_entities) > 0
 
     @pytest.mark.asyncio

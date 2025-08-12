@@ -191,6 +191,8 @@ class TestSemanticCache:
         semantic_cache.stats["hits"] = 31
         semantic_cache.adaptive_threshold = 0.87
         
+        # Update stats to calculate hit_rate
+        semantic_cache._update_stats()
         stats = semantic_cache.get_stats()
         
         assert stats["queries"] == 100
@@ -251,6 +253,11 @@ class TestSemanticCache:
         semantic_cache.config.adaptive_threshold = True
         semantic_cache.adaptive_threshold = 0.83  # Below minimum
         
+        # Set up conditions for clamping: need >= 100 similarity scores and significant hit rate difference
+        semantic_cache.similarity_scores = [0.8] * 100
+        semantic_cache.stats["queries"] = 200
+        semantic_cache.stats["hits"] = 40  # 20% hit rate, far from target 31%
+        
         semantic_cache._update_stats()
         
         # Should be clamped to minimum of 0.85
@@ -258,6 +265,8 @@ class TestSemanticCache:
         
         # Test upper bound
         semantic_cache.adaptive_threshold = 1.01  # Above maximum
+        semantic_cache.stats["hits"] = 80  # 40% hit rate, above target
+        
         semantic_cache._update_stats()
         
         # Should be clamped to maximum of 0.99

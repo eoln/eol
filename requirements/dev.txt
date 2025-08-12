@@ -34,5 +34,5 @@ docformatter>=1.7.0
 
 # Security scanning
 pip-audit>=2.6.0
-safety>=3.0.0
+# safety>=3.0.0  # Commented out - conflicts with pydantic>=2.11.7 required by fastmcp
 bandit>=1.7.0

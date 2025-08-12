@@ -58,9 +58,7 @@ jobs:
           # TODO: Fix uv sync issue with fastmcp version resolution
           # Install our requirements first to get correct versions
           pip install -r packages/eol-rag-context/requirements.txt
-          # Force reinstall fastmcp with email extra if needed
-          pip install --force-reinstall "fastmcp[email]>=2.11.3"
-          # Then install dev dependencies 
+          # Then install dev dependencies (safety excluded due to pydantic conflict)
           pip install -r requirements/dev.txt
       
       - name: Check dependency conflicts

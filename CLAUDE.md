@@ -44,6 +44,44 @@ The core RAG service that provides:
 - **MCP**: `fastmcp` for Model Context Protocol
 - **Testing**: `pytest`, `pytest-asyncio`
 
+## Nested CLAUDE.md Architecture
+
+The `.claude/` folder uses nested CLAUDE.md files for directory-specific behavior:
+- Each subdirectory may contain its own CLAUDE.md with local rules
+- Subdirectory rules override parent rules for that context
+- Always check for local CLAUDE.md when entering directories
+
+## Context Engineering
+
+Four strategies for effective AI assistance:
+- **WRITE**: Persistent memory via `.claude/plans/`
+- **SELECT**: Dynamic context loading from `.claude/context/`
+- **COMPRESS**: Optimize context window usage (<80%)
+- **ISOLATE**: Respect directory and security boundaries
+
+## Planning Methodology
+
+- Use structured plans in `.claude/plans/`
+- Follow state lifecycle: draft → ready → pending → completed
+- ALWAYS create dedicated git branch for plan execution (e.g., feat/plan-name)
+- Update task status immediately (never batch)
+- Mark completions in real-time
+- Create PR when plan moves to completed state
+
+## Command Patterns
+
+- Load commands from `.claude/commands/` for common workflows
+- PRP (Product Requirements Prompt) commands for implementation blueprints
+- Quality commands for validation and checks
+- Commands include prerequisites and success criteria
+
+## Python Environment
+
+- ALWAYS activate virtual environment before running scripts
+- Use `source .venv/bin/activate` or appropriate venv activation
+- Prefer `uv` for package management and environment handling
+- Never install packages globally - always use venv
+
 ## Project Structure
 
 ```
@@ -57,7 +95,12 @@ eol/
 │   ├── eol-cli/        # CLI interface (planned)
 │   └── eol-sdk/        # Python SDK for RAG apps (planned)
 ├── examples/           # Example RAG applications
-└── .claude/context/    # Technical documentation
+└── .claude/            # AI assistant context and commands
+    ├── CLAUDE.md       # Directory-specific rules
+    ├── context/        # Domain-specific knowledge
+    ├── plans/          # Task planning with states
+    ├── commands/       # Reusable command patterns
+    └── findings/       # Research and investigation reports
 ```
 
 ## Code Style and Conventions

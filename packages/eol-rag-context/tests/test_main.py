@@ -25,11 +25,11 @@ class TestMainCLI:
         mock_server_instance.run = MagicMock()
         mock_server.return_value = mock_server_instance
         mock_asyncio.run = MagicMock()
-        
+
         # Mock sys.argv to have just the script name
         with patch("sys.argv", ["eol-rag-context"]):
             main.main()
-            
+
             # Verify server was created with default config
             mock_config.assert_called_once()
             mock_server.assert_called_once()
@@ -45,11 +45,11 @@ class TestMainCLI:
         mock_server_instance.run = MagicMock()
         mock_server.return_value = mock_server_instance
         mock_asyncio.run = MagicMock()
-        
+
         # Mock sys.argv with config file
         with patch("sys.argv", ["eol-rag-context", "config.json"]):
             main.main()
-            
+
             # Verify server was created with file config
             mock_config.from_file.assert_called_once()
             mock_server.assert_called_once()
@@ -62,12 +62,12 @@ class TestMainCLI:
         """Test main entry point with config loading error."""
         mock_path.return_value = MagicMock()
         mock_config.from_file.side_effect = Exception("Config error")
-        
+
         def exit_side_effect(code):
             if code == 1:
                 raise SystemExit(code)  # Raise exception for error exit
             return None
-        
+
         with patch("sys.argv", ["eol-rag-context", "bad_config.json"]):
             with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
                 with patch("builtins.print"):
@@ -84,7 +84,7 @@ class TestMainCLI:
         mock_server_instance = MagicMock()
         mock_server.return_value = mock_server_instance
         mock_asyncio.run.side_effect = Exception("Server error")
-        
+
         with patch("sys.argv", ["eol-rag-context"]):
             with patch("sys.exit") as mock_exit:
                 main.main()
@@ -92,11 +92,12 @@ class TestMainCLI:
 
     def test_help_output(self):
         """Test help message display."""
+
         def exit_side_effect(code):
             if code == 0:
                 raise SystemExit(code)  # Raise exception for help exit
             return None  # Let other sys.exit calls be mocked normally
-            
+
         with patch("sys.argv", ["eol-rag-context", "--help"]):
             with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
                 with patch("builtins.print") as mock_print:
@@ -107,11 +108,12 @@ class TestMainCLI:
 
     def test_help_output_short_flag(self):
         """Test help message display with -h flag."""
+
         def exit_side_effect(code):
             if code == 0:
                 raise SystemExit(code)  # Raise exception for help exit
             return None  # Let other sys.exit calls be mocked normally
-            
+
         with patch("sys.argv", ["eol-rag-context", "-h"]):
             with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
                 with patch("builtins.print") as mock_print:
@@ -119,4 +121,3 @@ class TestMainCLI:
                         main.main()
                     assert exc_info.value.code == 0
                     mock_print.assert_called()
-

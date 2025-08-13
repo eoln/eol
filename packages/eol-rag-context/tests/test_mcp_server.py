@@ -91,13 +91,14 @@ class TestMCPServer:
         """Test index_directory MCP tool."""
         # Test the server's API compatibility method directly
         from eol.rag_context.server import IndexDirectoryRequest
-        
+
         request = IndexDirectoryRequest(path="/test/path", recursive=True, watch=False)
-        
+
         # Call the tool method directly since MCP internals are complex
         from fastmcp.server.context import Context, _current_context
+
         _current_context.set(Context(fastmcp=server.mcp))
-        
+
         # The tool is registered, so we can test by calling server methods directly
         result = await server.index_directory(request.path, recursive=request.recursive)
 
@@ -111,10 +112,10 @@ class TestMCPServer:
         """Test search context functionality via server methods."""
         # Test the search functionality by calling server methods directly
         query = "test query"
-        
+
         # The search will use the mocked redis_store.hierarchical_search
         results = server.redis_store.hierarchical_search.return_value
-        
+
         # Verify the mock is set up correctly
         assert results is not None
         assert len(results) > 0
@@ -125,26 +126,26 @@ class TestMCPServer:
         """Test knowledge graph functionality via server methods."""
         # Test the knowledge graph functionality
         query = "test query"
-        
+
         # The KG query will use the mocked knowledge_graph.query_subgraph
         kg_result = server.knowledge_graph.query_subgraph.return_value
-        
+
         # Verify the mock is set up correctly
         assert kg_result is not None
-        assert hasattr(kg_result, 'entities')
-        assert hasattr(kg_result, 'relationships')
-        assert hasattr(kg_result, 'central_entities')
-        assert hasattr(kg_result, 'metadata')
+        assert hasattr(kg_result, "entities")
+        assert hasattr(kg_result, "relationships")
+        assert hasattr(kg_result, "central_entities")
+        assert hasattr(kg_result, "metadata")
 
     @pytest.mark.asyncio
     async def test_watch_directory_functionality(self, server):
         """Test watch directory functionality via server methods."""
         # Test the watch functionality using the server's API method
         path = "/test/path"
-        
+
         # Call the server's watch_directory API method
         result = await server.watch_directory(path)
-        
+
         # The mock file_watcher should return success
         assert result["status"] == "success"
         assert result["path"] == path
@@ -156,7 +157,7 @@ class TestMCPServer:
         assert server.semantic_cache is not None
         assert server.redis_store is not None
         assert server.embedding_manager is not None
-        
+
         # Test that the cache get method is mocked
         cache_result = await server.semantic_cache.get("test query")
         assert cache_result is None  # Based on our mock setup
@@ -176,11 +177,11 @@ class TestMCPServer:
         indexer_stats = server.indexer.get_stats()
         assert isinstance(indexer_stats, dict)
         assert "documents_indexed" in indexer_stats
-        
+
         cache_stats = server.semantic_cache.get_stats()
         assert isinstance(cache_stats, dict)
         assert "hits" in cache_stats
-        
+
         embedding_stats = server.embedding_manager.get_cache_stats()
         assert isinstance(embedding_stats, dict)
         assert "hits" in embedding_stats
@@ -190,12 +191,12 @@ class TestMCPServer:
         """Test that prompt methods exist and work."""
         # Test that the server has been properly initialized with MCP components
         assert server.mcp is not None
-        
+
         # Just verify that the server's MCP instance can be used
-        assert hasattr(server.mcp, 'name')
+        assert hasattr(server.mcp, "name")
         assert server.mcp.name == server.config.server_name
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_component_integration(self, server):
         """Test that all server components are properly integrated."""
         # Test that all the mocked components are accessible
@@ -264,7 +265,7 @@ class TestMCPServerIntegration:
         # Test that the cache operations work
         await server.semantic_cache.clear()
         await server.embedding_manager.clear_cache()
-        
+
         server.semantic_cache.clear.assert_called_once()
         server.embedding_manager.clear_cache.assert_called_once()
 
@@ -273,10 +274,10 @@ class TestMCPServerIntegration:
         """Test source removal functionality."""
         # Set up the remove_source mock to return True
         server.indexer.remove_source = AsyncMock(return_value=True)
-        
+
         # Test removing a source
         source_id = "source_123"
         success = await server.indexer.remove_source(source_id)
-        
+
         assert success is True
         server.indexer.remove_source.assert_called_once_with(source_id)

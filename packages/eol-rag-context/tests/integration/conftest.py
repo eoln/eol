@@ -7,7 +7,6 @@ import asyncio
 import os
 import sys
 import tempfile
-import time
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
 
@@ -106,12 +105,10 @@ from eol.rag_context import (
     config,
     document_processor,
     embeddings,
-    file_watcher,
     indexer,
     knowledge_graph,
     redis_client,
     semantic_cache,
-    server,
 )
 
 
@@ -173,7 +170,7 @@ async def redis_store(redis_config):
         if cache_keys:
             await store.async_redis.delete(*cache_keys)
         await store.close()
-    except:
+    except Exception:
         pass
 
 
@@ -252,7 +249,7 @@ def hello_world():
 class TestClass:
     def __init__(self):
         self.value = 42
-    
+
     def get_value(self):
         return self.value
 """

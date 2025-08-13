@@ -68,7 +68,7 @@ async def test_redis_vector_store_complete():
         metadata={"type": "test", "source": "unit_test"},
         hierarchy_level=2,
     )
-    
+
     # Verify document was created properly
     assert doc.id == "doc1"
     assert doc.content == "Test content with enough text to be meaningful"
@@ -77,8 +77,8 @@ async def test_redis_vector_store_complete():
     assert doc.hierarchy_level == 2
 
     # Test that the store exists and has expected attributes
-    assert hasattr(store, 'redis_config')
-    assert hasattr(store, 'index_config')
+    assert hasattr(store, "redis_config")
+    assert hasattr(store, "index_config")
     assert store.redis_config.host == "localhost"
     assert store.redis_config.port == 6379
 
@@ -92,7 +92,7 @@ async def test_edge_cases():
     # Test that store is created in disconnected state
     assert store.redis is None
     assert store.async_redis is None
-    
+
     # Test creating documents with edge case data
     doc = redis_client.VectorDocument(
         id="edge_case",
@@ -101,7 +101,7 @@ async def test_edge_cases():
         metadata={},  # Empty metadata
         hierarchy_level=1,
     )
-    
+
     assert doc.id == "edge_case"
     assert doc.content == ""
     assert len(doc.embedding) == 0

@@ -53,7 +53,7 @@ class TestRelationType:
         """Test relationship type categorization."""
         structural_types = {RelationType.CONTAINS, RelationType.PART_OF}
         semantic_types = {RelationType.SIMILAR_TO, RelationType.RELATES_TO}
-        
+
         assert RelationType.CONTAINS in structural_types
         assert RelationType.SIMILAR_TO in semantic_types
 
@@ -64,7 +64,7 @@ class TestEntity:
     def test_entity_creation(self):
         """Test Entity creation with all fields."""
         embedding = np.array([0.1, 0.2, 0.3], dtype=np.float32)
-        
+
         entity = Entity(
             id="func_test_function",
             name="test_function",
@@ -72,9 +72,9 @@ class TestEntity:
             content="def test_function(): pass",
             embedding=embedding,
             properties={"language": "python", "line_count": 1},
-            source_ids={"src_123", "src_456"}
+            source_ids={"src_123", "src_456"},
         )
-        
+
         assert entity.id == "func_test_function"
         assert entity.name == "test_function"
         assert entity.type == EntityType.FUNCTION
@@ -85,12 +85,8 @@ class TestEntity:
 
     def test_entity_defaults(self):
         """Test Entity with default values."""
-        entity = Entity(
-            id="doc_test",
-            name="Test Document",
-            type=EntityType.DOCUMENT
-        )
-        
+        entity = Entity(id="doc_test", name="Test Document", type=EntityType.DOCUMENT)
+
         assert entity.content == ""
         assert entity.embedding is None
         assert entity.properties == {}
@@ -104,12 +100,12 @@ class TestRelationship:
         """Test Relationship creation."""
         relationship = Relationship(
             source_id="func_a",
-            target_id="func_b", 
+            target_id="func_b",
             type=RelationType.CALLS,
             weight=0.8,
-            properties={"call_count": 5, "context": "main_flow"}
+            properties={"call_count": 5, "context": "main_flow"},
         )
-        
+
         assert relationship.source_id == "func_a"
         assert relationship.target_id == "func_b"
         assert relationship.type == RelationType.CALLS
@@ -119,11 +115,9 @@ class TestRelationship:
     def test_relationship_defaults(self):
         """Test Relationship with default values."""
         relationship = Relationship(
-            source_id="entity1",
-            target_id="entity2",
-            type=RelationType.RELATES_TO
+            source_id="entity1", target_id="entity2", type=RelationType.RELATES_TO
         )
-        
+
         assert relationship.weight == 1.0
         assert relationship.properties == {}
 
@@ -135,20 +129,18 @@ class TestKnowledgeSubgraph:
         """Test KnowledgeSubgraph creation."""
         entities = [
             Entity(id="e1", name="Entity 1", type=EntityType.CONCEPT),
-            Entity(id="e2", name="Entity 2", type=EntityType.FUNCTION)
+            Entity(id="e2", name="Entity 2", type=EntityType.FUNCTION),
         ]
-        
-        relationships = [
-            Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)
-        ]
-        
+
+        relationships = [Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)]
+
         subgraph = KnowledgeSubgraph(
             entities=entities,
             relationships=relationships,
             central_entities=["e1"],
-            metadata={"query": "test query", "depth": 2}
+            metadata={"query": "test query", "depth": 2},
         )
-        
+
         assert len(subgraph.entities) == 2
         assert len(subgraph.relationships) == 1
         assert subgraph.central_entities == ["e1"]
@@ -183,7 +175,7 @@ class TestKnowledgeGraphBuilder:
         assert kg_builder.embeddings == mock_embedding_manager
         assert kg_builder.entities == {}
         assert kg_builder.relationships == []
-        assert hasattr(kg_builder, 'graph')
+        assert hasattr(kg_builder, "graph")
 
     @pytest.mark.asyncio
     async def test_extract_markdown_entities(self, kg_builder):
@@ -203,19 +195,21 @@ def authenticate(user):
 
 See [documentation](https://example.com/docs) for more details.
 """
-        
+
         # Mock document scanning - method modifies kg_builder state
-        await kg_builder._extract_markdown_entities(markdown_content, "doc1", {"source_id": "test_source"})
-        
+        await kg_builder._extract_markdown_entities(
+            markdown_content, "doc1", {"source_id": "test_source"}
+        )
+
         # Should extract topics from headers - check in kg_builder.entities
         topic_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TOPIC]
         assert len(topic_entities) >= 2  # Should have "Main Section" and "Authentication Methods"
-        
+
         # Verify specific headers were extracted
         topic_names = [e.name for e in topic_entities]
         assert any("Main Section" in name for name in topic_names)
         assert any("Authentication Methods" in name for name in topic_names)
-        
+
         # Should extract code blocks as API entities
         api_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.API]
         assert len(api_entities) >= 1  # Should have the python code block
@@ -251,19 +245,23 @@ See [documentation](https://example.com/docs) for more details.
             '''Logout user session.'''
             cleanup_session(session_id)
         """
-        
+
         # Method modifies kg_builder state, doesn't return entities
         await kg_builder._extract_code_entities_from_content(
-            python_code, "auth_module", {"language": "python", "file_type": "code", "source_id": "test_source"}
+            python_code,
+            "auth_module",
+            {"language": "python", "file_type": "code", "source_id": "test_source"},
         )
-        
+
         # Should extract class entities - check in kg_builder.entities
         class_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.CLASS]
         assert len(class_entities) >= 1
         assert any("AuthenticationManager" in e.name for e in class_entities)
-        
+
         # Should extract function entities
-        function_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.FUNCTION]
+        function_entities = [
+            e for e in kg_builder.entities.values() if e.type == EntityType.FUNCTION
+        ]
         assert len(function_entities) >= 2  # authenticate, create_session, logout, etc.
 
     @pytest.mark.asyncio
@@ -275,14 +273,14 @@ See [documentation](https://example.com/docs) for more details.
         The System Administrator configures security settings.
         Python Library includes utilities for data processing.
         """
-        
+
         # Method modifies kg_builder state, doesn't return entities
         await kg_builder._extract_text_entities(text_content, "doc1", {"source_id": "test_source"})
-        
+
         # Should extract technology entities - check in kg_builder.entities
         tech_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TECHNOLOGY]
         assert len(tech_entities) > 0
-        
+
         # Should extract term entities
         term_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TERM]
         assert len(term_entities) > 0
@@ -294,7 +292,7 @@ See [documentation](https://example.com/docs) for more details.
         embedding1 = np.array([0.8, 0.6, 0.1], dtype=np.float32)
         embedding2 = np.array([0.9, 0.5, 0.2], dtype=np.float32)  # Similar to embedding1
         embedding3 = np.array([0.1, 0.2, 0.9], dtype=np.float32)  # Different from others
-        
+
         entity1 = Entity(
             id="e1", name="Auth Function", type=EntityType.FUNCTION, embedding=embedding1
         )
@@ -304,26 +302,26 @@ See [documentation](https://example.com/docs) for more details.
         entity3 = Entity(
             id="e3", name="Database Config", type=EntityType.CONCEPT, embedding=embedding3
         )
-        
+
         kg_builder.entities = {"e1": entity1, "e2": entity2, "e3": entity3}
         kg_builder.graph.add_node("e1")
-        kg_builder.graph.add_node("e2") 
+        kg_builder.graph.add_node("e2")
         kg_builder.graph.add_node("e3")
-        
+
         await kg_builder._build_semantic_relationships()
-        
+
         # Should create relationships between similar entities
         similar_relationships = [
             r for r in kg_builder.relationships if r.type == RelationType.SIMILAR_TO
         ]
-        
+
         # Check that similar entities (e1, e2) have a relationship
         e1_e2_rel = any(
-            (r.source_id == "e1" and r.target_id == "e2") or
-            (r.source_id == "e2" and r.target_id == "e1")
+            (r.source_id == "e1" and r.target_id == "e2")
+            or (r.source_id == "e2" and r.target_id == "e1")
             for r in similar_relationships
         )
-        
+
         # Relationship should exist if similarity is high enough
         if e1_e2_rel:
             assert len(similar_relationships) > 0
@@ -333,28 +331,29 @@ See [documentation](https://example.com/docs) for more details.
         """Test code-specific relationship building."""
         # Create class entities
         base_class = Entity(
-            id="class_base", name="BaseAuth", type=EntityType.CLASS,
-            content="Base authentication class"
+            id="class_base",
+            name="BaseAuth",
+            type=EntityType.CLASS,
+            content="Base authentication class",
         )
         derived_class = Entity(
-            id="class_derived", name="ExtendedAuth", type=EntityType.CLASS,
-            content="Extended authentication that inherits BaseAuth"
+            id="class_derived",
+            name="ExtendedAuth",
+            type=EntityType.CLASS,
+            content="Extended authentication that inherits BaseAuth",
         )
-        
-        kg_builder.entities = {
-            "class_base": base_class,
-            "class_derived": derived_class
-        }
+
+        kg_builder.entities = {"class_base": base_class, "class_derived": derived_class}
         kg_builder.graph.add_node("class_base")
         kg_builder.graph.add_node("class_derived")
-        
+
         await kg_builder._build_code_relationships()
-        
+
         # Should create inheritance relationships
         extends_relationships = [
             r for r in kg_builder.relationships if r.type == RelationType.EXTENDS
         ]
-        
+
         # Check if inheritance relationship was detected
         # (This is a simplified test - real implementation might be more sophisticated)
         assert isinstance(extends_relationships, list)  # Basic check that it runs
@@ -365,17 +364,17 @@ See [documentation](https://example.com/docs) for more details.
         # Set up test entities
         entity1 = Entity(id="e1", name="Authentication", type=EntityType.CONCEPT)
         entity2 = Entity(id="e2", name="login_function", type=EntityType.FUNCTION)
-        
+
         kg_builder.entities = {"e1": entity1, "e2": entity2}
         kg_builder.graph.add_node("e1")
         kg_builder.graph.add_node("e2")
         kg_builder.graph.add_edge("e1", "e2", type="contains", weight=1.0)
-        
+
         # Mock finding relevant entities
         kg_builder._find_relevant_entities = AsyncMock(return_value=["e1"])
-        
+
         subgraph = await kg_builder.query_subgraph("authentication", max_depth=2, max_entities=10)
-        
+
         assert isinstance(subgraph, KnowledgeSubgraph)
         assert subgraph.central_entities == ["e1"]
         assert len(subgraph.entities) > 0
@@ -386,20 +385,18 @@ See [documentation](https://example.com/docs) for more details.
         # Add test entities and relationships
         entity1 = Entity(id="e1", name="Test Entity 1", type=EntityType.FUNCTION)
         entity2 = Entity(id="e2", name="Test Entity 2", type=EntityType.CLASS)
-        
+
         kg_builder.entities = {"e1": entity1, "e2": entity2}
-        
-        relationship1 = Relationship(
-            source_id="e1", target_id="e2", type=RelationType.CONTAINS
-        )
+
+        relationship1 = Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)
         kg_builder.relationships = [relationship1]
-        
+
         kg_builder.graph.add_node("e1")
         kg_builder.graph.add_node("e2")
         kg_builder.graph.add_edge("e1", "e2", type="contains")
-        
+
         stats = kg_builder.get_graph_stats()
-        
+
         assert stats["entity_count"] == 2
         assert stats["relationship_count"] == 1
         assert "entity_types" in stats
@@ -417,34 +414,33 @@ See [documentation](https://example.com/docs) for more details.
             "c1": Entity(id="c1", name="class1", type=EntityType.CLASS),
             "c2": Entity(id="c2", name="class2", type=EntityType.CLASS),
         }
-        
+
         relationships = [
             Relationship("c1", "f1", RelationType.CONTAINS),
             Relationship("c2", "f2", RelationType.CONTAINS),
             Relationship("f1", "f2", RelationType.CALLS),
         ]
-        
+
         kg_builder.entities = entities
         kg_builder.relationships = relationships
-        
+
         # Add to graph
         for entity_id in entities:
             kg_builder.graph.add_node(entity_id)
-        
+
         for rel in relationships:
             kg_builder.graph.add_edge(
-                rel.source_id, rel.target_id, 
-                type=rel.type.value, weight=rel.weight
+                rel.source_id, rel.target_id, type=rel.type.value, weight=rel.weight
             )
-        
+
         patterns = await kg_builder.discover_patterns(min_support=0.1)
-        
+
         assert isinstance(patterns, list)
-        
+
         # Should find relationship patterns
         rel_patterns = [p for p in patterns if "->" in p.get("pattern", "")]
         assert len(rel_patterns) > 0
-        
+
         # Should find hub entities if any exist
         hub_patterns = [p for p in patterns if p.get("pattern") == "hub_entities"]
         # May or may not exist depending on graph structure
@@ -453,14 +449,14 @@ See [documentation](https://example.com/docs) for more details.
     async def test_find_relevant_entities(self, kg_builder, mock_redis_store):
         """Test finding relevant entities by embedding similarity."""
         query_embedding = np.array([0.1, 0.2, 0.3], dtype=np.float32)
-        
+
         # Mock Redis scan operations
         mock_redis_store.redis.scan = MagicMock(
             side_effect=[
                 (0, [b"kg_entity:e1", b"kg_entity:e2"]),
             ]
         )
-        
+
         # Mock entity data with embeddings
         mock_redis_store.redis.hgetall = MagicMock(
             side_effect=[
@@ -468,13 +464,13 @@ See [documentation](https://example.com/docs) for more details.
                 {b"embedding": np.array([0.8, 0.1, 0.1], dtype=np.float32).tobytes()},
             ]
         )
-        
+
         relevant_entities = await kg_builder._find_relevant_entities(query_embedding, k=2)
-        
+
         assert isinstance(relevant_entities, list)
         assert len(relevant_entities) <= 2
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_store_graph(self, kg_builder, mock_redis_store):
         """Test storing graph in Redis."""
         # Add test entities and relationships
@@ -485,20 +481,25 @@ See [documentation](https://example.com/docs) for more details.
             content="test content",
             embedding=np.array([0.1, 0.2], dtype=np.float32),
             properties={"lang": "python"},
-            source_ids={"src1"}
+            source_ids={"src1"},
         )
-        
+
         relationship = Relationship(
-            source_id="e1", target_id="e2", type=RelationType.CALLS,
-            weight=0.8, properties={"freq": 5}
+            source_id="e1",
+            target_id="e2",
+            type=RelationType.CALLS,
+            weight=0.8,
+            properties={"freq": 5},
         )
-        
+
         kg_builder.entities = {"test_entity": entity}
         kg_builder.relationships = [relationship]
-        
+
         mock_redis_store.redis.hset = MagicMock()
-        
+
         await kg_builder._store_graph()
-        
+
         # Verify Redis operations were called
-        assert mock_redis_store.redis.hset.call_count >= 2  # At least entity + relationship + metadata
+        assert (
+            mock_redis_store.redis.hset.call_count >= 2
+        )  # At least entity + relationship + metadata

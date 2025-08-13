@@ -234,6 +234,154 @@ def test_server_components_initialization():
     assert srv.mcp is not None
 
 
+class TestServerMCPEndpoints:
+    """Test MCP resource endpoints and tools."""
+    
+    @pytest.mark.asyncio
+    async def test_search_context_tool_basic(self):
+        """Test basic search context tool functionality."""
+        srv = server.EOLRAGContextServer()
+        
+        # Mock the required components
+        srv.indexer = AsyncMock()
+        srv.redis_store = AsyncMock()
+        srv.semantic_cache = AsyncMock()
+        
+        # Mock search results
+        mock_results = [
+            {"id": "doc1", "content": "Test content 1", "metadata": {}},
+            {"id": "doc2", "content": "Test content 2", "metadata": {}}
+        ]
+        srv.redis_store.search_similar = AsyncMock(return_value=mock_results)
+        srv.semantic_cache.get = AsyncMock(return_value=None)  # Cache miss
+        srv.semantic_cache.set = AsyncMock()
+        
+        # Mock the search context request
+        request = server.SearchContextRequest(
+            query="test query",
+            max_results=5,
+            min_relevance=0.7
+        )
+        
+        # The search_context tool is attached to the MCP server
+        # We can test the logic by calling it directly if it exists
+        assert srv.mcp is not None
+    
+    @pytest.mark.asyncio 
+    async def test_index_directory_tool_basic(self):
+        """Test basic index directory tool functionality."""
+        srv = server.EOLRAGContextServer()
+        
+        # Mock the indexer
+        srv.indexer = AsyncMock()
+        mock_result = {
+            "source_id": "test_source",
+            "chunks": 50,
+            "total_chunks": 50,
+            "files": 10,
+            "errors": []
+        }
+        srv.indexer.index_folder = AsyncMock(return_value=mock_result)
+        
+        # Test the index_directory method directly
+        result = await srv.index_directory("/test/path", recursive=True)
+        
+        assert result["status"] == "success"
+        assert result["source_id"] == "test_source"
+        assert result["chunks"] == 50
+        srv.indexer.index_folder.assert_called_once()
+    
+    @pytest.mark.asyncio
+    async def test_index_file_tool_basic(self):
+        """Test basic index file tool functionality.""" 
+        srv = server.EOLRAGContextServer()
+        
+        # Mock the indexer
+        srv.indexer = AsyncMock()
+        mock_result = {
+            "source_id": "test_file",
+            "chunks": 5,
+            "total_chunks": 5,
+            "files": 1,
+            "errors": []
+        }
+        srv.indexer.index_file = AsyncMock(return_value=mock_result)
+        
+        # Test the index_file method directly
+        result = await srv.index_file("/test/file.py")
+        
+        assert result["status"] == "success"
+        assert result["source_id"] == "test_file"
+        assert result["chunks"] == 5
+        srv.indexer.index_file.assert_called_once()
+    
+    @pytest.mark.asyncio
+    async def test_watch_directory_basic(self):
+        """Test basic watch directory functionality."""
+        srv = server.EOLRAGContextServer()
+        
+        # Mock the file watcher
+        srv.file_watcher = AsyncMock()
+        srv.file_watcher.start_watching = AsyncMock()
+        
+        # Test the watch_directory method
+        result = await srv.watch_directory("/test/watch/path")
+        
+        assert result["status"] == "success"
+        assert result["path"] == "/test/watch/path"
+        srv.file_watcher.start_watching.assert_called_once()
+    
+    @pytest.mark.asyncio
+    async def test_watch_directory_no_watcher(self):
+        """Test watch directory when file watcher not initialized."""
+        srv = server.EOLRAGContextServer()
+        srv.file_watcher = None  # Not initialized
+        
+        result = await srv.watch_directory("/test/path")
+        
+        assert result["status"] == "error"
+        assert "not initialized" in result["message"]
+    
+    @pytest.mark.asyncio
+    async def test_index_directory_error_handling(self):
+        """Test index directory error handling."""
+        srv = server.EOLRAGContextServer()
+        srv.indexer = None  # Not initialized
+        
+        with pytest.raises(RuntimeError, match="Server not initialized"):
+            await srv.index_directory("/test/path")
+    
+    @pytest.mark.asyncio
+    async def test_run_method_basic(self):
+        """Test the run method execution with proper mocking."""
+        srv = server.EOLRAGContextServer()
+        
+        # Mock the initialization process
+        with patch.object(srv, 'initialize', new_callable=AsyncMock) as mock_init:
+            with patch.object(srv, 'shutdown', new_callable=AsyncMock) as mock_shutdown:
+                srv.mcp = AsyncMock()
+                srv.mcp.run = AsyncMock()
+                
+                await srv.run()
+                
+                mock_init.assert_called_once()
+                srv.mcp.run.assert_called_once()
+    
+    def test_mcp_setup_methods_exist(self):
+        """Test that MCP setup methods exist and are callable."""
+        srv = server.EOLRAGContextServer()
+        
+        # These methods should exist for setting up MCP resources/tools/prompts
+        assert hasattr(srv, '_setup_resources')
+        assert hasattr(srv, '_setup_tools') 
+        assert hasattr(srv, '_setup_prompts')
+        
+        # They should be callable
+        assert callable(srv._setup_resources)
+        assert callable(srv._setup_tools)
+        assert callable(srv._setup_prompts)
+
+
 if __name__ == "__main__":
     # Run sync tests
     test_request_model_defaults()

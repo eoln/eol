@@ -4,6 +4,7 @@ Unit tests for document processor.
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch, mock_open
+import sys
 
 import pytest
 
@@ -756,6 +757,119 @@ Final content."""
         assert chunk["metadata"]["custom_field"] == "custom_value"
         assert chunk["metadata"]["source"] == "test_source"
         assert chunk["metadata"]["language"] == "python"
+
+    def test_init_code_parsers_import_error(self, processor_extra):
+        """Test _init_code_parsers with import errors."""
+        # Mock import errors for tree-sitter modules
+        with patch('eol.rag_context.document_processor.logger') as mock_logger:
+            with patch('builtins.__import__', side_effect=ImportError("tree-sitter not available")):
+                parsers = processor_extra._init_code_parsers()
+                # Should return empty dict when tree-sitter unavailable
+                assert isinstance(parsers, dict)
+
+    def test_init_code_parsers_success(self, processor_extra):
+        """Test successful _init_code_parsers setup."""
+        # Mock tree-sitter modules
+        mock_python = MagicMock()
+        mock_js = MagicMock()
+        mock_ts = MagicMock()
+        
+        with patch.dict('sys.modules', {
+            'tree_sitter_python': mock_python,
+            'tree_sitter_javascript': mock_js,
+            'tree_sitter_typescript': mock_ts,
+            'tree_sitter_rust': MagicMock(),
+            'tree_sitter_go': MagicMock(),
+            'tree_sitter_java': MagicMock(),
+        }):
+            with patch('eol.rag_context.document_processor.Language') as mock_language:
+                with patch('eol.rag_context.document_processor.Parser') as mock_parser:
+                    with patch('eol.rag_context.document_processor.TREE_SITTER_AVAILABLE', True):
+                        parsers = processor_extra._init_code_parsers()
+                        # Should return parser dictionary
+                        assert isinstance(parsers, dict)
+
+    @pytest.mark.asyncio
+    async def test_process_pdf_file_success(self, processor_extra, temp_dir):
+        """Test successful PDF file processing."""
+        # Create a mock PDF file
+        pdf_file = temp_dir / "test.pdf"
+        
+        # Mock PDF processing
+        with patch('eol.rag_context.document_processor.pypdf') as mock_pypdf:
+            # Mock PDF reader
+            mock_reader = MagicMock()
+            mock_page1 = MagicMock()
+            mock_page1.extract_text.return_value = "Page 1 content with enough text to create a meaningful chunk"
+            mock_page2 = MagicMock()
+            mock_page2.extract_text.return_value = "Page 2 content with enough text to create another meaningful chunk"
+            
+            mock_reader.pages = [mock_page1, mock_page2]
+            mock_reader.metadata = {
+                "/Title": "Test PDF",
+                "/Author": "Test Author", 
+                "/Subject": "Test Subject"
+            }
+            mock_pypdf.PdfReader.return_value = mock_reader
+            
+            # Mock file opening
+            with patch('builtins.open', mock_open()):
+                result = await processor_extra._process_pdf(pdf_file)
+            
+            assert result is not None
+            assert result.doc_type == "pdf"
+            assert "Page 1 content" in result.content
+            assert "Page 2 content" in result.content
+            assert result.metadata["pages"] == 2
+            assert result.metadata["title"] == "Test PDF"
+            assert result.metadata["author"] == "Test Author"
+            # PDF processing creates chunks via _chunk_pdf_content
+            # So we expect chunks to be created
+
+    @pytest.mark.asyncio 
+    async def test_process_pdf_file_no_metadata(self, processor_extra, temp_dir):
+        """Test PDF processing without metadata."""
+        pdf_file = temp_dir / "test_no_meta.pdf"
+        
+        with patch('eol.rag_context.document_processor.pypdf') as mock_pypdf:
+            mock_reader = MagicMock()
+            mock_page = MagicMock()
+            mock_page.extract_text.return_value = "Simple page content with enough text"
+            mock_reader.pages = [mock_page]
+            mock_reader.metadata = None  # No metadata
+            mock_pypdf.PdfReader.return_value = mock_reader
+            
+            with patch('builtins.open', mock_open()):
+                result = await processor_extra._process_pdf(pdf_file)
+            
+            assert result is not None
+            assert result.doc_type == "pdf"
+            assert result.metadata["pages"] == 1
+            # Should not have title, author, subject when no metadata
+            assert "title" not in result.metadata or result.metadata.get("title") == ""
+
+    def test_detect_language_extension_mapping(self, processor_extra):
+        """Test language detection from file extensions."""
+        test_cases = [
+            (".py", "python"),
+            (".js", "javascript"),
+            (".jsx", "javascript"),
+            (".ts", "typescript"),
+            (".tsx", "typescript"), 
+            (".rs", "rust"),
+            (".go", "go"),
+            (".java", "java"),
+            (".cpp", "cpp"),
+            (".c", "c"),
+            (".h", "c"),
+            (".rb", "ruby"),
+            (".php", "php"),
+            (".unknown", "text")  # Default fallback
+        ]
+        
+        for suffix, expected_lang in test_cases:
+            detected_lang = processor_extra._detect_language(suffix)
+            assert detected_lang == expected_lang
 
     @pytest.mark.asyncio
     async def test_process_structured_yaml_detailed(self, processor_extra, temp_dir):

@@ -71,11 +71,11 @@ Brief description of what the plan accomplishes
 
 ## Research Summary
 
-### Existing EOL RAG Patterns Found
-- **Package Dependencies**: [Relevant Python packages]
-- **RAG Components**: [Document processors, indexers, searchers]
-- **Redis Patterns**: [Vector operations, caching strategies]
-- **Testing Patterns**: [Pytest fixtures, async test patterns]
+### Existing Codebase Patterns Found
+- **Package Dependencies**: [Relevant project dependencies]
+- **Domain Components**: [Core business logic, data processors, service layers]
+- **Infrastructure Patterns**: [Database operations, caching strategies, external integrations]
+- **Testing Patterns**: [Test framework fixtures, async test patterns]
 
 ### Key Dependencies Identified
 - **Python Packages**: packages/eol-rag-context/
@@ -131,7 +131,7 @@ packages/eol-rag-context/
   - Add type checking with mypy
   - Configure black and isort
 
-### Phase 2: RAG Core Implementation
+### Phase 2: Core Implementation
 - [ ] **Document processing pipeline**
   ```python
   async def process_document(self, doc: Document) -> None:
@@ -179,8 +179,8 @@ packages/eol-rag-context/
   ```
 
 - [ ] **Integration tests**
-  - End-to-end RAG pipeline
-  - Redis connection handling
+  - End-to-end feature pipeline
+  - External service integration
   - Performance benchmarks
 
 ### Phase 5: Performance Optimization
@@ -230,7 +230,7 @@ async def test_indexing_performance(benchmark):
 - **Type Safety**: Strict mypy configuration from start
 
 ## References
-- `.claude/context/rag/` - RAG patterns and best practices
+- `.claude/context/[domain]/` - Domain patterns and best practices
 - `.claude/context/redis/` - Redis optimization strategies
 - `.claude/context/python/` - Python async patterns
 - `packages/eol-rag-context/` - Existing implementations

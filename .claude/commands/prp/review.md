@@ -82,7 +82,7 @@ Recalculate confidence based on:
 - [ ] References to `.claude/context/` accurate
 - [ ] Code examples from actual codebase
 - [ ] Patterns follow established conventions
-- [ ] RAG-specific considerations included
+- [ ] Domain-specific considerations included
 
 ## Update Actions
 

@@ -1,6 +1,6 @@
 # prp-validate - Validate Implementation Quality and Completeness
 
-Comprehensive validation of PRP implementations against quality standards, performance targets, and RAG best practices.
+Comprehensive validation of PRP implementations against quality standards, performance targets, and software engineering best practices.
 
 ## Command Overview
 
@@ -96,7 +96,7 @@ pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 - Edge cases covered
 ```
 
-### 3. RAG Performance Validation
+### 3. Domain Performance Validation
 
 #### Document Processing
 ```python
@@ -217,7 +217,7 @@ assert os.path.exists("rag_context.html")
 3. Add monitoring for cache eviction rates
 
 ## Compliance
-- [x] Follows RAG patterns from context/
+- [x] Follows domain patterns from context/
 - [x] Uses Redis best practices
 - [x] Implements Python async patterns
 - [x] Meets performance targets

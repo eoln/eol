@@ -23,8 +23,8 @@ Product Requirements Prompt (PRP) commands implement a structured context engine
 ### Quick Start Workflow
 
 ```bash
-# 1. Analyze existing RAG patterns
-/prp:analyze "document-processing" "vector-search"
+# 1. Analyze existing codebase patterns
+/prp:analyze "authentication" "jwt-patterns"
 
 # 2. Create implementation blueprint
 /prp:create "enhanced semantic caching with TTL management"
@@ -57,7 +57,7 @@ PRP commands are specifically designed for the **planning and design phase** of 
 ### Context Engineering Layers
 Following the five-layer context engineering architecture:
 - **System Context**: Global project rules and conventions
-- **Domain Context**: Specific technology patterns (RAG, Redis, Python, etc.)
+- **Domain Context**: Specific technology patterns (database, caching, authentication, etc.)
 - **Task Context**: Feature-specific requirements and constraints
 - **Interaction Context**: Implementation workflow and validation gates
 - **Response Context**: Expected outputs and quality criteria
@@ -83,7 +83,7 @@ PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 ### Context Engineering Implementation
 - **Global Rules**: `.claude/CLAUDE.md` provides system-wide context
 - **Domain Knowledge**: `.claude/context/` contains specialized patterns
-- **Technology Context**: RAG, Redis, Python async patterns, and best practices
+- **Technology Context**: Database, caching, authentication patterns, and best practices
 - **Project Intelligence**: Existing codebase patterns and conventions
 - **Validation Framework**: Quality gates and testing requirements
 
@@ -97,8 +97,8 @@ PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 
 Each command includes comprehensive help documentation:
 
-- **analyze.md** - Codebase analysis and RAG pattern extraction
-- **create.md** - PRP generation with Python/RAG focus
+- **analyze.md** - Codebase analysis and pattern extraction
+- **create.md** - PRP generation with context engineering focus
 - **execute.md** - Systematic implementation with validation
 - **validate.md** - Quality assurance and compliance checking
 - **review.md** - Review and update existing PRPs
@@ -112,7 +112,7 @@ Each command includes comprehensive help documentation:
 - Package management with uv
 - Dataclasses and protocols for structure
 
-### RAG Framework Context (Example Domain)
+### Domain-Specific Context (Examples)
 - Document processing and chunking strategies
 - Embedding generation and management
 - Vector search optimization with Redis
@@ -150,7 +150,7 @@ Each command includes comprehensive help documentation:
 ```
 .claude/commands/prp/
 ├── README.md            # This overview
-├── analyze.md          # RAG pattern analysis
+├── analyze.md          # Codebase pattern analysis
 ├── create.md           # PRP generation
 ├── execute.md          # Implementation execution
 ├── validate.md         # Quality validation
@@ -174,13 +174,13 @@ Each command includes comprehensive help documentation:
 - **Type Safety**: Full mypy compliance
 
 ### Development Efficiency
-- **Time to Implementation**: Reduced through RAG pattern reuse
-- **Pattern Reuse**: Leveraging existing Redis/RAG implementations
+- **Time to Implementation**: Reduced through established pattern reuse
+- **Pattern Reuse**: Leveraging existing proven implementations
 - **Integration Success**: Seamless MCP server integration
 
 ### Maintainability
 - **PRP Currency**: Regular review cycles maintain accuracy
-- **Pattern Evolution**: Commands evolve with RAG best practices
+- **Pattern Evolution**: Commands evolve with software development best practices
 - **Documentation Quality**: Living documentation through examples
 
 ## Implementation Notes

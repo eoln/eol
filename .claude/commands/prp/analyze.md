@@ -1,11 +1,11 @@
-# prp-analyze - Extract RAG Patterns and Context
+# prp-analyze - Extract Codebase Patterns and Context
 
-Analyzes the EOL codebase to extract RAG patterns, Redis implementations, and Python best practices for comprehensive context engineering.
+Analyzes any codebase to extract implementation patterns, architectural decisions, and best practices for comprehensive context engineering in PRP development.
 
 ## Command Overview
 
-**Purpose**: Extract and document existing RAG implementation patterns
-**Target**: Python packages with Redis vector database integration
+**Purpose**: Extract and document existing implementation patterns from any codebase
+**Target**: Any software project requiring pattern analysis for context engineering
 **Output**: Pattern analysis saved to `.claude/context/[domain]/patterns.md`
 
 ## Usage
@@ -16,11 +16,12 @@ Analyzes the EOL codebase to extract RAG patterns, Redis implementations, and Py
 
 ### Examples
 ```bash
-# Analyze RAG-specific patterns
-/prp:analyze "document-processing" "chunking-strategies"
-/prp:analyze "vector-search" "redis-operations"
-/prp:analyze "semantic-caching" "ttl-management"
-/prp:analyze "embeddings" "model-providers"
+# Analyze any domain patterns
+/prp:analyze "authentication" "jwt-patterns"
+/prp:analyze "data-processing" "pipeline-operations"
+/prp:analyze "api-design" "error-handling"
+/prp:analyze "database" "connection-pooling"
+/prp:analyze "caching" "redis-operations"
 ```
 
 ## Analysis Process
@@ -28,16 +29,16 @@ Analyzes the EOL codebase to extract RAG patterns, Redis implementations, and Py
 ### 1. Pattern Discovery Phase
 ```bash
 # Search for domain-specific implementations
-grep -r "class.*Chunk" --include="*.py" packages/
-grep -r "async def.*embed" --include="*.py" packages/
-grep -r "redis.*search" --include="*.py" packages/
+grep -r "class.*[Domain]" --include="*.py" src/
+grep -r "async def.*[operation]" --include="*.py" src/
+grep -r "[technology].*[pattern]" --include="*.py" src/
 ```
 
 ### 2. Code Structure Analysis
-- **Python Patterns**: Type hints, async/await, dataclasses
-- **RAG Components**: Document processors, indexers, searchers
-- **Redis Operations**: Vector indexes, pipelines, connection pools
-- **Testing Patterns**: Pytest fixtures, mocks, async tests
+- **Language Patterns**: Type hints, async/await, design patterns, architectural decisions
+- **Domain Components**: Core business logic, data processors, service layers
+- **Infrastructure Operations**: Database patterns, caching strategies, external integrations
+- **Testing Patterns**: Test frameworks, fixtures, mocks, integration strategies
 
 ### 3. Dependency Mapping
 ```bash
@@ -47,10 +48,11 @@ grep -h "^from\|^import" packages/*/src/**/*.py | sort | uniq
 ```
 
 ### 4. Performance Patterns
-- Document indexing throughput patterns
-- Vector search optimization techniques
-- Caching strategies and hit rates
+- Data processing throughput patterns
+- Query optimization techniques
+- Caching strategies and performance metrics
 - Batch operation implementations
+- Concurrency and parallelization patterns
 
 ## Output Format
 
@@ -60,97 +62,98 @@ grep -h "^from\|^import" packages/*/src/**/*.py | sort | uniq
 
 ## Discovered Patterns
 
-### RAG Implementation Patterns
-- **Document Processing**: [List of chunking strategies found]
-- **Embedding Generation**: [Model providers and batch patterns]
-- **Vector Operations**: [Redis vector search patterns]
-- **Caching Strategies**: [Semantic cache implementations]
+### Implementation Patterns
+- **Data Processing**: [Processing strategies and transformation patterns found]
+- **Service Integration**: [External service patterns and client implementations]
+- **Storage Operations**: [Database access patterns and optimization techniques]
+- **Caching Strategies**: [Cache implementations and performance patterns]
 
 ### Code Examples Found
 ```python
-# Example from packages/eol-rag-context/src/document_processor.py
-async def chunk_by_semantic(content: str, max_size: int = 1000) -> List[Chunk]:
+# Example from src/[domain]/processor.py
+async def process_data(content: str, options: ProcessOptions) -> ProcessResult:
     """Actual implementation pattern from codebase"""
     ...
 ```
 
 ### Performance Optimizations
-- **Batch Processing**: Pipeline patterns for Redis operations
-- **Async Patterns**: Concurrent document processing
-- **Connection Management**: Pool configuration and health checks
+- **Batch Processing**: Pipeline patterns for data operations
+- **Async Patterns**: Concurrent processing and I/O management
+- **Connection Management**: Pool configuration, health checks, and resource optimization
 
 ### Testing Patterns
 ```python
-# Example from tests/test_document_processor.py
+# Example from tests/test_processor.py
 @pytest.fixture
-async def redis_store():
-    """Redis fixture pattern for testing"""
+async def service_client():
+    """Service fixture pattern for testing"""
     ...
 ```
 ```
 
 ## Analysis Targets
 
-### RAG-Specific Domains
-1. **Document Processing**
-   - Chunking strategies (semantic, AST, fixed)
-   - Metadata extraction
-   - Content type detection
+### Common Software Domains
+1. **Data Processing**
+   - Transformation strategies and pipelines
+   - Validation and sanitization patterns
+   - Content type handling
 
-2. **Vector Operations**
-   - Embedding generation patterns
-   - Index design (HNSW vs FLAT)
-   - Similarity search optimization
+2. **Service Integration**
+   - API client patterns and authentication
+   - Error handling and retry mechanisms
+   - Rate limiting and throttling
 
-3. **Caching Layer**
-   - Semantic similarity caching
-   - TTL management strategies
-   - Cache key generation
+3. **Storage Layer**
+   - Database access patterns
+   - Caching strategies and invalidation
+   - Data modeling and relationships
 
-4. **Redis Patterns**
-   - Connection pooling
-   - Pipeline operations
-   - Error recovery
+4. **Infrastructure Patterns**
+   - Connection pooling and resource management
+   - Configuration and environment handling
+   - Monitoring and observability
 
-### Python Best Practices
+### Language-Specific Best Practices
 1. **Type Safety**
-   - Type hint patterns
-   - Protocol definitions
-   - Generic types usage
+   - Type annotation patterns
+   - Interface definitions
+   - Generic programming patterns
 
-2. **Async Patterns**
-   - Concurrent operations
-   - Rate limiting
-   - Queue processing
+2. **Concurrency Patterns**
+   - Async/parallel operations
+   - Resource management
+   - Queue and worker patterns
 
 3. **Testing Strategies**
-   - Fixture patterns
-   - Mock strategies
-   - Integration testing
+   - Test organization patterns
+   - Mock and stub strategies
+   - Integration and end-to-end testing
 
 ## Integration Points
 
 ### Existing Context Files
 The analysis enriches:
-- `.claude/context/rag/` - RAG-specific patterns
-- `.claude/context/redis/` - Redis best practices
-- `.claude/context/python/` - Python conventions
+- `.claude/context/[domain]/` - Domain-specific patterns
+- `.claude/context/[technology]/` - Technology-specific best practices
+- `.claude/context/[language]/` - Language conventions and patterns
 
 ### Quality Standards
 Ensures patterns follow:
-- Performance targets (>10 docs/sec indexing)
+- Performance targets specific to domain
 - Test coverage requirements (>80%)
-- Type safety standards (mypy compliance)
+- Code quality standards (linting, type checking)
+- Security and reliability best practices
 
 ## Command Options
 
 ### Scope Control
 ```bash
-# Analyze specific package
-/prp:analyze "document-processing" "chunking" --package=eol-rag-context
+# Analyze specific package/module
+/prp:analyze "authentication" "jwt-handling" --package=auth-service
 
 # Deep analysis with examples
-/prp:analyze "vector-search" "optimization" --deep
+/prp:analyze "data-processing" "optimization" --deep
 
 # Performance focus
 /prp:analyze "caching" "performance" --metrics
@@ -159,18 +162,18 @@ Ensures patterns follow:
 ### Output Options
 ```bash
 # Save to specific location
-/prp:analyze "redis" "patterns" --output=.claude/context/redis/patterns.md
+/prp:analyze "database" "patterns" --output=.claude/context/database/patterns.md
 
 # Generate comparison report
-/prp:analyze "embeddings" "providers" --compare
+/prp:analyze "api-clients" "implementations" --compare
 ```
 
 ## Success Metrics
 
 ### Pattern Coverage
-- [ ] All major RAG components analyzed
-- [ ] Redis patterns documented
-- [ ] Python best practices captured
+- [ ] All major domain components analyzed
+- [ ] Technology patterns documented
+- [ ] Language best practices captured
 - [ ] Performance optimizations identified
 
 ### Documentation Quality
@@ -187,4 +190,4 @@ After analysis:
 3. Update context files with discoveries
 4. Share patterns with team
 
-This analysis command provides the foundation for context-aware RAG development by extracting and documenting proven patterns from the existing codebase.
+This analysis command provides the foundation for context-aware software development by extracting and documenting proven patterns from any existing codebase, enabling comprehensive context engineering for PRP methodology.

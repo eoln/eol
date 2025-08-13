@@ -28,6 +28,8 @@ Systematically executes PRPs with real-time task tracking, quality gates, and gi
 
 ## Execution Process
 
+Follows the structured execution workflow from [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md#git-branch-strategy).
+
 ### 1. Pre-Execution Validation
 ```bash
 # Verify plan is in ready state
@@ -41,6 +43,7 @@ git stash push -m "Pre-PRP execution stash"
 ```
 
 ### 2. Branch Creation
+Following the [Git Branch Strategy](../../context/planning-methodology.md#branch-lifecycle):
 ```bash
 # Create dedicated feature branch
 git checkout -b feat/[plan-name]
@@ -52,18 +55,20 @@ mv .claude/plans/ready/prp-[feature].md .claude/plans/pending/
 ### 3. Task Execution Flow
 
 #### Phase-Based Execution
+Following the [Phase Structure](../../context/planning-methodology.md#phase-based-development) and [Checkbox Format](../../context/planning-methodology.md#checkbox-format):
 ```markdown
 ## Phase 1: Foundation [~]
 - [x] Task 1 completed
 - [~] Task 2 in progress  # Current task
 - [ ] Task 3 pending
+- [!] Task 4 blocked
 
 ## Phase 2: Implementation [ ]
 - [ ] All tasks pending
 ```
 
 #### Real-Time Tracking
-- Update task status immediately upon completion
+- Update task status immediately upon completion (see [Planning Methodology](../../context/planning-methodology.md))
 - Use TodoWrite for persistent tracking
 - Commit after each phase completion
 

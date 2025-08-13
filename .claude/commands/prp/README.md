@@ -37,6 +37,8 @@ Product Requirements Prompt (PRP) commands implement a structured planning metho
 ## PRP Methodology Focus
 
 ### Planning Philosophy
+PRP commands implement the structured planning methodology detailed in [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
+
 PRP commands are specifically designed for the **planning and design phase** of development:
 - **Not** for executing code quality checks (use `/quality:*` commands)
 - **Not** for PR preparation (use `/project:prepare-pr`)
@@ -85,7 +87,7 @@ Each command includes comprehensive help documentation:
 - **create.md** - PRP generation with Python/RAG focus
 - **execute.md** - Systematic implementation with validation
 - **validate.md** - Quality assurance and compliance checking
-- **check-quality.md** - Comprehensive quality gate execution
+- **review.md** - Review and update existing PRPs
 
 ## Python/RAG Specific Adaptations
 
@@ -134,7 +136,7 @@ Each command includes comprehensive help documentation:
 ├── create.md           # PRP generation
 ├── execute.md          # Implementation execution
 ├── validate.md         # Quality validation
-└── check-quality.md    # Quality gate checks
+└── review.md           # Review and update PRPs
 
 .claude/plans/           # Generated PRPs and plans
 ├── draft/              # Initial plans

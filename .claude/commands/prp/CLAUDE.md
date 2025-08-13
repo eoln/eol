@@ -19,19 +19,22 @@ PRP commands implement a systematic planning methodology for creating, executing
 
 ## PRP Methodology
 
+PRP commands implement the structured planning methodology documented in [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
+
 ### Blueprint Generation
-PRP commands generate comprehensive implementation plans that include:
-- Architecture design
-- Implementation tasks
-- Testing strategy
-- Performance targets
-- Success metrics
+PRP commands generate comprehensive implementation plans following the structured format:
+- Architecture design with component structure
+- Phase-based implementation tasks (see [Phase Structure](../../context/planning-methodology.md#phase-based-development))
+- Testing strategy with coverage targets
+- Performance targets and benchmarks
+- Success metrics (see [Defining Success](../../context/planning-methodology.md#success-metrics))
 
 ### Systematic Execution
-- Phase-based implementation
-- Real-time task tracking
-- Quality gates at each phase
-- Performance validation
+- Phase-based implementation ([Phase Guidelines](../../context/planning-methodology.md#phase-guidelines))
+- Real-time task tracking with checkbox format
+- Git branch strategy ([Branch Lifecycle](../../context/planning-methodology.md#git-branch-strategy))
+- Quality gates at each phase boundary
+- Performance validation against defined metrics
 
 ## Best Practices
 1. Always analyze before creating PRPs

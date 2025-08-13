@@ -51,8 +51,19 @@ Creates comprehensive Product Requirements Prompts (PRPs) specifically designed 
 
 ## Generated PRP Structure
 
+The generated PRP follows the structured format defined in [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md):
+
 ```markdown
 # [Feature Name] - Product Requirements Prompt
+
+## Overview
+Brief description of what the plan accomplishes
+
+**Created**: YYYY-MM-DD
+**Status**: Draft
+**Priority**: High/Medium/Low
+**Estimated Duration**: X days/weeks
+**Scope**: Specific boundaries
 
 ## Implementation Confidence Score: [8-10]/10
 *Based on existing patterns and clear implementation path*

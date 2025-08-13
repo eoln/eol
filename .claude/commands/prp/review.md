@@ -28,6 +28,8 @@ Reviews existing PRPs for accuracy, completeness, and alignment with current cod
 
 ## Review Process
 
+Follows the review methodology from [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
+
 ### 1. Accuracy Verification
 - Verify code examples still exist and are current
 - Check if referenced patterns are still best practice

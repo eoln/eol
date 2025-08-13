@@ -1,5 +1,7 @@
 # Planning Methodology
 
+This methodology is implemented through the PRP (Product Requirements Prompt) commands in [`.claude/commands/prp/`](../commands/prp/).
+
 ## Structured Plan Format
 
 ### Plan Header

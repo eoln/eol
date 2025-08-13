@@ -49,6 +49,8 @@ Comprehensive validation of PRP implementations against quality standards, perfo
 
 ## Validation Process
 
+Follows the validation requirements from [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md#success-metrics).
+
 ### 1. Code Quality Validation
 
 #### Python Standards

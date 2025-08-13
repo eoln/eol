@@ -270,29 +270,6 @@ assert os.path.exists("rag_context.html")
 /prp:validate plan.md --output=validation-report.md
 ```
 
-## Integration with CI/CD
-
-### GitHub Actions Integration
-```yaml
-- name: Validate PRP Implementation
-  run: |
-    python -m black src/ tests/ --check
-    python -m pytest tests/ --cov --cov-fail-under=80
-    python scripts/validate_performance.py
-```
-
-### Pre-commit Hooks
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: prp-validate
-        name: Validate PRP compliance
-        entry: python scripts/prp_validate.py
-        language: python
-        files: \.py$
-```
-
 ## Success Criteria
 
 ### Implementation Complete
@@ -307,4 +284,4 @@ repos:
 - [ ] Load testing successful
 - [ ] Monitoring configured
 
-This validation command ensures PRP implementations meet all quality standards and performance targets before deployment.
+This validation command ensures PRP implementations meet all quality standards and performance targets for production readiness.

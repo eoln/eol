@@ -110,6 +110,24 @@ tests/
 ## Implementation Tasks
 
 ### Phase 1: Fix Failing Tests (Days 1-2)
+- [ ] **Fix pre-commit hook Python version issue**
+  ```bash
+  # Check current Python version and pre-commit config
+  python --version
+  cat .pre-commit-config.yaml
+  
+  # Update pre-commit hook to use correct Python version
+  # Current error: failed to find interpreter for python3.11
+  # Need to either:
+  # 1. Update .pre-commit-config.yaml to use python3.13 (current system version)
+  # 2. Or install python3.11 if required by project
+  
+  # Update hooks and reinstall
+  pre-commit clean
+  pre-commit install --install-hooks
+  pre-commit run --all-files  # Test all hooks work
+  ```
+
 - [ ] **Reorganize test structure with proper fixture separation**
   ```bash
   # Create unit test directory and move existing unit tests
@@ -484,6 +502,7 @@ async def test_search_latency(benchmark):
 ## Risk Mitigation
 
 ### Technical Risks
+- **Pre-commit Hook Failure**: CRITICAL - Must fix Python version mismatch first or all commits will fail
 - **Redis Dependency**: Create comprehensive mocks for unit tests
 - **Async Complexity**: Use pytest-asyncio properly, avoid event loop issues
 - **Mock Configuration**: Ensure mocks match actual interfaces
@@ -522,7 +541,11 @@ async def test_search_latency(benchmark):
 
 ## Task Dependencies
 
-### Independent Tasks (Can Start Immediately)
+### Critical First Task (MUST Complete Before All Others)
+- Fix pre-commit hook Python version issue
+
+### Independent Tasks (Can Start After Pre-commit Fix)
+- Reorganize test structure with proper fixture separation
 - Fix file_watcher fixture issues
 - Fix MCP server async mock issues  
 - Fix semantic cache Redis mocks

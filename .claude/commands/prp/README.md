@@ -1,22 +1,22 @@
-# PRP Commands - Product Requirements Prompt System for EOL RAG Framework
+# PRP Commands - Product Requirements Prompt Planning Methodology
 
-Comprehensive Python-focused command suite for context engineering and systematic RAG feature development in the EOL monorepo with Redis vector database infrastructure.
+Systematic planning methodology for creating comprehensive implementation blueprints for RAG feature development in the EOL framework.
 
 ## Overview
 
-Product Requirements Prompt (PRP) commands enable high-quality, one-pass Python/RAG feature development by providing comprehensive implementation context derived from existing codebase patterns.
+Product Requirements Prompt (PRP) commands implement a structured planning methodology that transforms feature requirements into detailed, actionable implementation blueprints. These commands focus on the planning and design phase of development, ensuring thorough preparation before coding begins.
 
 ## Command Suite
 
-### Core Commands
+### Core Planning Commands
 
 | Command | Purpose | Usage |
 |---------|---------|-------|
-| `analyze` | Extract RAG patterns and Redis context | `/prp:analyze "domain" "technology"` |
-| `create` | Generate comprehensive RAG implementation blueprints | `/prp:create "feature description"` |
-| `execute` | Execute PRPs with task tracking and validation | `/prp:execute .claude/plans/prp-file.md` |
-| `validate` | Validate implementation quality and completeness | `/prp:validate .claude/plans/prp-file.md` |
-| `check-quality` | Run comprehensive quality gates | `/prp:check-quality [package] [--full|--quick]` |
+| `analyze` | Extract patterns from codebase for planning | `/prp:analyze "domain" "technology"` |
+| `create` | Generate comprehensive implementation blueprint | `/prp:create "feature description"` |
+| `execute` | Execute PRP plan with systematic tracking | `/prp:execute .claude/plans/prp-file.md` |
+| `validate` | Validate PRP completeness and feasibility | `/prp:validate .claude/plans/prp-file.md` |
+| `review` | Review and update existing PRPs | `/prp:review .claude/plans/prp-file.md` |
 
 ### Quick Start Workflow
 
@@ -34,32 +34,34 @@ Product Requirements Prompt (PRP) commands enable high-quality, one-pass Python/
 /prp:validate .claude/plans/prp-semantic-caching.md --full
 ```
 
-## Key Features
+## PRP Methodology Focus
 
-### Python-First Development
-- Strong type hints throughout implementation
-- Async/await patterns for I/O operations
-- Dataclasses and protocols for structures
-- Pytest testing with comprehensive fixtures
+### Planning Philosophy
+PRP commands are specifically designed for the **planning and design phase** of development:
+- **Not** for executing code quality checks (use `/quality:*` commands)
+- **Not** for PR preparation (use `/project:prepare-pr`)
+- **Not** for documentation updates (use `/project:update-docs`)
+- **Focused** on creating, reviewing, and executing implementation blueprints
 
-### RAG Context Engineering
-- Document processing patterns (chunking, embeddings)
-- Vector search optimization strategies
-- Semantic caching implementations
-- Redis vector database patterns
+### What PRPs Do
+1. **Analyze** existing codebase patterns for context
+2. **Create** detailed implementation blueprints
+3. **Execute** plans with systematic task tracking
+4. **Validate** plan completeness and feasibility
+5. **Review** and update plans to maintain accuracy
 
-### Quality Assurance
-- Black formatting compliance
-- isort import ordering
-- Flake8 and mypy validation
-- 80%+ test coverage requirement
-- Performance benchmarking
+### Blueprint Components
+- Architecture design and component structure
+- Implementation tasks with phases
+- Testing strategy and coverage approach
+- Performance targets and benchmarks
+- Success metrics and validation criteria
 
-### Task Management Integration
-- TodoWrite integration for progress tracking
-- State-based plan management (draft → ready → pending → completed)
+### Planning Integration
+- TodoWrite integration for task tracking
+- State-based plan lifecycle (draft → ready → pending → completed)
 - Git branch strategy for plan execution
-- Quality gate checkpoints
+- Systematic phase-based implementation
 
 ## Integration with EOL Framework
 

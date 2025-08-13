@@ -1,9 +1,23 @@
 # Completed State Rules
 
+## Naming Convention
+
+All completed plans must use date prefix:
+```
+YYYYMMDD_plan-name.md
+```
+
+Examples:
+- `20250113_claude-folder-enhancement.md`
+- `20250114_semantic-caching-implementation.md`
+- `20250115_vector-search-optimization.md`
+
+## Completion Process
+
 - Create PR from feature branch to main
 - Extract lessons learned
 - Update context/ with discoveries
-- Archive for reference
+- Archive with date prefix for reference
 - Merge PR after review and approval
 
 ## Completion Checklist

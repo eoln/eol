@@ -15,6 +15,7 @@
 - **context/**: Domain-specific knowledge and patterns
 - **plans/**: Task planning and tracking with state management
 - **commands/**: Reusable command patterns and workflows
+- **findings/**: Research reports and investigation results (YYYYMMDD_ prefix)
 - **settings.local.json**: MCP server configuration
 
 ## Usage

@@ -99,7 +99,8 @@ eol/
     ├── CLAUDE.md       # Directory-specific rules
     ├── context/        # Domain-specific knowledge
     ├── plans/          # Task planning with states
-    └── commands/       # Reusable command patterns
+    ├── commands/       # Reusable command patterns
+    └── findings/       # Research and investigation reports
 ```
 
 ## Code Style and Conventions

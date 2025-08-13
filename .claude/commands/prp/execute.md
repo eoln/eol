@@ -207,13 +207,13 @@ gh pr create \
 
 ### Plan Archival
 ```bash
-# Move to completed with timestamp
+# Move to completed with date prefix
 mv .claude/plans/pending/prp-[feature].md \
-   .claude/plans/completed/prp-[feature]-$(date +%Y%m%d).md
+   .claude/plans/completed/$(date +%Y%m%d)_prp-[feature].md
 
 # Update with lessons learned
-echo "## Lessons Learned" >> .claude/plans/completed/prp-[feature]-*.md
-echo "- [Key learning 1]" >> .claude/plans/completed/prp-[feature]-*.md
+echo "## Lessons Learned" >> .claude/plans/completed/$(date +%Y%m%d)_prp-[feature].md
+echo "- [Key learning 1]" >> .claude/plans/completed/$(date +%Y%m%d)_prp-[feature].md
 ```
 
 ## Command Options

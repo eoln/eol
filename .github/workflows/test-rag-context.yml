@@ -15,6 +15,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     
     services:
       redis:
@@ -30,17 +33,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: ${{ matrix.python-version }}
     
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('packages/eol-rag-context/pyproject.toml') }}
+        key: ${{ runner.os }}-py${{ matrix.python-version }}-pip-${{ hashFiles('packages/eol-rag-context/pyproject.toml') }}
         restore-keys: |
+          ${{ runner.os }}-py${{ matrix.python-version }}-pip-
           ${{ runner.os }}-pip-
     
     - name: Install dependencies
@@ -112,15 +116,15 @@ jobs:
     
     - name: Upload Coverage Reports
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && matrix.python-version == '3.13'
       with:
-        name: coverage-reports
+        name: coverage-reports-py${{ matrix.python-version }}
         path: |
           packages/eol-rag-context/coverage.xml
           packages/eol-rag-context/coverage-report/
     
     - name: Comment Coverage on PR
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' && matrix.python-version == '3.13'
       uses: py-cov-action/python-coverage-comment-action@v3
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

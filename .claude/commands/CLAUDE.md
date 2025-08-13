@@ -2,11 +2,11 @@
 
 ## Purpose
 - Store reusable command patterns for common tasks
-- Provide PR preparation (PRP) workflows
+- Provide systematic development workflows
 - Standardize development operations
 
 ## Command Types
-- **prp/**: Pull Request Preparation commands
+- **prp/**: Product Requirements Prompt commands for feature blueprints
 - **quality/**: Quality check commands
 - **deploy/**: Deployment commands (future)
 

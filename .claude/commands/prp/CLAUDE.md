@@ -1,55 +1,40 @@
-# Pull Request Preparation (PRP) Commands
+# Product Requirements Prompt (PRP) Commands
+
+## Overview
+PRP commands provide systematic implementation blueprints for feature development with comprehensive context engineering.
 
 ## Workflow
-1. Run quality checks
-2. Update documentation
-3. Verify tests pass
-4. Create PR with proper description
+1. Analyze existing patterns and context
+2. Create comprehensive implementation blueprint
+3. Execute with systematic tracking
+4. Validate quality and completeness
 
-## Command Naming
-- Use descriptive names: `check-quality.md`, `prepare-pr.md`
-- Include prerequisites and expected outcomes
+## Command Structure
+- **analyze.md**: Extract patterns from codebase
+- **create.md**: Generate implementation blueprints
+- **execute.md**: Execute with task tracking
+- **validate.md**: Validate implementation quality
+- **check-quality.md**: Run quality checks
 
-## Standard PR Workflow
+## PRP Methodology
 
-### Pre-PR Checklist
-1. [ ] All tests passing
-2. [ ] Code formatted (Black)
-3. [ ] Imports sorted (isort)
-4. [ ] Type hints added
-5. [ ] Documentation updated
-6. [ ] Coverage >80%
-7. [ ] No security issues
+### Blueprint Generation
+PRP commands generate comprehensive implementation plans that include:
+- Architecture design
+- Implementation tasks
+- Testing strategy
+- Performance targets
+- Success metrics
 
-### PR Description Template
-```markdown
-## Summary
-Brief description of changes
-
-## Changes
-- Change 1
-- Change 2
-
-## Testing
-- How changes were tested
-- Coverage report
-
-## Performance Impact
-- Any performance implications
-
-## Breaking Changes
-- List any breaking changes
-```
-
-## Command Files
-- **check-quality.md**: Run all quality checks
-- **prepare-pr.md**: Create and push PR
-- **update-docs.md**: Update documentation
-- **verify-integration.md**: Run integration tests
+### Systematic Execution
+- Phase-based implementation
+- Real-time task tracking
+- Quality gates at each phase
+- Performance validation
 
 ## Best Practices
-1. Always run quality checks before PR
-2. Keep PRs focused and small
-3. Write clear commit messages
-4. Update tests with code changes
-5. Document breaking changes
+1. Always analyze before creating PRPs
+2. Use systematic task tracking
+3. Validate at each phase
+4. Document lessons learned
+5. Update context with discoveries

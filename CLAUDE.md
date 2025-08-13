@@ -71,7 +71,7 @@ Four strategies for effective AI assistance:
 ## Command Patterns
 
 - Load commands from `.claude/commands/` for common workflows
-- PRP commands for pull request preparation
+- PRP (Product Requirements Prompt) commands for implementation blueprints
 - Quality commands for validation and checks
 - Commands include prerequisites and success criteria
 

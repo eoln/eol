@@ -1,20 +1,21 @@
 # Product Requirements Prompt (PRP) Commands
 
 ## Overview
-PRP commands provide systematic implementation blueprints for feature development with comprehensive context engineering.
+PRP commands implement a systematic planning methodology for creating, executing, and maintaining comprehensive implementation blueprints for feature development.
 
-## Workflow
-1. Analyze existing patterns and context
-2. Create comprehensive implementation blueprint
-3. Execute with systematic tracking
-4. Validate quality and completeness
+## PRP Planning Workflow
+1. **Analyze** - Extract patterns and context from existing codebase
+2. **Create** - Generate comprehensive implementation blueprint
+3. **Review** - Review and refine the plan for accuracy
+4. **Execute** - Execute plan with systematic task tracking
+5. **Validate** - Validate plan completeness and results
 
 ## Command Structure
-- **analyze.md**: Extract patterns from codebase
-- **create.md**: Generate implementation blueprints
-- **execute.md**: Execute with task tracking
-- **validate.md**: Validate implementation quality
-- **check-quality.md**: Run quality checks
+- **analyze.md**: Extract patterns from codebase for planning context
+- **create.md**: Generate detailed implementation blueprints
+- **review.md**: Review and update existing PRPs
+- **execute.md**: Execute plans with task tracking
+- **validate.md**: Validate plan feasibility and completeness
 
 ## PRP Methodology
 

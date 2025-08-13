@@ -125,12 +125,16 @@ class TestFileChangeHandler:
         return scanner
 
     @pytest.fixture
-    def handler(self, mock_watcher, mock_scanner):
+    def handler(self, mock_watcher):
         """Create FileChangeHandler instance."""
         source_path = Path("/test/project")
         source_id = "test_src"
         file_patterns = ["*.py", "*.md"]
 
+        # Mock the FolderScanner class completely
+        mock_scanner = MagicMock()
+        mock_scanner._should_ignore.return_value = False
+        
         with patch("eol.rag_context.file_watcher.FolderScanner", return_value=mock_scanner):
             handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
 

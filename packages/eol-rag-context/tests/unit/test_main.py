@@ -121,3 +121,21 @@ class TestMainCLI:
                         main.main()
                     assert exc_info.value.code == 0
                     mock_print.assert_called()
+
+    @patch("eol.rag_context.main.asyncio")
+    @patch("eol.rag_context.main.EOLRAGContextServer")
+    @patch("eol.rag_context.main.RAGConfig")
+    def test_main_function_keyboard_interrupt(self, mock_config, mock_server, mock_asyncio):
+        """Test main entry point with keyboard interrupt."""
+        mock_config.return_value = MagicMock()
+        mock_server_instance = MagicMock()
+        mock_server.return_value = mock_server_instance
+        mock_asyncio.run.side_effect = KeyboardInterrupt()
+
+        with patch("sys.argv", ["eol-rag-context"]):
+            # Should handle KeyboardInterrupt gracefully without sys.exit
+            main.main()
+            
+            mock_config.assert_called_once()
+            mock_server.assert_called_once()
+            mock_asyncio.run.assert_called_once()

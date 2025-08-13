@@ -110,22 +110,34 @@ tests/
 ## Implementation Tasks
 
 ### Phase 1: Fix Failing Tests (Days 1-2)
-- [ ] **Fix pre-commit hook Python version issue**
+- [ ] **Standardize on Python 3.13 across project and CI**
   ```bash
-  # Check current Python version and pre-commit config
-  python --version
-  cat .pre-commit-config.yaml
+  # Update .pre-commit-config.yaml to use Python 3.13
+  # Change language_version from python3.11 to python3.13
+  sed -i 's/language_version: python3.11/language_version: python3.13/g' .pre-commit-config.yaml
   
-  # Update pre-commit hook to use correct Python version
-  # Current error: failed to find interpreter for python3.11
-  # Need to either:
-  # 1. Update .pre-commit-config.yaml to use python3.13 (current system version)
-  # 2. Or install python3.11 if required by project
+  # Verify the change
+  grep "language_version" .pre-commit-config.yaml
   
-  # Update hooks and reinstall
+  # Update GitHub Actions workflow to include Python 3.13 in test matrix
+  # Edit .github/workflows/test.yml to add python-version: ["3.11", "3.12", "3.13"]
+  
+  # Clean and reinstall hooks
   pre-commit clean
   pre-commit install --install-hooks
   pre-commit run --all-files  # Test all hooks work
+  
+  # Verify Python version consistency
+  python --version  # Should show 3.13.x
+  ```
+
+- [ ] **Update GitHub Actions workflow for Python 3.13 matrix**
+  ```yaml
+  # Update .github/workflows/test.yml (or create if missing)
+  # Add Python 3.13 to test matrix: ["3.11", "3.12", "3.13"]
+  # Ensure Redis Stack installation works across all versions
+  # Use uv for faster dependency installation
+  # Only upload coverage report once (from Python 3.13)
   ```
 
 - [ ] **Reorganize test structure with proper fixture separation**
@@ -463,17 +475,49 @@ async def test_search_latency(benchmark):
 
 ### Continuous Integration
 ```yaml
-# .github/workflows/test.yml updates
-- name: Run tests with coverage
-  run: |
-    redis-stack-server --daemonize yes
-    pytest tests/ --cov=eol.rag_context --cov-fail-under=80
-    
-- name: Upload coverage
-  uses: codecov/codecov-action@v3
-  with:
-    file: ./coverage.xml
-    fail_ci_if_error: true
+# .github/workflows/test.yml updates - Python 3.13 matrix support
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]  # Add 3.13 support
+        
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install Redis Stack
+      run: |
+        curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+        sudo apt-get update
+        sudo apt-get install redis-stack-server
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip uv
+        uv pip install -e ".[test]"
+        
+    - name: Start Redis Stack
+      run: redis-stack-server --daemonize yes
+      
+    - name: Run tests with coverage
+      run: |
+        pytest tests/ --cov=eol.rag_context --cov-fail-under=80 --cov-report=xml
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.13'  # Only upload once
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true
 ```
 
 ## Success Metrics
@@ -502,7 +546,8 @@ async def test_search_latency(benchmark):
 ## Risk Mitigation
 
 ### Technical Risks
-- **Pre-commit Hook Failure**: CRITICAL - Must fix Python version mismatch first or all commits will fail
+- **Python Version Standardization**: CRITICAL - Standardize on Python 3.13 across pre-commit, CI, and development
+- **CI Matrix Compatibility**: Ensure tests pass on Python 3.11, 3.12, and 3.13
 - **Redis Dependency**: Create comprehensive mocks for unit tests
 - **Async Complexity**: Use pytest-asyncio properly, avoid event loop issues
 - **Mock Configuration**: Ensure mocks match actual interfaces
@@ -541,10 +586,11 @@ async def test_search_latency(benchmark):
 
 ## Task Dependencies
 
-### Critical First Task (MUST Complete Before All Others)
-- Fix pre-commit hook Python version issue
+### Critical First Tasks (MUST Complete Before All Others)
+- Standardize on Python 3.13 across project and CI
+- Update GitHub Actions workflow for Python 3.13 matrix
 
-### Independent Tasks (Can Start After Pre-commit Fix)
+### Independent Tasks (Can Start After Python Standardization)
 - Reorganize test structure with proper fixture separation
 - Fix file_watcher fixture issues
 - Fix MCP server async mock issues  

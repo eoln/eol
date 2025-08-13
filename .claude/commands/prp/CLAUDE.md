@@ -1,9 +1,13 @@
 # Product Requirements Prompt (PRP) Commands
 
+Systematic planning methodology for creating comprehensive implementation blueprints for any software feature development using context engineering principles.
+
 ## Overview
 PRP commands implement the Product Requirements Prompt methodology - a context engineering approach that provides AI coding assistants with comprehensive implementation blueprints for production-ready software development.
 
 **Core Principle**: PRP = PRD + Curated Codebase Intelligence + Agent Runbook
+
+**Key Philosophy**: Context Engineering is the systematic process of giving AI coding assistants a comprehensive mission briefing - complete with requirements, code examples, technical constraints and best practices - before writing code.
 
 ## PRP Context Engineering Workflow
 1. **Analyze** - Extract patterns, dependencies, and technical context from codebase
@@ -12,12 +16,15 @@ PRP commands implement the Product Requirements Prompt methodology - a context e
 4. **Execute** - Systematic implementation with self-correction and validation gates
 5. **Validate** - Ensure production-ready code quality and performance targets
 
-## Command Structure
-- **analyze.md**: Extract patterns from codebase for planning context
-- **create.md**: Generate detailed implementation blueprints
-- **review.md**: Review and update existing PRPs
-- **execute.md**: Execute plans with task tracking
-- **validate.md**: Validate plan feasibility and completeness
+## Command Suite
+
+| Command | Purpose | Usage |
+|---------|---------|-------|
+| `analyze` | Extract patterns from codebase for planning | `/prp:analyze "domain" "technology"` |
+| `create` | Generate comprehensive implementation blueprint | `/prp:create "feature description"` |
+| `execute` | Execute PRP plan with systematic tracking | `/prp:execute .claude/plans/prp-file.md` |
+| `validate` | Validate PRP completeness and feasibility | `/prp:validate .claude/plans/prp-file.md` |
+| `review` | Review and update existing PRPs | `/prp:review .claude/plans/prp-file.md` |
 
 ## PRP Methodology
 

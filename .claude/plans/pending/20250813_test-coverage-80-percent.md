@@ -4,7 +4,7 @@
 Comprehensive plan to increase test coverage from 68.18% to 80% for both unit and integration tests in the eol-rag-context package, focusing on critical low-coverage modules and fixing existing test failures.
 
 **Created**: 2025-08-13  
-**Status**: Draft  
+**Status**: Pending  
 **Priority**: High  
 **Estimated Duration**: 2 weeks  
 **Scope**: Unit tests, integration tests, and test infrastructure improvements
@@ -110,7 +110,7 @@ tests/
 ## Implementation Tasks
 
 ### Phase 1: Fix Failing Tests (Days 1-2)
-- [ ] **Standardize on Python 3.13 across project and CI**
+- [x] **Standardize on Python 3.13 across project and CI**
   ```bash
   # Update .pre-commit-config.yaml to use Python 3.13
   # Change language_version from python3.11 to python3.13
@@ -131,7 +131,7 @@ tests/
   python --version  # Should show 3.13.x
   ```
 
-- [ ] **Update GitHub Actions workflow for Python 3.13 matrix**
+- [x] **Update GitHub Actions workflow for Python 3.13 matrix**
   ```yaml
   # Update .github/workflows/test.yml (or create if missing)
   # Add Python 3.13 to test matrix: ["3.11", "3.12", "3.13"]
@@ -140,7 +140,7 @@ tests/
   # Only upload coverage report once (from Python 3.13)
   ```
 
-- [ ] **Reorganize test structure with proper fixture separation**
+- [x] **Reorganize test structure with proper fixture separation**
   ```bash
   # Create unit test directory and move existing unit tests
   mkdir -p tests/unit
@@ -150,7 +150,7 @@ tests/
   # tests/integration/ already exists with proper conftest.py
   ```
 
-- [ ] **Fix file_watcher fixture issues**
+- [x] **Fix file_watcher fixture issues**
   ```python
   # Fix mock configuration in tests/test_file_watcher.py
   @pytest.fixture
@@ -185,7 +185,7 @@ tests/
       return redis_mock
   ```
 
-- [ ] **Create dedicated unit test fixtures directory**
+- [x] **Create dedicated unit test fixtures directory**
   ```python
   # tests/conftest.py - MINIMAL shared utilities only
   @pytest.fixture

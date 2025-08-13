@@ -1,12 +1,12 @@
-# prp-create - Generate Python/RAG Product Requirements Prompt
+# prp-create - Generate Product Requirements Prompt
 
-Creates comprehensive Product Requirements Prompts (PRPs) specifically designed for Python/RAG feature development in the EOL monorepo with Redis vector database infrastructure.
+Creates comprehensive Product Requirements Prompts (PRPs) using context engineering methodology for any software feature development. Analyzes existing codebase patterns and generates implementation blueprints with curated intelligence.
 
 ## Command Overview
 
-**Purpose**: Generate implementation blueprints for RAG features with complete context
-**Target**: Python packages with async patterns and Redis integration
-**Output**: Comprehensive PRP saved to `.claude/plans/draft/prp-[feature-name].md`
+**Purpose**: Generate implementation blueprints using context engineering principles
+**Target**: Any software feature requiring systematic development approach
+**Output**: Comprehensive PRP with curated codebase intelligence saved to `.claude/plans/draft/prp-[feature-name].md`
 
 ## Usage
 
@@ -16,38 +16,39 @@ Creates comprehensive Product Requirements Prompts (PRPs) specifically designed 
 
 ### Examples
 ```bash
-# Based on EOL RAG patterns
+# Any software feature development
+/prp:create "user authentication system with JWT tokens"
+/prp:create "real-time notification service with WebSockets"
 /prp:create "hierarchical document indexing with concept extraction"
-/prp:create "semantic cache with similarity threshold tuning"
-/prp:create "multi-modal embedding support for images and text"
-/prp:create "incremental indexing with file watcher integration"
+/prp:create "API rate limiting with Redis backend"
+/prp:create "file upload service with virus scanning"
 ```
 
 ## PRP Generation Process
 
 ### 1. Codebase Analysis Phase
-- **Package Scanning**: Identify relevant Python packages
-- **Pattern Discovery**: Extract async patterns, type hints, dataclasses
-- **Redis Analysis**: Review vector operations and caching strategies
-- **Test Pattern Review**: Analyze pytest fixtures and mocking strategies
+- **Technology Scanning**: Identify relevant frameworks, libraries, and patterns
+- **Pattern Discovery**: Extract existing code conventions, structures, and best practices
+- **Dependency Mapping**: Analyze package dependencies and integration points
+- **Test Pattern Review**: Understand testing frameworks and validation strategies
 
 ### 2. Context Engineering Phase
-- **RAG Pattern Extraction**: Document processing, embeddings, search
-- **Dependency Mapping**: Python package dependencies via uv
-- **Performance Baselines**: Current metrics for comparison
-- **Integration Points**: MCP server, Redis, LLM providers
+- **Domain Knowledge**: Extract domain-specific patterns and conventions
+- **Technical Constraints**: Identify dependencies, performance requirements, and limitations
+- **Integration Context**: Understand system boundaries and external service connections
+- **Quality Standards**: Establish testing, validation, and performance baselines
 
 ### 3. Implementation Blueprint Creation
-- **Architecture Design**: Python async component structure
-- **Redis Infrastructure**: Vector indexes, caching layers
-- **Testing Strategy**: Pytest patterns with async testing
-- **Validation Gates**: Quality checks and performance benchmarks
+- **Architecture Design**: Component structure following existing patterns
+- **Implementation Strategy**: Step-by-step development approach with validation gates
+- **Testing Framework**: Comprehensive test coverage using project standards
+- **Quality Assurance**: Performance benchmarks and validation criteria
 
 ### 4. Quality Assurance
-- **Pattern Verification**: Alignment with EOL RAG patterns
-- **Completeness Check**: All required sections present
-- **Python Compliance**: Type hints, async patterns, PEP 8
-- **Performance Targets**: Meeting RAG performance goals
+- **Pattern Verification**: Alignment with existing codebase conventions
+- **Completeness Check**: All PRP components present and detailed
+- **Technical Compliance**: Following project standards and best practices
+- **Performance Targets**: Measurable success criteria and benchmarks
 
 ## Generated PRP Structure
 

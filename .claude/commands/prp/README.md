@@ -1,10 +1,12 @@
 # PRP Commands - Product Requirements Prompt Planning Methodology
 
-Systematic planning methodology for creating comprehensive implementation blueprints for RAG feature development in the EOL framework.
+Systematic planning methodology for creating comprehensive implementation blueprints for any software feature development using context engineering principles.
 
 ## Overview
 
-Product Requirements Prompt (PRP) commands implement a structured planning methodology that transforms feature requirements into detailed, actionable implementation blueprints. These commands focus on the planning and design phase of development, ensuring thorough preparation before coding begins.
+Product Requirements Prompt (PRP) commands implement a structured context engineering methodology that transforms feature requirements into detailed, actionable implementation blueprints. PRP goes beyond traditional Product Requirements Documents (PRDs) by providing AI coding assistants with comprehensive context including existing code patterns, technical constraints, and validation frameworks.
+
+**Key Philosophy**: Context Engineering is the systematic process of giving AI coding assistants a comprehensive mission briefing - complete with requirements, code examples, technical constraints and best practices - before writing code.
 
 ## Command Suite
 
@@ -46,18 +48,29 @@ PRP commands are specifically designed for the **planning and design phase** of 
 - **Focused** on creating, reviewing, and executing implementation blueprints
 
 ### What PRPs Do
-1. **Analyze** existing codebase patterns for context
-2. **Create** detailed implementation blueprints
-3. **Execute** plans with systematic task tracking
-4. **Validate** plan completeness and feasibility
-5. **Review** and update plans to maintain accuracy
+1. **Analyze** existing codebase patterns and technical context
+2. **Create** comprehensive implementation blueprints with curated intelligence
+3. **Execute** plans with systematic validation and self-correction
+4. **Validate** implementation quality and production readiness
+5. **Review** and update plans to maintain accuracy and relevance
+
+### Context Engineering Layers
+Following the five-layer context engineering architecture:
+- **System Context**: Global project rules and conventions
+- **Domain Context**: Specific technology patterns (RAG, Redis, Python, etc.)
+- **Task Context**: Feature-specific requirements and constraints
+- **Interaction Context**: Implementation workflow and validation gates
+- **Response Context**: Expected outputs and quality criteria
 
 ### Blueprint Components
-- Architecture design and component structure
-- Implementation tasks with phases
-- Testing strategy and coverage approach
-- Performance targets and benchmarks
-- Success metrics and validation criteria
+PRP = PRD + Curated Codebase Intelligence + Agent Runbook
+
+- **Product Requirements**: Clear feature specifications and business context
+- **Codebase Intelligence**: Existing patterns, dependencies, and technical constraints
+- **Implementation Blueprint**: Phase-based tasks with validation gates
+- **Testing Strategy**: Comprehensive test coverage and quality gates
+- **Performance Targets**: Measurable success criteria and benchmarks
+- **Validation Framework**: Self-correcting mechanisms and error handling
 
 ### Planning Integration
 - TodoWrite integration for task tracking
@@ -67,11 +80,12 @@ PRP commands are specifically designed for the **planning and design phase** of 
 
 ## Integration with EOL Framework
 
-### Leverages Existing Systems
-- `.claude/context/` files for domain patterns
-- RAG-specific context (document processing, vector search, caching)
-- Redis patterns and best practices
-- Python async patterns and type hints
+### Context Engineering Implementation
+- **Global Rules**: `.claude/CLAUDE.md` provides system-wide context
+- **Domain Knowledge**: `.claude/context/` contains specialized patterns
+- **Technology Context**: RAG, Redis, Python async patterns, and best practices
+- **Project Intelligence**: Existing codebase patterns and conventions
+- **Validation Framework**: Quality gates and testing requirements
 
 ### Supports Development Workflow
 - Feature planning with checkbox format
@@ -89,33 +103,36 @@ Each command includes comprehensive help documentation:
 - **validate.md** - Quality assurance and compliance checking
 - **review.md** - Review and update existing PRPs
 
-## Python/RAG Specific Adaptations
+## Technology-Specific Adaptations
 
-### From TypeScript to Python
-- Type hints instead of TypeScript interfaces
-- Pytest instead of Jest
-- Black/isort instead of ESLint
-- uv instead of npm/nx
+### Python Development Context
+- Type hints and async patterns
+- Pytest testing frameworks
+- Code formatting with Black/isort
+- Package management with uv
+- Dataclasses and protocols for structure
 
-### RAG-Specific Patterns
-- Document chunking strategies (semantic, AST, fixed)
+### RAG Framework Context (Example Domain)
+- Document processing and chunking strategies
 - Embedding generation and management
-- Vector search optimization
-- Semantic caching with Redis
-- Hierarchical indexing patterns
+- Vector search optimization with Redis
+- Semantic caching patterns
+- Performance benchmarking and validation
 
-### Redis Integration
-- Connection pooling patterns
-- Vector index design
-- Performance tuning strategies
-- Pipeline operations for batch processing
+### Context Engineering Principles
+- **Codebase Intelligence**: Extract existing patterns and conventions
+- **Technical Constraints**: Include dependencies, performance requirements
+- **Validation Gates**: Define quality checks and testing requirements
+- **Implementation Guidance**: Provide step-by-step execution blueprints
+- **Self-Correction**: Enable AI to identify and fix implementation issues
 
 ## Benefits
 
 ### Development Efficiency
-- **Reduced Implementation Time**: Context-rich PRPs enable faster development
-- **Higher Success Rate**: Comprehensive blueprints reduce iteration cycles
-- **Consistent Quality**: Leveraging proven RAG patterns ensures maintainability
+- **Production-Ready Code**: First-pass implementations with comprehensive context
+- **Reduced Debugging**: Self-correcting mechanisms catch issues early
+- **Faster Delivery**: Systematic approach eliminates trial-and-error development
+- **Consistent Quality**: Leveraging proven patterns ensures maintainability
 
 ### Code Quality
 - **Python Best Practices**: Type hints and async patterns
@@ -123,9 +140,10 @@ Each command includes comprehensive help documentation:
 - **Redis Integration**: Proven vector database patterns
 
 ### Team Productivity
-- **Knowledge Sharing**: PRPs capture and distribute RAG implementation wisdom
+- **Knowledge Sharing**: PRPs capture and distribute implementation wisdom
+- **Scalable Expertise**: Junior developers can produce senior-level code
 - **Onboarding**: New team members learn from comprehensive examples
-- **Consistency**: Standardized patterns across all RAG development
+- **Consistency**: Standardized patterns across all feature development
 
 ## File Organization
 
@@ -167,10 +185,11 @@ Each command includes comprehensive help documentation:
 
 ## Implementation Notes
 
-This PRP command system provides a comprehensive methodology for Python/RAG development:
-- Structured approach to feature implementation
-- Commands adapted for Python ecosystem and tools
-- Focus on RAG-specific patterns and Redis vector operations
-- Integration with EOL's context engineering system
+This PRP command system provides a comprehensive context engineering methodology for any software development:
+- **Universal Application**: Works for any technology stack or domain
+- **Context Engineering**: Systematic approach to providing AI comprehensive context
+- **Production Focus**: Designed to generate production-ready code on first pass
+- **Self-Correcting**: Built-in validation and error recovery mechanisms
+- **Scalable**: From simple features to complex system implementations
 
-The PRP system transforms Python/RAG feature development from iterative exploration into systematic, high-quality implementation with comprehensive context engineering.
+The PRP system transforms software development from iterative exploration into systematic, high-quality implementation with comprehensive context engineering. As the methodology states: "Context isn't a one-time setup. It's an ongoing discipline."

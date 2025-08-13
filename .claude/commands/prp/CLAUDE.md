@@ -1,14 +1,16 @@
 # Product Requirements Prompt (PRP) Commands
 
 ## Overview
-PRP commands implement a systematic planning methodology for creating, executing, and maintaining comprehensive implementation blueprints for feature development.
+PRP commands implement the Product Requirements Prompt methodology - a context engineering approach that provides AI coding assistants with comprehensive implementation blueprints for production-ready software development.
 
-## PRP Planning Workflow
-1. **Analyze** - Extract patterns and context from existing codebase
-2. **Create** - Generate comprehensive implementation blueprint
-3. **Review** - Review and refine the plan for accuracy
-4. **Execute** - Execute plan with systematic task tracking
-5. **Validate** - Validate plan completeness and results
+**Core Principle**: PRP = PRD + Curated Codebase Intelligence + Agent Runbook
+
+## PRP Context Engineering Workflow
+1. **Analyze** - Extract patterns, dependencies, and technical context from codebase
+2. **Create** - Generate comprehensive implementation blueprint with curated intelligence
+3. **Review** - Validate plan accuracy and completeness against current patterns
+4. **Execute** - Systematic implementation with self-correction and validation gates
+5. **Validate** - Ensure production-ready code quality and performance targets
 
 ## Command Structure
 - **analyze.md**: Extract patterns from codebase for planning context
@@ -21,13 +23,13 @@ PRP commands implement a systematic planning methodology for creating, executing
 
 PRP commands implement the structured planning methodology documented in [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
 
-### Blueprint Generation
-PRP commands generate comprehensive implementation plans following the structured format:
-- Architecture design with component structure
-- Phase-based implementation tasks (see [Phase Structure](../../context/planning-methodology.md#phase-based-development))
-- Testing strategy with coverage targets
-- Performance targets and benchmarks
-- Success metrics (see [Defining Success](../../context/planning-methodology.md#success-metrics))
+### Context Engineering Implementation
+PRP commands generate comprehensive implementation blueprints following context engineering principles:
+- **System Context**: Global project rules and conventions from `.claude/CLAUDE.md`
+- **Domain Context**: Technology-specific patterns from `.claude/context/`
+- **Task Context**: Feature requirements with technical constraints
+- **Implementation Blueprint**: Phase-based tasks with validation gates (see [Phase Structure](../../context/planning-methodology.md#phase-based-development))
+- **Validation Framework**: Quality gates, testing, and success metrics (see [Defining Success](../../context/planning-methodology.md#success-metrics))
 
 ### Systematic Execution
 - Phase-based implementation ([Phase Guidelines](../../context/planning-methodology.md#phase-guidelines))

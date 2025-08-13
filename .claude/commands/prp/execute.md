@@ -1,12 +1,12 @@
 # prp-execute - Execute Product Requirements Prompt with Tracking
 
-Systematically executes PRPs with real-time task tracking, quality gates, and git integration for the EOL RAG Framework.
+Systematically executes PRPs using context engineering methodology with real-time task tracking, validation gates, and self-correction mechanisms for any software development project.
 
 ## Command Overview
 
-**Purpose**: Execute PRP implementation with systematic tracking and validation
-**Target**: Plans in `.claude/plans/` following state lifecycle
-**Integration**: TodoWrite for tracking, git for version control
+**Purpose**: Execute PRP implementation using context engineering principles with systematic validation
+**Target**: Any PRP in `.claude/plans/` following structured implementation methodology
+**Integration**: TodoWrite for tracking, git for version control, automated quality gates
 
 ## Usage
 
@@ -16,14 +16,14 @@ Systematically executes PRPs with real-time task tracking, quality gates, and gi
 
 ### Examples
 ```bash
-# Execute a ready plan
-/prp:execute .claude/plans/ready/prp-semantic-caching.md
+# Execute any ready plan
+/prp:execute .claude/plans/ready/prp-user-authentication.md
 
 # Execute with specific branch name
-/prp:execute .claude/plans/ready/prp-vector-search.md --branch=feat/vector-search
+/prp:execute .claude/plans/ready/prp-notification-service.md --branch=feat/notifications
 
 # Dry run to preview execution
-/prp:execute .claude/plans/ready/prp-embeddings.md --dry-run
+/prp:execute .claude/plans/ready/prp-file-upload.md --dry-run
 ```
 
 ## Execution Process

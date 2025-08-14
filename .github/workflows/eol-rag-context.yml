@@ -283,7 +283,7 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
       run: |
-        source .venv/bin/activate
+        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
 
         # Clear Redis data
         redis-cli -h localhost -p 6379 FLUSHALL
@@ -357,7 +357,7 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
       run: |
-        source .venv/bin/activate
+        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
 
         python -m pytest tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics \
           -v --tb=short \

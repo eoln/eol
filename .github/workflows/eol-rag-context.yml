@@ -500,6 +500,34 @@ jobs:
           test-results/unit-coverage-badge.json
           test-results/integration-coverage-badge.json
 
+    - name: Commit coverage badges
+      if: github.ref == 'refs/heads/main'
+      working-directory: test-results
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        # Copy badge files to root and commit
+        mkdir -p ${{ github.workspace }}/.github/badges
+        [ -f unit-coverage-badge.json ] && cp unit-coverage-badge.json ${{ github.workspace }}/.github/badges/
+        [ -f integration-coverage-badge.json ] && cp integration-coverage-badge.json ${{ github.workspace }}/.github/badges/
+
+        cd ${{ github.workspace }}
+        git add .github/badges/*.json
+
+        # Only commit if there are changes
+        if ! git diff --cached --quiet; then
+          git commit -m "chore: update coverage badges [skip ci]
+
+          🤖 Generated with Claude Code
+
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+          git push
+        else
+          echo "No badge changes to commit"
+        fi
+
   # =========================================
   # Security Scan
   # =========================================

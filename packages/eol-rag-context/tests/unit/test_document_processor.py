@@ -524,7 +524,10 @@ class MyClass:
         processor.chunk_config.max_chunk_size = 20
         processor.chunk_config.chunk_overlap = 5
 
-        content = "This is a test sentence that will be split into chunks with overlap."
+        content = (
+            "This is a test sentence that will be split into chunks with overlap "
+            "to ensure continuity and proper testing of the overlap functionality."
+        )
 
         chunks = processor._chunk_text(content)
 

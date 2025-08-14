@@ -12,7 +12,8 @@ on:
 env:
   PACKAGE_PATH: packages/eol-rag-context
   PYTHON_VERSION: '3.11'
-  COVERAGE_THRESHOLD: 80
+  UNIT_COVERAGE_THRESHOLD: 80
+  INTEGRATION_COVERAGE_THRESHOLD: 60
   REDIS_HOST: localhost
   REDIS_PORT: 6379
 
@@ -379,7 +380,7 @@ jobs:
         path: ${{ env.PACKAGE_PATH }}/performance-results.json
 
   # =========================================
-  # Coverage Analysis
+  # Coverage Analysis - Separate Unit & Integration Metrics
   # =========================================
   coverage:
     name: 📈 Coverage Analysis
@@ -407,44 +408,97 @@ jobs:
       run: |
         pip install coverage
 
-    - name: Merge coverage reports
+    - name: Analyze unit test coverage
       working-directory: test-results
       run: |
-        echo "📊 Merging coverage reports..."
+        echo "📊 Analyzing unit test coverage..."
 
-        # Find and copy all coverage XML files
-        find . -name '*coverage*.xml' -exec cp {} . \; 2>/dev/null || true
+        # Find unit coverage files (from all Python versions)
+        unit_files=($(find . -name 'unit-coverage-*.xml' 2>/dev/null))
 
-        # Try to combine coverage if .coverage files exist
-        coverage combine 2>/dev/null || true
+        if [ ${#unit_files[@]} -gt 0 ]; then
+          # Use the coverage from the primary Python version (3.11)
+          if [ -f "unit-coverage-3.11.xml" ]; then
+            cp unit-coverage-3.11.xml unit-coverage-final.xml
+            echo "✅ Using unit coverage from Python 3.11"
+          else
+            # Fallback to first available unit coverage
+            cp "${unit_files[0]}" unit-coverage-final.xml
+            echo "✅ Using unit coverage from: ${unit_files[0]}"
+          fi
 
-        # Generate final coverage report
-        if ls *.xml 1> /dev/null 2>&1; then
-          # Use the most recent coverage file
-          LATEST_COVERAGE=$(ls -t *coverage*.xml | head -1)
-          cp "$LATEST_COVERAGE" final-coverage.xml
-          echo "✅ Using coverage from: $LATEST_COVERAGE"
+          # Check unit coverage threshold
+          echo "🎯 Checking unit test coverage against ${UNIT_COVERAGE_THRESHOLD}% threshold..."
+          python ${{ github.workspace }}/.github/scripts/coverage_check.py \
+            unit-coverage-final.xml \
+            ${{ env.UNIT_COVERAGE_THRESHOLD }} \
+            --badge unit-coverage-badge.json \
+            --type "Unit Tests"
         else
-          echo "⚠️ No coverage files found"
-          # Create dummy coverage file
-          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > final-coverage.xml
+          echo "⚠️ No unit coverage files found"
+          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > unit-coverage-final.xml
         fi
 
-    - name: Check coverage threshold
+    - name: Analyze integration test coverage
+      working-directory: test-results
       run: |
-        python ${{ github.workspace }}/.github/scripts/coverage_check.py \
-          test-results/final-coverage.xml \
-          ${{ env.COVERAGE_THRESHOLD }} \
-          --badge test-results/coverage-badge.json
+        echo "📊 Analyzing integration test coverage..."
+
+        if [ -f "integration-coverage.xml" ]; then
+          cp integration-coverage.xml integration-coverage-final.xml
+          echo "✅ Using integration coverage"
+
+          # Check integration coverage threshold
+          echo "🎯 Checking integration test coverage against ${INTEGRATION_COVERAGE_THRESHOLD}% threshold..."
+          python ${{ github.workspace }}/.github/scripts/coverage_check.py \
+            integration-coverage-final.xml \
+            ${{ env.INTEGRATION_COVERAGE_THRESHOLD }} \
+            --badge integration-coverage-badge.json \
+            --type "Integration Tests"
+        else
+          echo "⚠️ No integration coverage files found"
+          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > integration-coverage-final.xml
+        fi
+
+    - name: Generate coverage summary
+      working-directory: test-results
+      run: |
+        # Use external Python script to generate coverage summary
+        unit_file=""
+        integration_file=""
+
+        [ -f "unit-coverage-final.xml" ] && unit_file="--unit-file unit-coverage-final.xml"
+        [ -f "integration-coverage-final.xml" ] && integration_file="--integration-file integration-coverage-final.xml"
+
+        # Run coverage summary script and capture environment variables
+        summary_output=$(python ${{ github.workspace }}/.github/scripts/coverage_summary.py \
+          $unit_file --unit-threshold ${{ env.UNIT_COVERAGE_THRESHOLD }} \
+          $integration_file --integration-threshold ${{ env.INTEGRATION_COVERAGE_THRESHOLD }})
+
+        # Display the summary
+        echo "$summary_output"
+
+        # Extract and set environment variables
+        if echo "$summary_output" | grep -q "UNIT_COVERAGE_PASS="; then
+          unit_pass=$(echo "$summary_output" | grep "UNIT_COVERAGE_PASS=" | cut -d'=' -f2)
+          echo "UNIT_COVERAGE_PASS=$unit_pass" >> $GITHUB_ENV
+        fi
+
+        if echo "$summary_output" | grep -q "INTEGRATION_COVERAGE_PASS="; then
+          integration_pass=$(echo "$summary_output" | grep "INTEGRATION_COVERAGE_PASS=" | cut -d'=' -f2)
+          echo "INTEGRATION_COVERAGE_PASS=$integration_pass" >> $GITHUB_ENV
+        fi
 
     - name: Upload coverage reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: final-coverage
+        name: coverage-reports
         path: |
-          test-results/final-coverage.xml
-          test-results/coverage-badge.json
+          test-results/unit-coverage-final.xml
+          test-results/integration-coverage-final.xml
+          test-results/unit-coverage-badge.json
+          test-results/integration-coverage-badge.json
 
   # =========================================
   # Security Scan

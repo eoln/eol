@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check coverage against quality gate threshold."""
 
+import argparse
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -70,12 +71,15 @@ def check_coverage(
     return coverage, meets_threshold
 
 
-def generate_badge(coverage: float, output_file: str = "coverage-badge.json"):
+def generate_badge(
+    coverage: float, output_file: str = "coverage-badge.json", test_type: str = "Coverage"
+):
     """Generate a coverage badge JSON file.
 
     Args:
         coverage: Coverage percentage
         output_file: Output file path for badge data
+        test_type: Type of tests (e.g., "Unit Tests", "Integration Tests")
     """
     # Determine badge color
     if coverage >= 80:
@@ -88,7 +92,7 @@ def generate_badge(coverage: float, output_file: str = "coverage-badge.json"):
     # Create badge data
     badge_data = {
         "schemaVersion": 1,
-        "label": "coverage",
+        "label": f"{test_type.lower().replace(' ', '-')}-coverage",
         "message": f"{coverage:.1f}%",
         "color": color,
     }
@@ -97,35 +101,39 @@ def generate_badge(coverage: float, output_file: str = "coverage-badge.json"):
     with open(output_file, "w") as f:
         json.dump(badge_data, f, indent=2)
 
-    print(f"🏷️ Generated coverage badge: {coverage:.1f}% ({color})")
+    print(f"🏷️ Generated {test_type} coverage badge: {coverage:.1f}% ({color})")
 
 
 if __name__ == "__main__":
     # Parse command line arguments
-    if len(sys.argv) < 3:
-        print(
-            "Usage: python coverage_check.py <coverage_file> <threshold> " "[--badge <output_file>]"
-        )
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Check coverage against quality gate threshold")
+    parser.add_argument("coverage_file", help="Path to coverage file (JSON or XML)")
+    parser.add_argument("threshold", type=float, help="Required coverage percentage")
+    parser.add_argument("--badge", help="Generate badge JSON file")
+    parser.add_argument(
+        "--type", default="Coverage", help="Type of tests (e.g., 'Unit Tests', 'Integration Tests')"
+    )
+    parser.add_argument(
+        "--format", choices=["json", "xml", "auto"], default="auto", help="Coverage file format"
+    )
 
-    coverage_file = sys.argv[1]
-    threshold = float(sys.argv[2])
-
-    # Check for badge generation
-    generate_badge_file = None
-    if "--badge" in sys.argv:
-        badge_idx = sys.argv.index("--badge")
-        if badge_idx + 1 < len(sys.argv):
-            generate_badge_file = sys.argv[badge_idx + 1]
-        else:
-            generate_badge_file = "coverage-badge.json"
+    args = parser.parse_args()
 
     # Check coverage
-    coverage, meets_threshold = check_coverage(coverage_file, threshold)
+    coverage, meets_threshold = check_coverage(args.coverage_file, args.threshold, args.format)
+
+    # Print results
+    print(f"📊 {args.type} Coverage: {coverage:.1f}%")
+    print(f"🎯 Threshold: {args.threshold}%")
+
+    if meets_threshold:
+        print(f"✅ {args.type} coverage meets threshold")
+    else:
+        print(f"❌ {args.type} coverage below threshold ({coverage:.1f}% < {args.threshold}%)")
 
     # Generate badge if requested
-    if generate_badge_file:
-        generate_badge(coverage, generate_badge_file)
+    if args.badge:
+        generate_badge(coverage, args.badge, args.type)
 
     # Exit with appropriate code
     sys.exit(0 if meets_threshold else 1)

@@ -134,14 +134,18 @@ jobs:
     - name: Decide wheel cache building
       id: wheel-decision
       run: |
-        if [ "${{ github.event_name }}" = "schedule" ] ||
-           [ "${{ github.event.inputs.build_wheels }}" = "true" ] ||
-           [ "${{ steps.changes.outputs.dependencies }}" = "true" ]; then
+        # Always skip for PR events from forks (no cache write access)
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+          echo "needed=false" >> $GITHUB_OUTPUT
+          echo "⏭️ Wheel cache building skipped (PR from fork)"
+        elif [ "${{ github.event_name }}" = "schedule" ] ||
+             [ "${{ github.event.inputs.build_wheels }}" = "true" ] ||
+             [ "${{ steps.changes.outputs.dependencies }}" = "true" ]; then
           echo "needed=true" >> $GITHUB_OUTPUT
-          echo "🏗️ Wheel cache building needed"
+          echo "🏗️ Wheel cache building needed (dependencies changed or scheduled/manual build)"
         else
           echo "needed=false" >> $GITHUB_OUTPUT
-          echo "⏭️ Wheel cache building skipped"
+          echo "⏭️ Wheel cache building skipped (no dependency changes)"
         fi
 
   # =========================================
@@ -166,12 +170,30 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Generate wheel cache key
+      id: wheel-cache-key
+      run: |
+        # Generate cache key from dependency files
+        echo "cache-key=wheels-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/requirements*.txt') }}" >> $GITHUB_OUTPUT
+        echo "📝 Cache key: wheels-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/requirements*.txt') }}"
+
+    - name: Check wheel cache
+      id: cache-wheels
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        key: ${{ steps.wheel-cache-key.outputs.cache-key }}
+        restore-keys: |
+          wheels-${{ runner.os }}-py${{ matrix.python-version }}-
+
     - name: Install uv
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Create wheel cache
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
       working-directory: ${{ env.PACKAGE_PATH }}
       run: |
         echo "🔄 Creating optimized wheel cache for Python ${{ matrix.python-version }}..."
@@ -231,6 +253,13 @@ jobs:
 
         archive_size=$(du -sh wheels-py${{ matrix.python-version }}.tar.gz | cut -f1)
         echo "✅ Wheel cache created: $archive_size, $wheel_count packages"
+
+    - name: Report cache status
+      if: steps.cache-wheels.outputs.cache-hit == 'true'
+      run: |
+        echo "✅ Using cached wheels for Python ${{ matrix.python-version }}"
+        echo "📦 Cache hit! Skipping wheel download - saved ~1-2 minutes"
+        ls -lh ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz || true
 
     - name: Upload wheel cache
       uses: actions/upload-artifact@v4

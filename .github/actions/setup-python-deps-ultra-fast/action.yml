@@ -49,6 +49,16 @@ runs:
     # With wheel caches, dependency installation is already 5-10s
     # Caching venv adds overhead without performance benefit
 
+    # Try to restore wheel cache from GitHub cache first
+    - name: Try restoring wheel cache from GitHub cache
+      id: restore-wheel-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.working-directory }}/wheels-py${{ inputs.python-version }}.tar.gz
+        key: wheels-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/requirements*.txt') }}
+        restore-keys: |
+          wheels-${{ runner.os }}-py${{ inputs.python-version }}-
+
     # Try to download pre-built wheel cache using GitHub CLI (cross-workflow compatible)
     - name: Check for wheel cache availability
       id: check-wheels
@@ -61,7 +71,21 @@ runs:
         echo "WHEELS_AVAILABLE=false" >> $GITHUB_ENV
         echo "WHEEL_CACHE_STATUS=checking" >> $GITHUB_ENV
 
-        # Try to find recent wheel cache artifacts using GitHub CLI
+        # First check if we got cache from GitHub cache
+        if [ "${{ steps.restore-wheel-cache.outputs.cache-hit }}" = "true" ] && [ -f "wheels-py${{ inputs.python-version }}.tar.gz" ]; then
+          echo "📦 Found wheel cache from GitHub cache!"
+          if tar xzf wheels-py${{ inputs.python-version }}.tar.gz 2>/dev/null; then
+            if [ -d ".wheels-py${{ inputs.python-version }}" ] && [ "$(ls -A .wheels-py${{ inputs.python-version }} 2>/dev/null | wc -l)" -gt 0 ]; then
+              echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
+              echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
+              echo "WHEEL_CACHE_STATUS=github-cache" >> $GITHUB_ENV
+              echo "✅ Using cached wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages (from GitHub cache)"
+              exit 0
+            fi
+          fi
+        fi
+
+        # Try to find recent wheel cache artifacts using GitHub CLI as fallback
         echo "🔎 Looking for wheel cache from recent dependency optimization runs..."
 
         # Search for recent successful workflow runs that created wheel caches
@@ -209,8 +233,13 @@ runs:
         echo "  Environment: Fresh .venv-${{ inputs.python-version }} (no caching overhead)"
 
         case "$WHEEL_CACHE_STATUS" in
+          github-cache)
+            echo "  ⚡ Installation Method: GitHub cached wheels (ULTRA-FAST)"
+            echo "  📊 Performance: ~5-10s dependency setup"
+            echo "  💾 Cache restored from GitHub Actions cache"
+            ;;
           success)
-            echo "  ⚡ Installation Method: Pre-built wheel cache (ULTRA-FAST)"
+            echo "  ⚡ Installation Method: Pre-built wheel cache from artifacts (ULTRA-FAST)"
             echo "  📊 Performance: ~5-10s dependency setup"
             ;;
           no_workflow)

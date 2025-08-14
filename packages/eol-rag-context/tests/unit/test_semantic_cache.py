@@ -4,10 +4,8 @@ This test file contains meaningful tests for the SemanticCache class,
 extracted from coverage booster files and enhanced with real functionality testing.
 """
 
-import asyncio
-import json
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
@@ -251,7 +249,8 @@ class TestSemanticCache:
         semantic_cache.config.adaptive_threshold = True
         semantic_cache.adaptive_threshold = 0.83  # Below minimum
 
-        # Set up conditions for clamping: need >= 100 similarity scores and significant hit rate difference
+        # Set up conditions for clamping: need >= 100 similarity scores
+        # and significant hit rate difference
         semantic_cache.similarity_scores = [0.8] * 100
         semantic_cache.stats["queries"] = 200
         semantic_cache.stats["hits"] = 40  # 20% hit rate, far from target 31%

@@ -2,9 +2,7 @@
 Unit tests for main CLI module.
 """
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -69,7 +67,7 @@ class TestMainCLI:
             return None
 
         with patch("sys.argv", ["eol-rag-context", "bad_config.json"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print"):
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()
@@ -99,7 +97,7 @@ class TestMainCLI:
             return None  # Let other sys.exit calls be mocked normally
 
         with patch("sys.argv", ["eol-rag-context", "--help"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print") as mock_print:
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()
@@ -115,7 +113,7 @@ class TestMainCLI:
             return None  # Let other sys.exit calls be mocked normally
 
         with patch("sys.argv", ["eol-rag-context", "-h"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print") as mock_print:
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()

@@ -2,11 +2,9 @@
 Extra tests for semantic_cache to achieve 80% coverage.
 """
 
-import asyncio
-import json
 import sys
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
@@ -15,8 +13,8 @@ import pytest
 sys.modules["redis"] = MagicMock()
 sys.modules["redis.asyncio"] = MagicMock()
 
-from eol.rag_context import config
-from eol.rag_context.semantic_cache import CachedQuery, SemanticCache
+from eol.rag_context import config  # noqa: E402
+from eol.rag_context.semantic_cache import CachedQuery, SemanticCache  # noqa: E402
 
 
 class TestSemanticCacheExtra:
@@ -255,7 +253,7 @@ class TestSemanticCacheExtra:
         if hasattr(cache, "clear"):
             try:
                 await cache.clear()
-            except:
+            except Exception:
                 pass  # Expected to handle errors
 
     def test_cache_initialization_variations(self):

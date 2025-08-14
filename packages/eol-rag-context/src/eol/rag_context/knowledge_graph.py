@@ -591,8 +591,9 @@ class KnowledgeGraphBuilder:
         header_pattern = r"^#{1,6}\s+(.+)$"
         for match in re.finditer(header_pattern, content, re.MULTILINE):
             header_text = match.group(1)
+            header_hash = hashlib.md5(header_text.encode(), usedforsecurity=False).hexdigest()[:8]
             entity = Entity(
-                id=f"topic_{hashlib.md5(header_text.encode()).hexdigest()[:8]}",
+                id=f"topic_{header_hash}",
                 name=header_text,
                 type=EntityType.TOPIC,
                 content=header_text,
@@ -616,8 +617,11 @@ class KnowledgeGraphBuilder:
             code_content = match.group(2)
 
             if len(code_content) > 50:  # Skip very short code blocks
+                code_hash = hashlib.md5(code_content.encode(), usedforsecurity=False).hexdigest()[
+                    :8
+                ]
                 entity = Entity(
-                    id=f"code_{hashlib.md5(code_content.encode()).hexdigest()[:8]}",
+                    id=f"code_{code_hash}",
                     name=f"Code example ({language})",
                     type=EntityType.API,
                     content=code_content[:200],
@@ -659,8 +663,9 @@ class KnowledgeGraphBuilder:
                 elif any(org in term.lower() for org in ["inc", "corp", "company", "foundation"]):
                     entity_type = EntityType.ORGANIZATION
 
+                term_hash = hashlib.md5(term.encode(), usedforsecurity=False).hexdigest()[:8]
                 entity = Entity(
-                    id=f"term_{hashlib.md5(term.encode()).hexdigest()[:8]}",
+                    id=f"term_{term_hash}",
                     name=term,
                     type=entity_type,
                     content=term,

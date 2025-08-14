@@ -3,13 +3,11 @@ Improved tests for redis_client to boost coverage from 26% to 60%.
 """
 
 import asyncio
-import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 
-from eol.rag_context import config, knowledge_graph, redis_client
+from eol.rag_context import config, redis_client
 
 
 def test_vector_document():
@@ -368,7 +366,7 @@ async def test_connection_parameters():
     assert store.redis_config.port == 1234
     assert store.redis_config.password == "secret"
     assert store.redis_config.db == 5
-    assert store.redis_config.socket_keepalive == True
+    assert store.redis_config.socket_keepalive is True
     assert store.redis_config.max_connections == 20
 
 

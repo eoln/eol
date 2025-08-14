@@ -2,7 +2,6 @@
 Working server tests for achieving coverage on server.py module.
 """
 
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -101,9 +100,9 @@ class TestServerRequestModels:
         )
 
         assert request.path == "/test/path"
-        assert request.recursive == True
+        assert request.recursive is True
         assert request.file_patterns == ["*.py", "*.md"]
-        assert request.watch == False
+        assert request.watch is False
 
     def test_search_context_request(self):
         """Test SearchContextRequest model."""
@@ -142,7 +141,7 @@ class TestServerRequestModels:
         )
 
         assert request.path == "/watch/path"
-        assert request.recursive == True
+        assert request.recursive is True
         assert request.file_patterns == ["*.py"]
 
 
@@ -188,9 +187,9 @@ def test_request_model_defaults():
     # Test minimal IndexDirectoryRequest
     request = server.IndexDirectoryRequest(path="/test")
     assert request.path == "/test"
-    assert request.recursive == True
+    assert request.recursive is True
     assert request.file_patterns is None
-    assert request.watch == False
+    assert request.watch is False
 
     # Test minimal SearchContextRequest
     search_req = server.SearchContextRequest(query="test")
@@ -239,9 +238,6 @@ class TestServerMCPEndpoints:
         srv.redis_store.search_similar = AsyncMock(return_value=mock_results)
         srv.semantic_cache.get = AsyncMock(return_value=None)  # Cache miss
         srv.semantic_cache.set = AsyncMock()
-
-        # Mock the search context request
-        request = server.SearchContextRequest(query="test query", max_results=5, min_relevance=0.7)
 
         # The search_context tool is attached to the MCP server
         # We can test the logic by calling it directly if it exists
@@ -347,7 +343,7 @@ class TestServerMCPEndpoints:
 
         # Mock the initialization process
         with patch.object(srv, "initialize", new_callable=AsyncMock) as mock_init:
-            with patch.object(srv, "shutdown", new_callable=AsyncMock) as mock_shutdown:
+            with patch.object(srv, "shutdown", new_callable=AsyncMock):
                 srv.mcp = AsyncMock()
                 srv.mcp.run = AsyncMock()
 

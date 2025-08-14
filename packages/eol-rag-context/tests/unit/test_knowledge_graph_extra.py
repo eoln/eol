@@ -2,7 +2,7 @@
 Extra tests for knowledge_graph to achieve 80% coverage.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest

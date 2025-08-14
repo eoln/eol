@@ -4,7 +4,6 @@ This test file contains meaningful tests for the file watching components,
 extracted from coverage booster files and enhanced with real functionality testing.
 """
 
-import asyncio
 import tempfile
 import time
 from pathlib import Path

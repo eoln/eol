@@ -525,7 +525,7 @@ class FolderScanner:
             Source ID: a1b2c3d4e5f6g7h8
         """
         abs_path = str(path.resolve())
-        return hashlib.md5(abs_path.encode()).hexdigest()[:16]
+        return hashlib.md5(abs_path.encode(), usedforsecurity=False).hexdigest()[:16]
 
 
 class DocumentIndexer:
@@ -1060,9 +1060,8 @@ class DocumentIndexer:
         content = "\n\n".join([c["content"] for c in chunks])
 
         # Generate section ID
-        section_id = (
-            f"{base_metadata.source_id}_section_{hashlib.md5(content.encode()).hexdigest()[:8]}"
-        )
+        content_hash = hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()[:8]
+        section_id = f"{base_metadata.source_id}_section_{content_hash}"
 
         # Create section metadata - filter out None values for Redis
         section_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
@@ -1219,7 +1218,8 @@ class DocumentIndexer:
         """
         try:
             # Get stored metadata
-            file_key = f"file_meta:{hashlib.md5(str(file_path).encode()).hexdigest()}"
+            path_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()
+            file_key = f"file_meta:{path_hash}"
             stored = self.redis.redis.hgetall(file_key)
 
             if not stored:
@@ -1246,7 +1246,8 @@ class DocumentIndexer:
             file_hash: SHA-256 hash of file content.
             mtime: File modification timestamp.
         """
-        file_key = f"file_meta:{hashlib.md5(str(file_path).encode()).hexdigest()}"
+        file_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()
+        file_key = f"file_meta:{file_hash}"
 
         self.redis.redis.hset(
             file_key,

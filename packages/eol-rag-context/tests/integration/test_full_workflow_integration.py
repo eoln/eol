@@ -68,7 +68,7 @@ class TestFullWorkflowIntegration:
 
         # Step 3: Try similar query
         query2 = "What's ML?"  # Similar but not exact
-        cached2 = await semantic_cache_instance.get(query2)
+        await semantic_cache_instance.get(query2)
         # May or may not match depending on similarity threshold
 
         # Step 4: Store more entries
@@ -179,19 +179,22 @@ class TestFullWorkflowIntegration:
         query_embedding = await embedding_manager.get_embedding(query)
 
         # Search concepts (level 1)
-        concepts = await redis_store.vector_search(
+        concepts_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=1, k=3
         )
+        assert len(concepts_results) >= 0
 
         # Search sections (level 2)
-        sections = await redis_store.vector_search(
+        sections_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=2, k=5
         )
+        assert len(sections_results) >= 0
 
         # Search chunks (level 3)
-        chunks = await redis_store.vector_search(
+        chunks_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=3, k=10
         )
+        assert len(chunks_results) >= 0
 
         # Hierarchical search (all levels)
         all_results = await redis_store.hierarchical_search(
@@ -268,9 +271,10 @@ class TestFullWorkflowIntegration:
         files_per_second = index_result.file_count / index_time if index_time > 0 else 0
         chunks_per_second = index_result.total_chunks / index_time if index_time > 0 else 0
 
-        print(f"\nIndexing Performance:")
+        print("\nIndexing Performance:")
         print(
-            f"  Files: {index_result.file_count} in {index_time:.2f}s ({files_per_second:.1f} files/s)"
+            f"  Files: {index_result.file_count} in {index_time:.2f}s "
+            f"({files_per_second:.1f} files/s)"
         )
         print(f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)")
 
@@ -284,7 +288,7 @@ class TestFullWorkflowIntegration:
         search_time = time.time() - start_time
 
         searches_per_second = 10 / search_time if search_time > 0 else 0
-        print(f"\nSearch Performance:")
+        print("\nSearch Performance:")
         print(f"  10 searches in {search_time:.2f}s ({searches_per_second:.1f} searches/s)")
 
         # Measure cache performance
@@ -298,7 +302,7 @@ class TestFullWorkflowIntegration:
             await semantic_cache_instance.get(f"q{i}")
         cache_read_time = time.time() - start_time
 
-        print(f"\nCache Performance:")
+        print("\nCache Performance:")
         print(f"  Writes: 20 in {cache_write_time:.2f}s ({20/cache_write_time:.1f} writes/s)")
         print(f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)")
 

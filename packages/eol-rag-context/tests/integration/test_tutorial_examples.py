@@ -4,12 +4,8 @@ Ensures all tutorial code is runnable and correct with real Redis v8.
 """
 
 import asyncio
-import json
-import tempfile
 import time
-from pathlib import Path
 
-import numpy as np
 import pytest
 
 from eol.rag_context.config import RAGConfig
@@ -370,7 +366,7 @@ class TestTutorialExamples:
     async def test_documentation_search_example(
         self, redis_store, indexer_instance, temp_test_directory, embedding_manager
     ):
-        """Test: Documentation Search Example (from Integration Examples section) with real Redis."""
+        """Test: Documentation Search Example (from Integration Examples section)."""
 
         async def search_docs(query: str):
             server = EOLRAGContextServer()

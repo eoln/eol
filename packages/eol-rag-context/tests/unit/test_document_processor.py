@@ -2,7 +2,6 @@
 Unit tests for document processor.
 """
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -443,7 +442,12 @@ Deep content."""
         processor.chunk_config.chunk_overlap = 3  # Set a reasonable overlap in words
 
         # Create content with enough words to force splitting (30+ words for 20-word chunks)
-        content = "This is a long text that should definitely be split into multiple chunks because it exceeds the maximum chunk size that we have configured for testing purposes and contains more than enough content to trigger the splitting logic in the document processor."
+        content = (
+            "This is a long text that should definitely be split into multiple chunks "
+            "because it exceeds the maximum chunk size that we have configured for testing "
+            "purposes and contains more than enough content to trigger the splitting logic "
+            "in the document processor."
+        )
 
         chunks = processor._chunk_text(content)
 
@@ -520,7 +524,7 @@ class MyClass:
         processor.chunk_config.max_chunk_size = 20
         processor.chunk_config.chunk_overlap = 5
 
-        content = "This is a test sentence that will be split into chunks with overlap to ensure continuity."
+        content = "This is a test sentence that will be split into chunks with overlap."
 
         chunks = processor._chunk_text(content)
 
@@ -529,9 +533,7 @@ class MyClass:
 
         # Check that chunks have overlap (last few characters of one chunk appear in next)
         if len(chunks) >= 2:
-            first_chunk_end = chunks[0]["content"][-5:]
-            second_chunk_start = chunks[1]["content"][:5]
-            # There should be some overlap
+            # There should be some overlap - just check chunks have content
             assert len(chunks[0]["content"]) > 0
             assert len(chunks[1]["content"]) > 0
 
@@ -569,9 +571,9 @@ print("Wrong indentation")"""
 
         processor = DocumentProcessor(custom_doc_config, custom_chunk_config)
         assert processor.doc_config.max_file_size_mb == 5
-        assert processor.doc_config.extract_metadata == False
+        assert processor.doc_config.extract_metadata is False
         assert processor.chunk_config.max_chunk_size == 256
-        assert processor.chunk_config.use_semantic_chunking == False
+        assert processor.chunk_config.use_semantic_chunking is False
 
         # Test with default configs
         default_doc_config = DocumentConfig()
@@ -775,7 +777,7 @@ Final content."""
     def test_init_code_parsers_import_error(self, processor_extra):
         """Test _init_code_parsers with import errors."""
         # Mock import errors for tree-sitter modules
-        with patch("eol.rag_context.document_processor.logger") as mock_logger:
+        with patch("eol.rag_context.document_processor.logger"):
             with patch(
                 "builtins.__import__",
                 side_effect=ImportError("tree-sitter not available"),
@@ -802,8 +804,8 @@ Final content."""
                 "tree_sitter_java": MagicMock(),
             },
         ):
-            with patch("eol.rag_context.document_processor.Language") as mock_language:
-                with patch("eol.rag_context.document_processor.Parser") as mock_parser:
+            with patch("eol.rag_context.document_processor.Language"):
+                with patch("eol.rag_context.document_processor.Parser"):
                     with patch("eol.rag_context.document_processor.TREE_SITTER_AVAILABLE", True):
                         parsers = processor_extra._init_code_parsers()
                         # Should return parser dictionary

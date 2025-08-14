@@ -873,7 +873,7 @@ class FileWatcher:
         """Process file deletion."""
         try:
             # Remove from index
-            file_hash = hashlib.md5(str(change.path).encode()).hexdigest()
+            file_hash = hashlib.md5(str(change.path).encode(), usedforsecurity=False).hexdigest()
 
             # Delete chunks
             pattern = f"chunk:*{file_hash}*"

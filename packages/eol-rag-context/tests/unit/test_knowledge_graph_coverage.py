@@ -8,13 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
-from eol.rag_context.knowledge_graph import (
-    Entity,
-    EntityType,
-    KnowledgeGraphBuilder,
-    Relationship,
-    RelationType,
-)
+from eol.rag_context.knowledge_graph import Entity, EntityType, KnowledgeGraphBuilder, RelationType
 
 
 class TestKnowledgeGraphCoverage:
@@ -235,8 +229,6 @@ Content for section 2
         """Test NER entity extraction."""
         builder = builder_with_mock_redis
 
-        text = "Apple Inc. was founded by Steve Jobs in Cupertino."
-
         # _extract_entities_ner doesn't exist in the actual implementation
         # Just test that the builder can be used without errors
         assert builder is not None
@@ -282,8 +274,6 @@ Content for section 2
         builder.entities["org_company"] = e2
         builder.graph.add_node("person_john", name=e1.name, type=e1.type.value)
         builder.graph.add_node("org_company", name=e2.name, type=e2.type.value)
-
-        text = "John works at Company as a senior engineer."
 
         # _extract_relationships_pattern_based doesn't exist
         # Just verify the graph can handle relationships

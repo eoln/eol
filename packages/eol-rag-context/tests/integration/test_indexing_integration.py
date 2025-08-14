@@ -6,7 +6,6 @@ Tests real indexing workflow with Redis.
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from eol.rag_context import indexer
@@ -161,7 +160,7 @@ class TestIndexingIntegration:
             # Try to make it unreadable (platform-dependent)
             try:
                 bad_file.chmod(0o000)
-            except:
+            except OSError:
                 pass  # May not work on all platforms
 
             # Index should handle errors gracefully
@@ -173,7 +172,7 @@ class TestIndexingIntegration:
             # Clean up permissions
             try:
                 bad_file.chmod(0o644)
-            except:
+            except OSError:
                 pass
 
     @pytest.mark.asyncio

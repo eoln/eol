@@ -145,7 +145,7 @@ class EmbeddingManager:
 
     def _cache_key(self, text: str) -> str:
         """Generate cache key for text."""
-        return f"emb:{hashlib.md5(text.encode()).hexdigest()}"
+        return f"emb:{hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()}"
 
     async def get_embedding(self, text: str, use_cache: bool = True) -> np.ndarray:
         """Get embedding for text with caching."""

@@ -176,6 +176,10 @@ runs:
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
               pytest-cov redis redisvl sentence-transformers aioredis
             ;;
+          quality)
+            uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              black isort flake8 bandit
+            ;;
         esac
 
     - name: Install system dependencies

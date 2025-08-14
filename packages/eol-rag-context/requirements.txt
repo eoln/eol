@@ -39,3 +39,4 @@ tree-sitter-javascript>=0.20.0
 # Graph and utilities
 networkx>=3.0
 gitignore-parser>=0.1.0
+# Trigger dependency optimization - czw 14 sie 16:10:10 2025 CEST

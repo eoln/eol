@@ -261,6 +261,13 @@ jobs:
         echo "📦 Cache hit! Skipping wheel download - saved ~1-2 minutes"
         ls -lh ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz || true
 
+    - name: Save wheel cache to GitHub cache
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        key: ${{ steps.wheel-cache-key.outputs.cache-key }}
+
     - name: Upload wheel cache
       uses: actions/upload-artifact@v4
       with:

@@ -154,15 +154,18 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         echo "⚡ Installing from pre-built wheels..."
+        # Install with both offline wheels and online index for missing deps
         uv pip install \
           --python .venv-${{ inputs.python-version }}/bin/python \
           --find-links "$WHEEL_DIR" \
-          --no-index \
           pytest pytest-asyncio pytest-timeout pytest-xdist \
-          -r requirements.txt || {
-          echo "⚠️ Wheel installation failed, falling back to index"
-          export WHEELS_AVAILABLE=false
-        }
+          -r requirements.txt
+
+        # Ensure redis with search is installed
+        uv pip install \
+          --python .venv-${{ inputs.python-version }}/bin/python \
+          --find-links "$WHEEL_DIR" \
+          "redis[hiredis]>=5.0.0" redisvl
 
     - name: Install base dependencies (fallback)
       if: env.WHEELS_AVAILABLE != 'true'
@@ -185,23 +188,28 @@ runs:
         case "${{ inputs.test-type }}" in
           unit)
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              --find-links "$WHEEL_DIR" \
               pytest-cov sentence-transformers
             ;;
           integration)
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
-              pytest-cov redis redisvl sentence-transformers aioredis \
+              --find-links "$WHEEL_DIR" \
+              pytest-cov "redis[hiredis]>=5.0.0" redisvl sentence-transformers aioredis \
               watchdog gitignore-parser
             ;;
           performance)
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              --find-links "$WHEEL_DIR" \
               pytest-benchmark sentence-transformers
             ;;
           coverage)
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
-              pytest-cov redis redisvl sentence-transformers aioredis
+              --find-links "$WHEEL_DIR" \
+              pytest-cov "redis[hiredis]>=5.0.0" redisvl sentence-transformers aioredis
             ;;
           quality)
             uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              --find-links "$WHEEL_DIR" \
               black isort flake8 bandit
             ;;
         esac

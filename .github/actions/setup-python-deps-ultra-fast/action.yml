@@ -45,14 +45,9 @@ runs:
         restore-keys: |
           ml-models-${{ runner.os }}-
 
-    - name: Cache virtual environment
-      uses: actions/cache@v4
-      with:
-        path: ${{ inputs.working-directory }}/.venv-${{ inputs.python-version }}
-        key: venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}
-        restore-keys: |
-          venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-
-          venv-${{ runner.os }}-py${{ inputs.python-version }}-
+    # Virtual environment caching removed - redundant with wheel caches
+    # With wheel caches, dependency installation is already 5-10s
+    # Caching venv adds overhead without performance benefit
 
     # Try to download pre-built wheel cache using GitHub CLI (cross-workflow compatible)
     - name: Check for wheel cache availability
@@ -124,12 +119,10 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [ ! -d ".venv-${{ inputs.python-version }}" ]; then
-          echo "🔧 Creating virtual environment..."
-          uv venv .venv-${{ inputs.python-version }} --python ${{ inputs.python-version }}
-        else
-          echo "✅ Using cached virtual environment"
-        fi
+        echo "🔧 Creating fresh virtual environment..."
+        # Always create fresh venv (fast with wheel caches)
+        rm -rf .venv-${{ inputs.python-version }}
+        uv venv .venv-${{ inputs.python-version }} --python ${{ inputs.python-version }}
 
     - name: Install dependencies (ultra-fast with wheels)
       if: env.WHEELS_AVAILABLE == 'true'
@@ -209,7 +202,7 @@ runs:
         echo "🔧 Dependency Setup Summary:"
         echo "  Python Version: ${{ inputs.python-version }}"
         echo "  Test Type: ${{ inputs.test-type }}"
-        echo "  Environment: .venv-${{ inputs.python-version }}"
+        echo "  Environment: Fresh .venv-${{ inputs.python-version }} (no caching overhead)"
 
         case "$WHEEL_CACHE_STATUS" in
           success)

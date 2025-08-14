@@ -1,0 +1,81 @@
+name: Dependency Optimization
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly on Sunday
+
+jobs:
+  build-wheel-cache:
+    name: 🏗️ Build Wheel Cache
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Create wheel cache
+      working-directory: packages/eol-rag-context
+      run: |
+        echo "🔄 Creating optimized wheel cache for Python ${{ matrix.python-version }}..."
+
+        # Create wheel download directory
+        mkdir -p .wheels-py${{ matrix.python-version }}
+
+        # Create requirements from lock file
+        uv export --no-hashes > temp-requirements.txt
+
+        # Add test dependencies
+        cat >> temp-requirements.txt << EOF
+        pytest
+        pytest-asyncio
+        pytest-cov
+        pytest-timeout
+        pytest-xdist
+        pytest-benchmark
+        redis
+        redisvl
+        sentence-transformers
+        aioredis
+        watchdog
+        gitignore-parser
+        black
+        isort
+        flake8
+        bandit
+        safety
+        EOF
+
+        # Download all wheels using combined requirements
+        uv pip download \
+          --python ${{ matrix.python-version }} \
+          --dest .wheels-py${{ matrix.python-version }} \
+          -r temp-requirements.txt
+
+        # Create index of downloaded wheels
+        ls -la .wheels-py${{ matrix.python-version }} > .wheels-py${{ matrix.python-version }}/index.txt
+
+        # Create compressed archive
+        tar czf wheels-py${{ matrix.python-version }}.tar.gz .wheels-py${{ matrix.python-version }}
+
+        echo "✅ Wheel cache created: $(du -sh wheels-py${{ matrix.python-version }}.tar.gz)"
+
+    - name: Upload wheel cache
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-py${{ matrix.python-version }}
+        path: packages/eol-rag-context/wheels-py${{ matrix.python-version }}.tar.gz
+        retention-days: 30  # Keep wheels for a month

@@ -1,0 +1,178 @@
+name: 'Setup Python Dependencies (Ultra Fast)'
+description: 'Ultra-fast dependency setup using wheel cache and lockfile-based resolution'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+  test-type:
+    description: 'Type of test (unit, integration, performance, coverage)'
+    required: true
+  working-directory:
+    description: 'Working directory for installation'
+    required: false
+    default: 'packages/eol-rag-context'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    # Multi-layer caching strategy
+    - name: Cache pip wheels and packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+        key: pip-wheels-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}
+        restore-keys: |
+          pip-wheels-${{ runner.os }}-py${{ inputs.python-version }}-
+          pip-wheels-${{ runner.os }}-
+
+    - name: Cache ML models
+      if: inputs.test-type == 'integration' || inputs.test-type == 'coverage'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/torch
+          ~/.cache/huggingface
+        key: ml-models-${{ runner.os }}-all-MiniLM-L6-v2
+        restore-keys: |
+          ml-models-${{ runner.os }}-
+
+    - name: Cache virtual environment
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.working-directory }}/.venv-${{ inputs.python-version }}
+        key: venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-
+          venv-${{ runner.os }}-py${{ inputs.python-version }}-
+
+    # Try to download pre-built wheel cache
+    - name: Download wheel cache
+      id: download-wheels
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: wheels-py${{ inputs.python-version }}
+        path: /tmp/wheels-cache
+
+    - name: Extract wheel cache
+      if: steps.download-wheels.outcome == 'success'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📦 Extracting pre-built wheel cache..."
+        tar xzf /tmp/wheels-cache/wheels-py${{ inputs.python-version }}.tar.gz
+        if [ -d ".wheels-py${{ inputs.python-version }}" ]; then
+          echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
+          echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
+          echo "✅ Using pre-built wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages"
+        fi
+
+    - name: Install uv
+      shell: bash
+      run: |
+        if ! command -v uv &> /dev/null; then
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        fi
+
+    - name: Setup virtual environment
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ ! -d ".venv-${{ inputs.python-version }}" ]; then
+          echo "🔧 Creating virtual environment..."
+          uv venv .venv-${{ inputs.python-version }} --python ${{ inputs.python-version }}
+        else
+          echo "✅ Using cached virtual environment"
+        fi
+
+    - name: Install dependencies (ultra-fast with wheels)
+      if: env.WHEELS_AVAILABLE == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "⚡ Installing from pre-built wheels..."
+        uv pip install \
+          --python .venv-${{ inputs.python-version }}/bin/python \
+          --find-links "$WHEEL_DIR" \
+          --no-index \
+          pytest pytest-asyncio pytest-timeout pytest-xdist \
+          -r requirements.txt || {
+          echo "⚠️ Wheel installation failed, falling back to index"
+          export WHEELS_AVAILABLE=false
+        }
+
+    - name: Install base dependencies (fallback)
+      if: env.WHEELS_AVAILABLE != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📦 Installing base dependencies..."
+        uv pip install \
+          --python .venv-${{ inputs.python-version }}/bin/python \
+          --compile-bytecode \
+          pytest pytest-asyncio pytest-timeout pytest-xdist \
+          -r requirements.txt
+
+    - name: Install test-specific dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🔧 Installing ${{ inputs.test-type }}-specific dependencies..."
+
+        case "${{ inputs.test-type }}" in
+          unit)
+            uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              pytest-cov sentence-transformers
+            ;;
+          integration)
+            uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              pytest-cov redis redisvl sentence-transformers aioredis \
+              watchdog gitignore-parser
+            ;;
+          performance)
+            uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              pytest-benchmark sentence-transformers
+            ;;
+          coverage)
+            uv pip install --python .venv-${{ inputs.python-version }}/bin/python \
+              pytest-cov redis redisvl sentence-transformers aioredis
+            ;;
+        esac
+
+    - name: Install system dependencies
+      if: inputs.test-type == 'integration' || inputs.test-type == 'coverage'
+      shell: bash
+      run: |
+        if ! command -v redis-cli &> /dev/null; then
+          echo "📦 Installing Redis CLI..."
+          sudo apt-get update && sudo apt-get install -y redis-tools
+        fi
+
+    - name: Pre-download ML models
+      if: (inputs.test-type == 'integration' || inputs.test-type == 'coverage') && steps.download-wheels.outcome != 'success'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📥 Pre-downloading sentence transformer models..."
+        .venv-${{ inputs.python-version }}/bin/python -c \
+          "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
+
+    - name: Report setup method
+      shell: bash
+      run: |
+        if [ "$WHEELS_AVAILABLE" = "true" ]; then
+          echo "⚡ Dependencies installed from wheel cache (ultra-fast!)"
+        else
+          echo "📦 Dependencies installed from PyPI (with caching)"
+        fi
+        echo "Environment: .venv-${{ inputs.python-version }}"

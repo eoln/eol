@@ -74,7 +74,7 @@ jobs:
       if: steps.changes.outputs.package == 'true'
       id: cache
       run: |
-        echo "cache-key=deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}" >> $GITHUB_OUTPUT
+        echo "cache-key=deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
       if: steps.changes.outputs.package == 'true'
@@ -198,21 +198,16 @@ jobs:
           ~/.cache/huggingface
           ~/.cache/torch
           ${{ env.PACKAGE_PATH }}/.venv-${{ matrix.python-version }}
-        key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+        key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}
         restore-keys: |
           deps-${{ runner.os }}-py${{ matrix.python-version }}-
 
-    - name: Setup dependencies
-      working-directory: ${{ env.PACKAGE_PATH }}
-      run: |
-        if [ ! -d ".venv-${{ matrix.python-version }}" ]; then
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-          uv venv .venv-${{ matrix.python-version }}
-          uv pip install --python .venv-${{ matrix.python-version }}/bin/python \
-            pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist \
-            sentence-transformers -r requirements.txt
-        fi
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ matrix.python-version }}
+        test-type: unit
+        working-directory: ${{ env.PACKAGE_PATH }}
 
     - name: Run unit tests
       working-directory: ${{ env.PACKAGE_PATH }}
@@ -269,21 +264,12 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Restore dependencies
-      uses: actions/cache@v4
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
       with:
-        path: |
-          ~/.cache/pip
-          ~/.cache/uv
-          ~/.local/share/uv
-          ~/.cache/huggingface
-          ~/.cache/torch
-          ${{ env.PACKAGE_PATH }}/.venv
-        key: ${{ needs.setup.outputs.cache-key }}
-
-    - name: Install Redis CLI
-      run: |
-        sudo apt-get update && sudo apt-get install -y redis-tools
+        python-version: ${{ env.PYTHON_VERSION }}
+        test-type: integration
+        working-directory: ${{ env.PACKAGE_PATH }}
 
     - name: Wait for Redis
       run: |
@@ -359,23 +345,12 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Restore dependencies
-      uses: actions/cache@v4
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
       with:
-        path: |
-          ~/.cache/pip
-          ~/.cache/uv
-          ~/.local/share/uv
-          ~/.cache/huggingface
-          ~/.cache/torch
-          ${{ env.PACKAGE_PATH }}/.venv
-        key: ${{ needs.setup.outputs.cache-key }}
-
-    - name: Install additional performance dependencies
-      working-directory: ${{ env.PACKAGE_PATH }}
-      run: |
-        source .venv/bin/activate
-        pip install pytest-benchmark
+        python-version: ${{ env.PYTHON_VERSION }}
+        test-type: performance
+        working-directory: ${{ env.PACKAGE_PATH }}
 
     - name: Run performance tests
       working-directory: ${{ env.PACKAGE_PATH }}

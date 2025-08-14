@@ -341,12 +341,18 @@ jobs:
         safety
         EOF
 
-        # Download all wheels using combined requirements
+        # Download wheels using pip
         echo "⬇️ Downloading wheels for $(wc -l < temp-requirements.txt) packages..."
-        if ! uv pip download \
-          --python ${{ matrix.python-version }} \
+
+        # Create temporary venv
+        uv venv temp-venv --python ${{ matrix.python-version }}
+
+        # Use pip download to get wheels
+        if ! temp-venv/bin/pip download \
           --dest .wheels-py${{ matrix.python-version }} \
-          -r temp-requirements.txt; then
+          -r temp-requirements.txt \
+          --prefer-binary \
+          --no-deps; then
           echo "❌ Failed to download wheels"
           exit 1
         fi

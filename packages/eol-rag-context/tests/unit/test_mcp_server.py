@@ -3,9 +3,16 @@ Tests for MCP server functionality.
 """
 
 import asyncio
+import importlib.machinery
 import json
+import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+# Mock networkx with proper __spec__ for Python 3.13 (needed by server module)
+nx_mock = MagicMock()
+nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
+sys.modules["networkx"] = nx_mock
 
 import pytest
 from fastmcp import FastMCP
@@ -23,7 +30,9 @@ class TestMCPServer:
         # Create server but prevent auto-registration
         server = object.__new__(EOLRAGContextServer)
         server.config = test_config
-        server.mcp = FastMCP(name=test_config.server_name, version=test_config.server_version)
+        server.mcp = FastMCP(
+            name=test_config.server_name, version=test_config.server_version
+        )
 
         # Mock components to avoid Redis dependency
         server.redis_store = AsyncMock()
@@ -62,7 +71,9 @@ class TestMCPServer:
 
         server.knowledge_graph.build_from_documents = AsyncMock()
         server.knowledge_graph.query_subgraph = AsyncMock(
-            return_value=Mock(entities=[], relationships=[], central_entities=[], metadata={})
+            return_value=Mock(
+                entities=[], relationships=[], central_entities=[], metadata={}
+            )
         )
         server.knowledge_graph.get_graph_stats = Mock(return_value={"entity_count": 0})
 
@@ -103,7 +114,9 @@ class TestMCPServer:
         result = await server.index_directory(request.path, recursive=request.recursive)
 
         assert result["source_id"] == "test_source"
-        assert result["indexed_files"] == 10  # This is what the indexer mock returns as file_count
+        assert (
+            result["indexed_files"] == 10
+        )  # This is what the indexer mock returns as file_count
         assert result["total_chunks"] == 50
         server.indexer.index_folder.assert_called_once()
 

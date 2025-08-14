@@ -6,8 +6,10 @@ on:
     paths:
       - 'packages/eol-rag-context/**'
       - '.github/workflows/eol-rag-context.yml'
-      - '.github/actions/setup-python-deps/**'
+      - '.github/actions/**'
       - '.github/scripts/**'
+      - '.github/badges/**'
+      - 'README.md'
 
 env:
   PACKAGE_PATH: packages/eol-rag-context

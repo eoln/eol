@@ -3,6 +3,7 @@
 ## Overview
 
 The EOL RAG Context MCP Server includes comprehensive testing at multiple levels:
+
 - **Unit Tests**: Test individual components in isolation
 - **Integration Tests**: Test component interactions with Redis
 - **MCP Server Tests**: Test the MCP protocol implementation
@@ -160,7 +161,7 @@ async def test_index_directory_tool(server):
         recursive=True,
         watch=False
     )
-    
+
     result = await index_tool.function(request, Mock())
     assert result["source_id"] == "test_source"
 ```
@@ -219,7 +220,7 @@ async def test_concurrent_operations():
 async def test_redis_reconnection():
     # Simulate connection loss
     await redis_store.close()
-    
+
     # Should reconnect automatically
     await redis_store.connect_async()
     assert await redis_store.async_redis.ping()
@@ -277,7 +278,7 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       redis:
         image: redis/redis-stack:latest
@@ -288,21 +289,21 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install -e ".[dev]"
-      
+
       - name: Run tests
         run: |
           pytest --redis --cov=eol.rag_context
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 ```
@@ -369,27 +370,31 @@ open htmlcov/index.html
 ### Common Issues
 
 1. **Redis Connection Failed**
+
    ```bash
    # Check Redis is running
    redis-cli ping
-   
+
    # Check correct port
    lsof -i :6379
    ```
 
 2. **Import Errors**
+
    ```bash
    # Ensure package is installed
    pip install -e .
    ```
 
 3. **Slow Tests**
+
    ```bash
    # Run tests in parallel
    pytest -n auto
    ```
 
 4. **Flaky Tests**
+
    ```bash
    # Rerun failures
    pytest --reruns 3
@@ -448,6 +453,7 @@ When adding new features:
 ## Support
 
 For test-related issues:
+
 - Check the [GitHub Issues](https://github.com/eoln/eol/issues)
 - Review test output carefully
 - Enable debug logging

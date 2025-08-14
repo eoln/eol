@@ -135,7 +135,7 @@ class TestMainCLI:
         with patch("sys.argv", ["eol-rag-context"]):
             # Should handle KeyboardInterrupt gracefully without sys.exit
             main.main()
-            
+
             mock_config.assert_called_once()
             mock_server.assert_called_once()
             mock_asyncio.run.assert_called_once()

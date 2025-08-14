@@ -79,9 +79,7 @@ async def test_connection_management():
     mock_async_redis = AsyncMock()
     mock_async_redis.ping = AsyncMock(return_value=True)
 
-    with patch(
-        "eol.rag_context.redis_client.AsyncRedis", return_value=mock_async_redis
-    ):
+    with patch("eol.rag_context.redis_client.AsyncRedis", return_value=mock_async_redis):
         await store.connect_async()
         assert store.async_redis is not None
         mock_async_redis.ping.assert_called_once()
@@ -94,9 +92,7 @@ async def test_vector_operations():
     # Mock Redis FT operations
     mock_redis = MagicMock()
     mock_ft = MagicMock()
-    mock_ft.info.side_effect = Exception(
-        "Index not found"
-    )  # First time, index doesn't exist
+    mock_ft.info.side_effect = Exception("Index not found")  # First time, index doesn't exist
     mock_ft.create_index = MagicMock()
     mock_redis.ft.return_value = mock_ft
 
@@ -167,9 +163,7 @@ async def test_vector_search():
         ),
     ]
 
-    with patch.object(
-        store, "vector_search", return_value=expected_results
-    ) as mock_search:
+    with patch.object(store, "vector_search", return_value=expected_results) as mock_search:
         query_embedding = np.random.rand(384).astype(np.float32)
         results = await store.vector_search(query_embedding, hierarchy_level=3, k=5)
 
@@ -200,9 +194,7 @@ async def test_hierarchical_search():
         }
     ]
 
-    with patch.object(
-        store, "hierarchical_search", return_value=expected_results
-    ) as mock_search:
+    with patch.object(store, "hierarchical_search", return_value=expected_results) as mock_search:
         query_embedding = np.random.rand(384).astype(np.float32)
         results = await store.hierarchical_search(
             query_embedding, max_chunks=5, strategy="detailed"
@@ -236,9 +228,7 @@ async def test_error_handling():
     # Test async connection error handling
     with patch("eol.rag_context.redis_client.AsyncRedis") as mock_async_redis_class:
         mock_async_redis_instance = AsyncMock()
-        mock_async_redis_instance.ping = AsyncMock(
-            side_effect=Exception("Async connection failed")
-        )
+        mock_async_redis_instance.ping = AsyncMock(side_effect=Exception("Async connection failed"))
         mock_async_redis_class.return_value = mock_async_redis_instance
 
         try:
@@ -261,9 +251,7 @@ async def test_document_tree_functionality():
         "children": [],
     }
 
-    with patch.object(
-        store, "get_document_tree", return_value=expected_tree
-    ) as mock_tree:
+    with patch.object(store, "get_document_tree", return_value=expected_tree) as mock_tree:
         result = await store.get_document_tree("test_doc")
 
         assert result["id"] == "test_doc"
@@ -743,14 +731,10 @@ async def test_get_document_tree_functionality():
 def test_configuration_variations():
     """Test store initialization with different configurations."""
     # Test with custom Redis config
-    custom_redis_config = config.RedisConfig(
-        host="custom-host", port=1234, db=5, password="secret"
-    )
+    custom_redis_config = config.RedisConfig(host="custom-host", port=1234, db=5, password="secret")
 
     # Test with custom Index config
-    custom_index_config = config.IndexConfig(
-        index_name="custom_index", m=32, ef_construction=400
-    )
+    custom_index_config = config.IndexConfig(index_name="custom_index", m=32, ef_construction=400)
 
     store = redis_client.RedisVectorStore(custom_redis_config, custom_index_config)
 
@@ -778,9 +762,7 @@ async def test_connection_scenarios():
     mock_async_redis = AsyncMock()
     mock_async_redis.ping = AsyncMock(side_effect=ConnectionError("Connection failed"))
 
-    with patch(
-        "eol.rag_context.redis_client.AsyncRedis", return_value=mock_async_redis
-    ):
+    with patch("eol.rag_context.redis_client.AsyncRedis", return_value=mock_async_redis):
         try:
             await store.connect_async()
             assert False, "Should have raised connection error"

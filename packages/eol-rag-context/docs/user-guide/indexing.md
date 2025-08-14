@@ -29,13 +29,13 @@ async def index_single_file():
     # Initialize server
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Index a single file
     result = await server.index_file(
         file_path="/path/to/document.py",
         force_reindex=True
     )
-    
+
     print(f"Indexed: {result['file_path']}")
     print(f"Chunks created: {result['chunks_created']}")
     print(f"Processing time: {result['processing_time']:.2f}s")
@@ -51,7 +51,7 @@ Index entire directories with flexible patterns:
 async def index_directory():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     result = await server.index_directory(
         directory_path="/path/to/project",
         recursive=True,
@@ -59,7 +59,7 @@ async def index_directory():
         exclude_patterns=["*.pyc", "__pycache__/*", ".git/*"],
         force_reindex=False  # Skip unchanged files
     )
-    
+
     print(f"Indexed {result['indexed_files']} files")
     print(f"Created {result['total_chunks']} chunks")
     print(f"Skipped {result['skipped_files']} unchanged files")
@@ -74,6 +74,7 @@ asyncio.run(index_directory())
 Code files use AST (Abstract Syntax Tree) parsing for structure-aware chunking.
 
 **Supported Languages:**
+
 - Python (`.py`)
 - JavaScript/TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`)
 - Rust (`.rs`)
@@ -83,12 +84,13 @@ Code files use AST (Abstract Syntax Tree) parsing for structure-aware chunking.
 - C# (`.cs`)
 
 **Chunking Strategy:**
+
 ```python
 # Python code is chunked by:
 class MyClass:           # ← Class-level chunk
     def method1(self):   # ← Method-level chunk
         pass
-    
+
     def method2(self):   # ← Separate method chunk
         pass
 
@@ -97,6 +99,7 @@ def standalone_function():  # ← Function-level chunk
 ```
 
 **Configuration:**
+
 ```yaml
 indexing:
   parse_code_structure: true    # Enable AST parsing
@@ -118,6 +121,7 @@ More content...           ← Chunk level
 ```
 
 **Configuration:**
+
 ```yaml
 chunking:
   markdown_split_headers: true    # Split by headers
@@ -129,24 +133,26 @@ chunking:
 PDF processing extracts text while preserving document structure:
 
 **Features:**
+
 - Text extraction from pages
 - Metadata extraction (title, author, creation date)
 - Paragraph-based chunking
 - Page number preservation
 
 **Example:**
+
 ```python
 async def index_pdf_collection():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Configure for PDF processing
     config = {
         "max_file_size_mb": 50,  # Skip very large PDFs
         "extract_metadata": True,
         "chunk_by_pages": False,  # Use paragraph chunking
     }
-    
+
     result = await server.index_directory(
         directory_path="/path/to/pdfs",
         file_patterns=["*.pdf"],
@@ -171,6 +177,7 @@ JSON and YAML files are processed with structure awareness:
 ```
 
 **Configuration:**
+
 ```yaml
 indexing:
   structured_chunk_by_key: true   # Chunk by top-level keys
@@ -194,12 +201,13 @@ async def configure_semantic_chunking():
             "paragraph_threshold": 0.3,   # Minimum paragraph coherence
         }
     }
-    
+
     server = EOLRAGContextServer(config=config)
     await server.initialize()
 ```
 
 **Benefits:**
+
 - Preserves meaning across chunk boundaries
 - Maintains paragraph coherence
 - Better context for search results
@@ -219,7 +227,7 @@ async def setup_hierarchical_indexing():
                     "chunk_size": 2000,
                     "overlap": 100,
                 },
-                "section": {          # Medium-level sections  
+                "section": {          # Medium-level sections
                     "chunk_size": 1000,
                     "overlap": 200,
                 },
@@ -256,7 +264,7 @@ async def content_aware_indexing():
             "validate_syntax": True,
         }
     }
-    
+
     for content_type, rules in processing_rules.items():
         await server.index_with_rules(
             path="/path/to/content",
@@ -275,7 +283,7 @@ Efficiently process thousands of documents:
 async def batch_index_large_collection():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Configure for batch processing
     batch_config = {
         "batch_size": 50,           # Process 50 files at once
@@ -284,17 +292,17 @@ async def batch_index_large_collection():
         "error_handling": "skip",   # Skip problematic files
         "progress_callback": log_progress,
     }
-    
+
     # Process large collection
     result = await server.batch_index(
         directories=[
             "/path/to/docs",
-            "/path/to/code", 
+            "/path/to/code",
             "/path/to/research"
         ],
         **batch_config
     )
-    
+
     print(f"Processed {result['total_files']} files")
     print(f"Success rate: {result['success_rate']:.1%}")
 
@@ -313,7 +321,7 @@ Only process changed files for faster updates:
 async def incremental_indexing():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Index only changed files since last run
     result = await server.index_directory(
         directory_path="/path/to/project",
@@ -321,7 +329,7 @@ async def incremental_indexing():
         checksum_validation=True,   # Verify file changes
         track_deletions=True,       # Remove deleted files from index
     )
-    
+
     print(f"Updated files: {result['updated_files']}")
     print(f"Deleted files: {result['deleted_files']}")
     print(f"Unchanged files: {result['unchanged_files']}")
@@ -415,7 +423,7 @@ Track indexing performance and quality:
 async def monitor_indexing():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Enable metrics collection
     await server.enable_metrics(
         track_performance=True,
@@ -423,15 +431,15 @@ async def monitor_indexing():
         export_metrics=True,
         metrics_interval=60  # seconds
     )
-    
+
     # Get indexing statistics
     stats = await server.get_indexing_stats()
-    
+
     print("Indexing Performance:")
     print(f"  Files per minute: {stats['files_per_minute']}")
     print(f"  Chunks per file: {stats['avg_chunks_per_file']}")
     print(f"  Processing time per MB: {stats['time_per_mb']:.2f}s")
-    
+
     print("Quality Metrics:")
     print(f"  Average chunk size: {stats['avg_chunk_size']} chars")
     print(f"  Embedding quality score: {stats['embedding_quality']}")
@@ -446,7 +454,7 @@ Monitor system health during indexing:
 async def health_monitoring():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Set up health monitoring
     health_config = {
         "memory_threshold_mb": 2048,    # Alert if exceeding 2GB
@@ -454,12 +462,12 @@ async def health_monitoring():
         "error_rate_threshold": 0.05,   # Alert if >5% files fail
         "redis_connection_timeout": 30,
     }
-    
+
     await server.setup_health_monitoring(**health_config)
-    
+
     # Check system health
     health = await server.get_health_status()
-    
+
     if health['status'] == 'healthy':
         print("✅ System healthy")
     else:
@@ -483,7 +491,7 @@ code_patterns = [
     "*.json", "*.yaml", "*.yml",  # Configuration
 ]
 
-# Research/documentation project  
+# Research/documentation project
 docs_patterns = [
     "*.md", "*.rst", "*.txt",
     "*.pdf", "*.docx",
@@ -493,7 +501,7 @@ docs_patterns = [
 # Mixed content project
 mixed_patterns = [
     "*.py", "*.js", "*.md",     # Core files
-    "*.pdf", "*.docx",          # Documents  
+    "*.pdf", "*.docx",          # Documents
     "*.json", "*.yaml",         # Config
     "*.sql",                    # Database
 ]
@@ -516,7 +524,7 @@ Process files differently based on characteristics:
 async def conditional_processing():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Define processing rules
     rules = [
         {
@@ -536,7 +544,7 @@ async def conditional_processing():
             "action": {"priority": "low", "chunk_size": 1000}
         }
     ]
-    
+
     await server.index_with_rules("/path/to/project", rules=rules)
 ```
 
@@ -545,23 +553,24 @@ async def conditional_processing():
 ### Common Issues
 
 **Files Not Being Indexed:**
+
 ```python
 # Debug file pattern matching
 async def debug_patterns():
     import fnmatch
-    
+
     patterns = ["*.py", "*.md"]
     exclude_patterns = ["*test*", "__pycache__/*"]
-    
+
     for file_path in Path("/path/to/check").rglob("*"):
         # Check if file matches include patterns
-        included = any(fnmatch.fnmatch(file_path.name, pattern) 
+        included = any(fnmatch.fnmatch(file_path.name, pattern)
                       for pattern in patterns)
-        
-        # Check if file matches exclude patterns  
+
+        # Check if file matches exclude patterns
         excluded = any(fnmatch.fnmatch(str(file_path), pattern)
                       for pattern in exclude_patterns)
-        
+
         if included and not excluded:
             print(f"✅ Would index: {file_path}")
         elif included and excluded:
@@ -571,20 +580,21 @@ async def debug_patterns():
 ```
 
 **Memory Issues During Indexing:**
+
 ```python
 # Monitor memory usage
 import psutil
 
 async def memory_aware_indexing():
     process = psutil.Process()
-    
+
     def check_memory():
         memory_mb = process.memory_info().rss / 1024 / 1024
         if memory_mb > 2048:  # 2GB threshold
             print(f"⚠️ High memory usage: {memory_mb:.0f}MB")
             return False
         return True
-    
+
     # Process files with memory checks
     files = list(Path("/path/to/project").rglob("*.py"))
     for i, file_path in enumerate(files):
@@ -592,41 +602,42 @@ async def memory_aware_indexing():
             # Force garbage collection
             import gc
             gc.collect()
-            
+
         await server.index_file(file_path)
 ```
 
 **Slow Processing:**
+
 ```python
-# Profile indexing performance  
+# Profile indexing performance
 import time
 from collections import defaultdict
 
 async def profile_indexing():
     timings = defaultdict(list)
-    
+
     async def timed_index(file_path):
         start = time.time()
         result = await server.index_file(file_path)
         duration = time.time() - start
-        
+
         file_size = file_path.stat().st_size / 1024  # KB
         timings[file_path.suffix].append({
             'duration': duration,
             'size_kb': file_size,
             'chunks': result.get('chunks_created', 0)
         })
-        
+
         return result
-    
+
     # Profile different file types
     for pattern in ["*.py", "*.md", "*.pdf"]:
         files = list(Path("/path/to/project").rglob(pattern))[:10]  # Sample
-        
+
         print(f"\nProfiling {pattern} files:")
         for file_path in files:
             await timed_index(file_path)
-        
+
         # Analyze timings
         pattern_timings = timings[pattern.replace("*", "")]
         if pattern_timings:
@@ -648,12 +659,12 @@ async def profile_indexing():
 ### Production Deployment
 
 1. **Resource Planning**: Estimate memory and storage needs
-2. **Batch Processing**: Use incremental updates for large datasets  
+2. **Batch Processing**: Use incremental updates for large datasets
 3. **Error Handling**: Implement robust retry mechanisms
 4. **Monitoring**: Set up alerts for performance and errors
 5. **Backup Strategy**: Regular index backups and recovery plans
 
-### Quality Assurance  
+### Quality Assurance
 
 1. **Content Validation**: Ensure meaningful chunk boundaries
 2. **Metadata Accuracy**: Verify extracted metadata is correct

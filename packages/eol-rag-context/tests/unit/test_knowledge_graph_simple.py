@@ -33,9 +33,7 @@ class TestKnowledgeGraphSimple:
             return_value=np.random.rand(384).astype(np.float32)
         )
 
-        builder = KnowledgeGraphBuilder(
-            redis_store=mock_redis, embedding_manager=mock_embeddings
-        )
+        builder = KnowledgeGraphBuilder(redis_store=mock_redis, embedding_manager=mock_embeddings)
         return builder
 
     def test_builder_initialization(self, graph_builder):
@@ -94,9 +92,7 @@ class TestKnowledgeGraphSimple:
     async def test_query_subgraph(self, graph_builder):
         """Test query_subgraph method."""
         # Mock embedding
-        graph_builder.embeddings.get_embedding.return_value = np.random.rand(
-            384
-        ).astype(np.float32)
+        graph_builder.embeddings.get_embedding.return_value = np.random.rand(384).astype(np.float32)
 
         # Mock Redis search
         graph_builder.redis.search_similar = AsyncMock(return_value=[])

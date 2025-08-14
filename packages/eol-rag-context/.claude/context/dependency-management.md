@@ -3,11 +3,13 @@
 ## Current State Analysis
 
 The EOL project is structured as a Python monorepo with multiple packages:
+
 - `packages/eol-core/` - Core framework engine
 - `packages/eol-cli/` - Command-line interface
 - `packages/eol-rag-context/` - RAG context MCP server (current package)
 
 Currently, each package manages its own dependencies independently:
+
 - Individual `pyproject.toml` per package
 - Separate `requirements.txt` and `requirements-dev.txt` files
 - No root-level dependency coordination
@@ -38,12 +40,14 @@ eol/
 ```
 
 **Benefits:**
+
 - ✅ Centralized version control for common dependencies
 - ✅ Package-specific flexibility for unique requirements
 - ✅ Easier security updates across all packages
 - ✅ Consistent development environment
 
 **Implementation:**
+
 ```toml
 # Root pyproject.toml
 [tool.uv.workspace]
@@ -57,6 +61,7 @@ eol-cli = { workspace = true }
 ### 2. **Tool-Specific Approaches**
 
 #### **UV (Modern Python Package Manager)**
+
 UV is particularly well-suited for monorepos with its workspace feature:
 
 ```bash
@@ -77,12 +82,14 @@ uv add redis
 ```
 
 **Advantages:**
+
 - Built-in workspace support
 - Fast dependency resolution
 - Lock file for reproducibility
 - Compatible with pip
 
 #### **Poetry with Path Dependencies**
+
 ```toml
 # packages/eol-rag-context/pyproject.toml
 [tool.poetry.dependencies]
@@ -92,12 +99,15 @@ redis = "^5.0.0"
 ```
 
 **Advantages:**
+
 - Mature tooling
 - Good IDE support
 - Automatic virtual environment management
 
 #### **Pants Build System**
+
 For large-scale monorepos:
+
 ```python
 # BUILD file in package root
 python_sources(
@@ -113,6 +123,7 @@ python_requirements(
 ```
 
 **Advantages:**
+
 - Fine-grained caching
 - Parallel builds
 - Advanced dependency analysis
@@ -120,6 +131,7 @@ python_requirements(
 ### 3. **Dependency Organization Patterns**
 
 #### **Pattern 1: Centralized Dependencies (Simple)**
+
 All dependencies in root, packages only declare what they use:
 
 ```
@@ -137,6 +149,7 @@ sentence-transformers>=2.2.0
 **When to use:** Small to medium monorepos with high dependency overlap
 
 #### **Pattern 2: Layered Dependencies (Scalable)**
+
 ```
 requirements/
 ├── core.txt          # Absolute essentials (pydantic, typing-extensions)
@@ -150,6 +163,7 @@ requirements/
 **When to use:** Large monorepos with diverse package types
 
 #### **Pattern 3: Package Groups (Domain-Driven)**
+
 ```
 requirements/
 ├── framework/        # Core framework deps
@@ -168,6 +182,7 @@ requirements/
 ### 4. **Version Management Strategies**
 
 #### **Constraint Files**
+
 Use a central constraints file to ensure version consistency:
 
 ```txt
@@ -183,6 +198,7 @@ pip install -r requirements.txt -c requirements/constraints.txt
 ```
 
 #### **Version Ranges**
+
 Define acceptable version ranges centrally:
 
 ```txt
@@ -195,6 +211,7 @@ numpy==1.24.0        # Exact version for stability
 ### 5. **Dependency Resolution Workflow**
 
 #### **Development Workflow**
+
 ```bash
 # 1. Add new dependency to package
 cd packages/eol-rag-context
@@ -211,6 +228,7 @@ pip install -r requirements.txt -c ../../requirements/constraints.txt
 ```
 
 #### **CI/CD Integration**
+
 ```yaml
 # .github/workflows/deps.yml
 name: Dependency Management
@@ -227,7 +245,7 @@ jobs:
         run: |
           pip-compile requirements/base.txt -o requirements/locked.txt
           pip check
-      
+
       - name: Security audit
         run: |
           pip-audit -r requirements/locked.txt
@@ -237,6 +255,7 @@ jobs:
 ### 6. **Migration Path for EOL Project**
 
 #### **Phase 1: Centralize Common Dependencies**
+
 ```bash
 # Create central requirements
 mkdir -p requirements
@@ -247,6 +266,7 @@ cat packages/*/requirements.txt | sort -u > requirements/analysis.txt
 ```
 
 #### **Phase 2: Implement Constraints**
+
 ```bash
 # Create constraints file
 pip freeze > requirements/constraints.txt
@@ -256,6 +276,7 @@ echo "-c ../../requirements/constraints.txt" >> packages/eol-rag-context/require
 ```
 
 #### **Phase 3: Adopt UV Workspaces**
+
 ```toml
 # Root pyproject.toml
 [project]
@@ -275,6 +296,7 @@ constraint-dependencies = [
 ### 7. **Best Practices**
 
 #### **DO:**
+
 - ✅ Use constraint files for version consistency
 - ✅ Pin major versions, allow minor updates
 - ✅ Centralize common dependencies
@@ -284,6 +306,7 @@ constraint-dependencies = [
 - ✅ Document dependency decisions
 
 #### **DON'T:**
+
 - ❌ Duplicate version specifications across packages
 - ❌ Use unpinned dependencies in production
 - ❌ Mix dependency management tools
@@ -293,6 +316,7 @@ constraint-dependencies = [
 ### 8. **Tooling Recommendations**
 
 #### **Essential Tools:**
+
 ```bash
 # UV - Modern package manager
 pip install uv
@@ -308,6 +332,7 @@ pip install pipdeptree
 ```
 
 #### **Helper Scripts:**
+
 ```bash
 #!/bin/bash
 # scripts/sync-deps.sh
@@ -324,15 +349,19 @@ done
 ### 9. **Common Issues and Solutions**
 
 #### **Issue: Version Conflicts**
+
 **Solution:** Use constraint files and test resolution in CI
 
 #### **Issue: Slow Installation**
+
 **Solution:** Use UV or implement caching layers
 
 #### **Issue: Different Python Versions**
+
 **Solution:** Use pyenv + virtual environments per package
 
 #### **Issue: Private Dependencies**
+
 **Solution:** Use index-url configuration or path dependencies
 
 ### 10. **Decision Matrix**
@@ -385,6 +414,7 @@ eol/
 ```
 
 This approach provides the best balance of:
+
 - **Simplicity**: Easy to understand and implement
 - **Flexibility**: Packages can have unique dependencies
 - **Maintainability**: Central version management

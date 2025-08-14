@@ -3,6 +3,7 @@
 ## Test Structure
 
 ### Basic Test Organization
+
 ```python
 # tests/test_document_processor.py
 import pytest
@@ -11,7 +12,7 @@ from eol.rag_context import DocumentProcessor
 
 class TestDocumentProcessor:
     """Group related tests in classes"""
-    
+
     @pytest.fixture
     async def processor(self):
         """Setup processor for tests"""
@@ -19,7 +20,7 @@ class TestDocumentProcessor:
         yield proc
         # Cleanup if needed
         await proc.close()
-    
+
     async def test_process_text_document(self, processor):
         """Test processing text documents"""
         result = await processor.process("test.txt", "content")
@@ -30,6 +31,7 @@ class TestDocumentProcessor:
 ## Fixtures
 
 ### Reusable Test Setup
+
 ```python
 @pytest.fixture(scope="session")
 async def redis_client():
@@ -60,6 +62,7 @@ async def cleanup_temp_files():
 ## Mocking
 
 ### Mock External Dependencies
+
 ```python
 @pytest.fixture
 def mock_llm():
@@ -78,6 +81,7 @@ async def test_with_mocked_llm(mock_llm):
 ```
 
 ### Mock Redis Operations
+
 ```python
 @pytest.fixture
 def mock_redis():
@@ -95,6 +99,7 @@ def mock_redis():
 ## Async Testing
 
 ### Test Async Functions
+
 ```python
 @pytest.mark.asyncio
 async def test_async_operation():
@@ -109,15 +114,16 @@ async def test_async_operation():
 ```
 
 ### Test Concurrent Operations
+
 ```python
 async def test_concurrent_processing():
     """Test parallel processing"""
     docs = [Document(f"doc{i}") for i in range(10)]
-    
+
     start = time.time()
     results = await process_documents_parallel(docs)
     duration = time.time() - start
-    
+
     assert len(results) == 10
     assert duration < 2.0  # Should be faster than sequential
 ```
@@ -153,7 +159,7 @@ async def test_file_processors(file_type, processor_class):
 @pytest.mark.integration
 class TestRedisIntegration:
     """Integration tests requiring Redis"""
-    
+
     @pytest.fixture(scope="class")
     async def redis_store(self):
         """Setup Redis for integration tests"""
@@ -161,17 +167,17 @@ class TestRedisIntegration:
         await store.initialize()
         yield store
         await store.cleanup()
-    
+
     async def test_end_to_end_indexing(self, redis_store):
         """Test complete indexing workflow"""
         # Index documents
         docs = await load_test_documents()
         await redis_store.index_documents(docs)
-        
+
         # Search
         results = await redis_store.search("test query")
         assert len(results) > 0
-        
+
         # Verify metadata
         assert all(r.metadata for r in results)
 ```
@@ -183,11 +189,11 @@ class TestRedisIntegration:
 async def test_indexing_performance(benchmark):
     """Benchmark document indexing"""
     docs = generate_test_documents(100)
-    
+
     async def index():
         indexer = DocumentIndexer()
         await indexer.index_batch(docs)
-    
+
     result = benchmark(index)
     assert result.stats["mean"] < 10.0  # Should index in <10s
 ```
@@ -195,6 +201,7 @@ async def test_indexing_performance(benchmark):
 ## Coverage Configuration
 
 ### pyproject.toml
+
 ```toml
 [tool.coverage.run]
 source = ["src"]
@@ -241,6 +248,7 @@ async def assert_eventually(
 ```
 
 ## Best Practices
+
 1. Use descriptive test names
 2. One assertion per test (when possible)
 3. Use fixtures for setup/teardown

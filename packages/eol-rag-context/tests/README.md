@@ -20,6 +20,7 @@
 ## Testing Approach
 
 ### Unit Tests (Current Focus)
+
 - **test_config.py**: Configuration classes (96% coverage)
 - **test_embeddings.py**: Embedding providers (partial coverage)
 - **test_force_coverage.py**: Comprehensive mocked tests for all modules
@@ -47,11 +48,13 @@
 ## Recommended Testing Strategy
 
 ### Phase 1: Current Unit Tests (43% coverage) ✅
+
 - Focus on business logic and data transformations
 - Mock external dependencies
 - Test configuration and initialization
 
 ### Phase 2: Integration Tests (Target: +20% coverage)
+
 ```python
 # Use Docker Redis for real vector operations
 @pytest.mark.integration
@@ -59,7 +62,7 @@ async def test_redis_vector_operations():
     # Real Redis connection
     store = RedisVectorStore(config)
     await store.connect_async()
-    
+
     # Test real vector storage and search
     doc = VectorDocument(...)
     await store.store_document(doc)
@@ -67,21 +70,23 @@ async def test_redis_vector_operations():
 ```
 
 ### Phase 3: End-to-End Tests (Target: +10% coverage)
+
 ```python
 # Full MCP server testing
 @pytest.mark.e2e
 async def test_mcp_server_flow():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Test complete indexing flow
     result = await server.index_directory("/test/data")
-    
+
     # Test search and retrieval
     contexts = await server.search_context("query")
 ```
 
 ### Phase 4: Performance Tests
+
 ```python
 @pytest.mark.performance
 async def test_indexing_performance():
@@ -93,21 +98,25 @@ async def test_indexing_performance():
 ## Testing Challenges
 
 ### 1. Redis Vector Operations
+
 - Requires Redis 8 with vector search module
 - Complex HNSW index configuration
 - Binary embedding serialization
 
 ### 2. FastMCP Framework
+
 - Limited documentation for testing
 - Requires specific async patterns
 - Tool registration and execution flow
 
 ### 3. Document Processing
+
 - Multiple file format dependencies
 - AST parsing for code files
 - Async file I/O operations
 
 ### 4. File Watching
+
 - OS-specific behavior
 - Event debouncing logic
 - Concurrent file change handling
@@ -115,16 +124,19 @@ async def test_indexing_performance():
 ## How to Run Tests
 
 ### Unit Tests Only
+
 ```bash
 pytest tests/test_config.py tests/test_embeddings.py tests/test_force_coverage.py
 ```
 
 ### With Coverage Report
+
 ```bash
 pytest --cov=eol.rag_context --cov-report=term --cov-report=html
 ```
 
 ### Integration Tests (requires Docker)
+
 ```bash
 docker-compose up -d redis
 pytest -m integration
@@ -161,6 +173,7 @@ The current 43% unit test coverage provides good validation of core functionalit
 3. Significant time investment in mock complexity
 
 For a production system, the recommended approach is:
+
 - Keep current unit tests for quick validation
 - Add integration tests for critical paths
 - Use monitoring and observability in production

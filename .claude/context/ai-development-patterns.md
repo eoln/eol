@@ -3,24 +3,26 @@
 ## Context Verification Workflow
 
 ### Always Verify Before Acting
+
 ```python
 # Pattern: Read, Verify, Act
 async def safe_file_operation(file_path: str):
     # 1. Read current state
     if not await file_exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist")
-    
+
     current_content = await read_file(file_path)
-    
+
     # 2. Verify assumptions
     if not validate_content(current_content):
         raise ValueError("File content doesn't match expected format")
-    
+
     # 3. Act with confidence
     return await process_file(file_path, current_content)
 ```
 
 ### Context Loading Strategy
+
 1. **Check for local context first**: Look for CLAUDE.md in current directory
 2. **Load domain context**: Pull in relevant domain knowledge
 3. **Verify with codebase**: Check actual implementation
@@ -29,6 +31,7 @@ async def safe_file_operation(file_path: str):
 ## Error Recovery Patterns
 
 ### Graceful Degradation
+
 ```python
 async def resilient_operation():
     try:
@@ -44,12 +47,13 @@ async def resilient_operation():
 ```
 
 ### Error Context Preservation
+
 ```python
 class ContextualError(Exception):
     def __init__(self, message: str, context: Dict[str, Any]):
         super().__init__(message)
         self.context = context
-        
+
     def __str__(self):
         context_str = "\n".join(
             f"  {k}: {v}" for k, v in self.context.items()
@@ -60,6 +64,7 @@ class ContextualError(Exception):
 ## Quality Gate Patterns
 
 ### Pre-commit Checks
+
 ```bash
 # Run before allowing commits
 async def quality_gate():
@@ -70,13 +75,14 @@ async def quality_gate():
         ("Tests", run_tests),
         ("Coverage", check_coverage)
     ]
-    
+
     for name, check in checks:
         if not await check():
             raise QualityGateError(f"{name} check failed")
 ```
 
 ### Progressive Enhancement
+
 1. Start with basic functionality
 2. Add error handling
 3. Implement retries
@@ -86,6 +92,7 @@ async def quality_gate():
 ## Anti-Patterns to Avoid
 
 ### ❌ Assuming Without Verifying
+
 ```python
 # BAD: Assumes file exists
 content = read_file("config.json")
@@ -98,6 +105,7 @@ else:
 ```
 
 ### ❌ Silent Failures
+
 ```python
 # BAD: Swallows errors
 try:
@@ -114,6 +122,7 @@ except SpecificError as e:
 ```
 
 ### ❌ Overwriting Without Backup
+
 ```python
 # BAD: Direct overwrite
 write_file(path, new_content)
@@ -126,6 +135,7 @@ write_file(path, new_content)
 ## Development Workflow
 
 ### Incremental Development
+
 1. **Implement core functionality**
 2. **Add tests**
 3. **Handle errors**
@@ -133,6 +143,7 @@ write_file(path, new_content)
 5. **Document**
 
 ### Test-Driven Approach
+
 ```python
 # 1. Write test first
 async def test_new_feature():
@@ -155,16 +166,17 @@ async def new_feature(data):
 ## Context Window Management
 
 ### Prioritization Strategy
+
 ```python
 class ContextManager:
     def __init__(self, max_tokens: int = 100000):
         self.max_tokens = max_tokens
         self.items = []
-    
+
     def add(self, item: str, priority: int):
         self.items.append((priority, item))
         self._compress_if_needed()
-    
+
     def _compress_if_needed(self):
         total = sum(len(item) for _, item in self.items)
         if total > self.max_tokens * 0.8:
@@ -178,6 +190,7 @@ class ContextManager:
 ## Monitoring and Observability
 
 ### Performance Tracking
+
 ```python
 from functools import wraps
 import time
@@ -201,6 +214,7 @@ def track_performance(func):
 ## Documentation Patterns
 
 ### Self-Documenting Code
+
 ```python
 async def process_document(
     document: Document,
@@ -209,19 +223,19 @@ async def process_document(
 ) -> ProcessedDocument:
     """
     Process document with configurable chunking.
-    
+
     Args:
         document: Input document to process
         chunk_size: Maximum size of each chunk
         overlap: Number of characters to overlap between chunks
-    
+
     Returns:
         ProcessedDocument with chunks and metadata
-    
+
     Raises:
         ValueError: If chunk_size <= overlap
         ProcessingError: If document cannot be processed
-    
+
     Example:
         >>> doc = Document("example.txt", "content")
         >>> result = await process_document(doc, chunk_size=500)
@@ -229,12 +243,13 @@ async def process_document(
     """
     if chunk_size <= overlap:
         raise ValueError("chunk_size must be greater than overlap")
-    
+
     # Implementation
     ...
 ```
 
 ## Best Practices
+
 1. Always verify before acting
 2. Provide clear error messages
 3. Implement graceful degradation

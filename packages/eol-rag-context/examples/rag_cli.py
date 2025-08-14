@@ -6,9 +6,9 @@ A simple CLI tool for indexing and searching with RAG context.
 """
 
 import asyncio
+import json
 import sys
 from pathlib import Path
-import json
 from typing import Optional
 
 # Add parent directory to path for development
@@ -16,10 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import typer
 from rich.console import Console
-from rich.table import Table
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.syntax import Syntax
-from rich.panel import Panel
+from rich.table import Table
 
 from eol.rag_context import EOLRAGContextServer
 from eol.rag_context.config import RAGConfig

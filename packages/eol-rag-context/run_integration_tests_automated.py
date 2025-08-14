@@ -4,12 +4,12 @@ Automated integration test runner for EOL RAG Context.
 Handles Redis lifecycle and test execution.
 """
 
+import atexit
+import os
+import signal
 import subprocess
 import sys
 import time
-import os
-import signal
-import atexit
 from pathlib import Path
 
 

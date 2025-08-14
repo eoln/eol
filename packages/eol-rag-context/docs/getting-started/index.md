@@ -37,15 +37,19 @@ eol-rag-context --help
 ## Key Concepts
 
 ### Hierarchical Indexing
+
 Documents are processed into three levels:
+
 - **Concepts**: High-level abstractions and themes
-- **Sections**: Grouped related content 
+- **Sections**: Grouped related content
 - **Chunks**: Fine-grained retrievable units
 
 ### Vector Similarity
+
 Content is converted to high-dimensional vectors that capture semantic meaning, enabling search by concepts rather than just keywords.
 
 ### Real-time Updates
+
 The file watcher monitors your codebase for changes and automatically reindexes modified documents to keep context current.
 
 ## Architecture Overview

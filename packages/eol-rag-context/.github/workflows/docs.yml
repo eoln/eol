@@ -73,7 +73,7 @@ jobs:
       - name: Build documentation
         run: |
           mkdocs build --clean --verbose
-          
+
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -92,7 +92,7 @@ jobs:
         run: |
           # Get version from package or use 'dev' for non-releases
           VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['project']['version'])" 2>/dev/null || echo "dev")
-          
+
           # Deploy with mike
           if [ "$VERSION" == "dev" ]; then
             mike deploy --push --update-aliases dev latest
@@ -133,7 +133,7 @@ jobs:
         with:
           name: documentation
           path: site/
-      
+
       - name: Comment PR with preview info
         uses: actions/github-script@v7
         with:

@@ -160,6 +160,7 @@ document:
 ## MCP Tools
 
 ### Index Directory
+
 Index a directory of documents with hierarchical structure:
 
 ```typescript
@@ -175,6 +176,7 @@ Index a directory of documents with hierarchical structure:
 ```
 
 ### Search Context
+
 Search for relevant context using vector similarity:
 
 ```typescript
@@ -190,6 +192,7 @@ Search for relevant context using vector similarity:
 ```
 
 ### Query Knowledge Graph
+
 Explore entity relationships:
 
 ```typescript
@@ -204,6 +207,7 @@ Explore entity relationships:
 ```
 
 ### Watch Directory
+
 Monitor a directory for changes:
 
 ```typescript
@@ -221,6 +225,7 @@ Monitor a directory for changes:
 ## MCP Resources
 
 ### Get Context
+
 Retrieve optimized context for a query:
 
 ```
@@ -228,6 +233,7 @@ GET context://search/{query}
 ```
 
 ### List Sources
+
 List all indexed sources:
 
 ```
@@ -235,6 +241,7 @@ GET sources://list
 ```
 
 ### Get Statistics
+
 Get server statistics:
 
 ```
@@ -300,6 +307,7 @@ See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 ### Hierarchical Indexing
 
 Documents are indexed at three levels:
+
 1. **Concepts**: High-level abstractions
 2. **Sections**: Grouped related content
 3. **Chunks**: Fine-grained retrievable units
@@ -307,6 +315,7 @@ Documents are indexed at three levels:
 ### Knowledge Graph
 
 Automatically extracts:
+
 - **Entities**: Functions, classes, topics, technologies
 - **Relationships**: Dependencies, references, similarities
 - **Patterns**: Common structures, hubs, communities
@@ -390,6 +399,7 @@ GPL-3.0 - See [LICENSE](../../LICENSE) file
 ## Acknowledgments
 
 Built with:
+
 - [FastMCP](https://github.com/fastmcp/fastmcp) - MCP framework
 - [Redis Stack](https://redis.io/docs/stack/) - Vector database
 - [Sentence Transformers](https://www.sbert.net/) - Embeddings

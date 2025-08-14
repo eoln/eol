@@ -150,9 +150,7 @@ class TestSemanticCacheExtra:
         mock_redis_store.redis.scan = MagicMock(
             return_value=(0, [b"cache:1", b"cache:2", b"cache:3"])
         )
-        mock_redis_store.redis.info = MagicMock(
-            return_value={"used_memory_human": "10MB"}
-        )
+        mock_redis_store.redis.info = MagicMock(return_value={"used_memory_human": "10MB"})
 
         mock_embedding = AsyncMock()
 
@@ -240,9 +238,7 @@ class TestSemanticCacheExtra:
         mock_search = MagicMock()
         mock_search.search = MagicMock(side_effect=Exception("Connection error"))
         mock_redis_store.redis.ft = MagicMock(return_value=mock_search)
-        mock_redis_store.redis.scan = MagicMock(
-            side_effect=Exception("Connection error")
-        )
+        mock_redis_store.redis.scan = MagicMock(side_effect=Exception("Connection error"))
 
         mock_embedding = AsyncMock()
         mock_embedding.get_embedding = AsyncMock(
@@ -327,9 +323,7 @@ class TestCachedQuery:
         """Test CachedQuery with default values."""
         embedding = np.random.rand(384).astype(np.float32)
 
-        cached_query = CachedQuery(
-            query="test", response="response", embedding=embedding
-        )
+        cached_query = CachedQuery(query="test", response="response", embedding=embedding)
 
         assert cached_query.hit_count == 0
         assert isinstance(cached_query.timestamp, float)

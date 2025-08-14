@@ -1,8 +1,8 @@
 # Redis Setup Guide for Running Tests
 
-**Date**: August 13, 2025  
-**Current Coverage with Redis**: 68.18%  
-**Coverage without Redis**: 58.98%  
+**Date**: August 13, 2025
+**Current Coverage with Redis**: 68.18%
+**Coverage without Redis**: 58.98%
 **Improvement**: +9.2% when Redis is running
 
 ## Summary
@@ -14,6 +14,7 @@ The test coverage significantly improves from 58.98% to 68.18% when Redis Stack 
 ### Option 1: Redis Stack Server (Native - Recommended)
 
 **Installation:**
+
 ```bash
 # macOS
 brew tap redis-stack/redis-stack
@@ -24,6 +25,7 @@ which redis-stack-server
 ```
 
 **Start Redis:**
+
 ```bash
 # Start in background
 redis-stack-server --daemonize yes
@@ -36,6 +38,7 @@ redis-cli MODULE LIST | grep search
 ```
 
 **Stop Redis:**
+
 ```bash
 redis-cli shutdown
 ```
@@ -43,6 +46,7 @@ redis-cli shutdown
 ### Option 2: Docker Compose (Automated)
 
 **Using the provided docker-compose.test.yml:**
+
 ```bash
 # Start Redis and run tests
 docker-compose -f docker-compose.test.yml up
@@ -57,6 +61,7 @@ docker-compose -f docker-compose.test.yml down
 ### Option 3: Docker (Manual)
 
 **Start Redis Stack with Docker:**
+
 ```bash
 # Remove any existing container
 docker rm -f eol-test-redis 2>/dev/null
@@ -73,6 +78,7 @@ docker exec eol-test-redis redis-cli ping
 ```
 
 **Stop Redis:**
+
 ```bash
 docker stop eol-test-redis
 docker rm eol-test-redis
@@ -81,10 +87,12 @@ docker rm eol-test-redis
 ## Automated Test Scripts
 
 ### 1. test_all.sh (Comprehensive)
+
 ```bash
 # Automatically starts Redis Stack Server and runs all tests
 ./test_all.sh
 ```
+
 - Checks for Redis Stack Server
 - Starts Redis if not running
 - Clears Redis data for clean state
@@ -92,15 +100,18 @@ docker rm eol-test-redis
 - Generates coverage reports
 
 ### 2. run_tests_with_redis.sh (Flexible)
+
 ```bash
 # Tries Docker first, then native Redis
 ./run_tests_with_redis.sh
 ```
+
 - Attempts Docker Redis first
 - Falls back to native Redis
 - Automatically handles cleanup
 
 ### 3. run_integration_tests.sh (Integration Only)
+
 ```bash
 # Runs only integration tests with Redis
 ./run_integration_tests.sh
@@ -109,6 +120,7 @@ docker rm eol-test-redis
 ## Manual Test Execution
 
 ### With Virtual Environment
+
 ```bash
 # 1. Activate virtual environment
 source .venv/bin/activate
@@ -127,6 +139,7 @@ redis-cli shutdown
 ```
 
 ### Specific Test Categories
+
 ```bash
 # Unit tests only (less Redis dependency)
 python -m pytest tests/ -k "not integration" --cov=eol.rag_context
@@ -158,13 +171,17 @@ python -m pytest tests/integration/test_redis_integration.py -v
 ## Troubleshooting
 
 ### Issue: "Connection refused" errors
+
 **Solution:** Redis is not running. Start Redis Stack Server:
+
 ```bash
 redis-stack-server --daemonize yes
 ```
 
 ### Issue: "FT.CREATE command not found"
+
 **Solution:** Regular Redis is running instead of Redis Stack. You need Redis with RediSearch module:
+
 ```bash
 # Stop regular Redis
 redis-cli shutdown
@@ -174,10 +191,13 @@ redis-stack-server --daemonize yes
 ```
 
 ### Issue: Docker daemon not running
+
 **Solution:** Start Docker Desktop or use native Redis Stack Server instead.
 
 ### Issue: Port 6379 already in use
+
 **Solution:** Check what's using the port:
+
 ```bash
 lsof -i :6379
 # Kill the process or stop Redis properly
@@ -188,12 +208,15 @@ redis-cli shutdown
 
 1. **Always use Redis Stack Server** (not regular Redis) for full feature support
 2. **Clear Redis data before test runs** for consistent results:
+
    ```bash
    redis-cli FLUSHDB
    ```
+
 3. **Use virtual environment** to avoid dependency conflicts
 4. **Run automated test scripts** for proper setup/teardown
 5. **Check Redis health** before running tests:
+
    ```bash
    redis-cli ping
    redis-cli MODULE LIST | grep search

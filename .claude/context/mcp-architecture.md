@@ -1,11 +1,13 @@
 # MCP (Model Context Protocol) Architecture
 
 ## Overview
+
 MCP is a standardized protocol that allows applications to provide context for LLMs, separating the concerns of providing context from the actual LLM interaction.
 
 ## Architecture Components
 
 ### 1. Core Architecture
+
 - **MCP Server**: Bridge/API between MCP world and external system functionality
 - **MCP Client**: Consumes server capabilities and interfaces with LLMs
 - **MCP Host**: Runtime environment managing client-server communication (e.g., Claude Desktop, Cursor, custom agents)
@@ -13,16 +15,19 @@ MCP is a standardized protocol that allows applications to provide context for L
 ### 2. Server Capabilities
 
 #### Resources (GET-like endpoints)
+
 - Load information into LLM's context
 - Expose data from external systems
 - Read-only operations
 
 #### Tools (POST-like endpoints)
+
 - Execute code or produce side effects
 - Provide functionality to LLMs
 - Action-oriented operations
 
 #### Prompts
+
 - Reusable templates for LLM interactions
 - Standardized interaction patterns
 - Context-aware prompt management
@@ -30,11 +35,13 @@ MCP is a standardized protocol that allows applications to provide context for L
 ### 3. Communication Methods
 
 #### stdio (Standard Input/Output)
+
 - Used for local client-server communication
 - Simple and effective for local integrations
 - Accessing local files or running local scripts
 
 #### HTTP via SSE (Server-Sent Events)
+
 - Remote client-server communication
 - Scalable for distributed systems
 - Real-time event streaming
@@ -42,18 +49,21 @@ MCP is a standardized protocol that allows applications to provide context for L
 ## Python Implementation
 
 ### SDK Setup
+
 ```python
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 ```
 
 ### Dependencies
+
 - `mcp[cli]>=1.4.0` - Core MCP server functionality
 - `requests>=2.31.0` - API calls
 - `python-dotenv>=1.0.0` - Environment variables
 - Additional integration libraries as needed
 
 ### Server Implementation Pattern
+
 1. Initialize MCP server instance
 2. Define resources for data exposure
 3. Implement tools for actions
@@ -67,9 +77,10 @@ from mcp.client.stdio import stdio_client
 FastMCP is the recommended choice for the EOL framework implementation for the following reasons:
 
 #### Advantages
+
 - **Comprehensive MCP Support**: Covers all aspects of the MCP specification
 - **Developer-Friendly**: Pythonic interface with simple decorators (like FastAPI for MCP)
-- **Rich Features**: 
+- **Rich Features**:
   - Authentication hooks
   - User session management
   - Image content handling
@@ -83,6 +94,7 @@ FastMCP is the recommended choice for the EOL framework implementation for the f
 - **CLI Tools**: Built-in development tools for debugging and inspection
 
 #### Implementation Example
+
 ```python
 from fastmcp import FastMCP
 
@@ -98,6 +110,7 @@ async def manage_context(query: str) -> str:
 ### Alternative: Pydantic-AI-MCP
 
 Consider Pydantic-AI-MCP if:
+
 - Building comprehensive AI agents beyond just MCP servers
 - Need integrated monitoring via Pydantic Logfire
 - Working with multiple LLM providers simultaneously
@@ -114,16 +127,19 @@ Consider Pydantic-AI-MCP if:
 ## Benefits
 
 ### Development Efficiency
+
 - **M+N Problem Solution**: Tool creators build N servers, application developers build M clients
 - **Reduced Duplication**: Single server implementation works with multiple clients
 - **Vendor Flexibility**: Avoid lock-in, switch between LLM providers easily
 
 ### Composability
+
 - Applications can be both MCP clients and servers simultaneously
 - Enables layered and chained systems
 - Logical distinction between client/server roles
 
 ### Language Agnostic
+
 - Servers can be built in Python, TypeScript, Java, Rust, etc.
 - Communication over standard transports
 - Cross-language interoperability
@@ -131,6 +147,7 @@ Consider Pydantic-AI-MCP if:
 ## Integration Points
 
 ### Supported Platforms
+
 - Claude Desktop
 - Cursor IDE
 - VS Code with GitHub Copilot
@@ -138,6 +155,7 @@ Consider Pydantic-AI-MCP if:
 - Custom agent implementations
 
 ### Full Implementation Languages
+
 - Python SDK (complete)
 - TypeScript SDK (complete)
 - Other languages via protocol implementation
@@ -170,6 +188,7 @@ Consider Pydantic-AI-MCP if:
 ## EOL Framework Integration
 
 For the EOL framework, MCP (via FastMCP) will serve as:
+
 - Primary protocol for context-oriented services
 - Bridge between LLMs and Redis context storage
 - Interface for executing .eol file scripts

@@ -3,23 +3,25 @@
 ## Cache Key Generation
 
 ### Semantic Similarity Approach
+
 ```python
 async def get_cache_key(query: str, threshold: float = 0.85) -> Optional[str]:
     """Find semantically similar cached query"""
     query_embedding = await generate_embedding(query)
-    
+
     # Search for similar queries in cache
     similar = await cache_store.search_similar(
-        query_embedding, 
+        query_embedding,
         threshold=threshold
     )
-    
+
     if similar:
         return similar[0].cache_key
     return None
 ```
 
 ## Cache Storage Strategy
+
 ```python
 class CacheEntry:
     query: str
@@ -31,15 +33,18 @@ class CacheEntry:
 ```
 
 ## TTL Management
+
 - Short TTL (5 min): Rapidly changing data
 - Medium TTL (1 hour): Standard queries
 - Long TTL (24 hours): Reference data
 - Infinite TTL: Static documentation
 
 ## Cache Hit Rate Optimization
+
 Target: >31% hit rate
 
-### Strategies:
+### Strategies
+
 1. **Query Normalization**
    - Remove stop words
    - Standardize formatting
@@ -56,6 +61,7 @@ Target: >31% hit rate
    - Warm cache on startup
 
 ## Performance Metrics
+
 ```python
 # Track cache performance
 metrics = {

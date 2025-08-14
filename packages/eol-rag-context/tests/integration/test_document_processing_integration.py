@@ -104,15 +104,15 @@ import sys
 
 class MyClass:
     """A sample class."""
-    
+
     def __init__(self, value):
         """Initialize the class."""
         self.value = value
-    
+
     def get_value(self):
         """Get the value."""
         return self.value
-    
+
     @property
     def double_value(self):
         """Return double the value."""
@@ -195,11 +195,11 @@ class Calculator {
     constructor() {
         this.result = 0;
     }
-    
+
     add(a, b) {
         return a + b;
     }
-    
+
     multiply(a, b) {
         return a * b;
     }

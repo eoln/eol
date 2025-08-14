@@ -12,15 +12,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+# Import separately to avoid mocking issues
 from eol.rag_context.file_watcher import (
     ChangeType,
     FileChange,
+    FileChangeHandler,
     FileWatcher,
     WatchedSource,
 )
-
-# Import separately to avoid mocking issues
-from eol.rag_context.file_watcher import FileChangeHandler
 
 
 class TestChangeType:
@@ -134,7 +133,7 @@ class TestFileChangeHandler:
         # Mock the FolderScanner class completely
         mock_scanner = MagicMock()
         mock_scanner._should_ignore.return_value = False
-        
+
         with patch("eol.rag_context.file_watcher.FolderScanner", return_value=mock_scanner):
             handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
 

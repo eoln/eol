@@ -7,6 +7,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 ## Features Implemented
 
 ### Core Functionality ✅
+
 - **Hierarchical Indexing**: 3-level structure (concepts → sections → chunks)
 - **Vector Search**: Redis 8 native vector capabilities with HNSW indexing
 - **Knowledge Graph**: Automatic entity extraction and relationship discovery
@@ -16,6 +17,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 - **MCP Protocol**: Full Model Context Protocol implementation
 
 ### Components
+
 1. **redis_client.py** - Redis 8 vector store with hierarchical indexes
 2. **document_processor.py** - Multi-format document processing
 3. **indexer.py** - Hierarchical document indexing
@@ -29,6 +31,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 ## Testing Coverage: 80% ✅
 
 ### Test Infrastructure
+
 - **Unit Tests**: 43% coverage (mocked dependencies)
 - **Integration Tests**: +37% coverage (real Redis)
 - **Total Coverage**: 80% achieved
@@ -36,6 +39,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 - **CI/CD**: GitHub Actions workflow configured
 
 ### Test Files
+
 - `test_config.py` - Configuration tests (96% coverage)
 - `test_force_coverage.py` - Core functionality tests
 - `test_achieve_80_coverage.py` - Comprehensive coverage tests
@@ -45,6 +49,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 ## Documentation 📚
 
 ### User Documentation
+
 - **README.md** - Project overview and quick start
 - **TUTORIAL.md** - Comprehensive step-by-step guide
 - **examples/** - Working example scripts
@@ -53,6 +58,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
   - `rag_cli.py` - Full-featured CLI tool
 
 ### Developer Documentation
+
 - `.claude/context/` - AI assistant context
   - `testing.md` - Testing guide
   - Technical implementation details
@@ -61,6 +67,7 @@ Complete implementation of an intelligent RAG-based context management MCP serve
 ## Example Usage
 
 ### Quick Start
+
 ```bash
 # Start Redis
 docker run -d -p 6379:6379 redis/redis-stack:latest
@@ -76,6 +83,7 @@ rag_cli search "authentication flow"
 ```
 
 ### Code Assistant
+
 ```python
 from eol.rag_context import EOLRAGContextServer
 
@@ -99,10 +107,12 @@ results = await server.search_context("How to implement authentication?")
 ## Dependencies
 
 ### Required
+
 - Python 3.11+
 - Redis Stack 8.0+ (with RediSearch module)
 
 ### Python Packages
+
 - pydantic>=2.0.0
 - numpy>=1.24.0
 - aiofiles>=23.0.0
@@ -112,12 +122,14 @@ results = await server.search_context("How to implement authentication?")
 ## Testing Instructions
 
 ### Automated (Recommended)
+
 ```bash
 # Runs everything automatically
 ./test_all.sh
 ```
 
 ### Manual
+
 ```bash
 # Start Redis
 docker run -d -p 6379:6379 redis/redis-stack:latest
@@ -142,6 +154,7 @@ pytest tests/ --cov=eol.rag_context --cov-report=term
 ## Next Steps
 
 After merge:
+
 1. Publish to PyPI
 2. Create Docker image
 3. Add monitoring/metrics
@@ -155,6 +168,7 @@ None - This is a new component.
 ## Migration Guide
 
 For projects using static `.claude/context` files:
+
 1. Install eol-rag-context
 2. Run `eol-rag-context index /path/to/project`
 3. Remove static context files

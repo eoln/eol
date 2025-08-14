@@ -11,17 +11,21 @@ Claude Code automatically recognizes any Markdown file in your project's `.claud
 ## Command Types
 
 ### Project Commands (This Directory)
+
 - **prp/**: Product Requirements Prompt commands for feature blueprints
 - **quality/**: Quality check commands for validation and testing
 - **deploy/**: Deployment commands (future)
 
 Commands in this directory are:
+
 - Available to all team members when checked into git
 - Shown as `/project:command-name` in Claude Code
 - Listed with "(project)" suffix in `/help`
 
 ### Personal Commands
+
 You can also create personal commands in `~/.claude/commands/` that are:
+
 - Available across all your Claude Code sessions
 - Private to your local environment
 - Shown as `/personal:command-name`
@@ -29,6 +33,7 @@ You can also create personal commands in `~/.claude/commands/` that are:
 ## Command Structure
 
 Each command file should include:
+
 1. **Purpose**: Clear description of what the command accomplishes
 2. **Prerequisites**: Required setup, environment, or conditions
 3. **Command Sequence**: Step-by-step instructions or prompts
@@ -38,22 +43,29 @@ Each command file should include:
 ## Advanced Features
 
 ### Parameter Support
+
 Use `$ARGUMENTS` to pass parameters to commands:
+
 ```markdown
 # Example: .claude/commands/analyze-issue.md
 Please analyze and fix the GitHub issue: $ARGUMENTS
 ```
+
 Usage: `/project:analyze-issue 1234`
 
 ### File References
+
 Include file contents using the `@` prefix:
+
 ```markdown
 Review the implementation in @src/utils/helpers.py
 Compare @src/old-version.py with @src/new-version.py
 ```
 
 ### Bash Command Execution
+
 Execute bash commands before the slash command runs using the `!` prefix:
+
 ```markdown
 !git status
 Analyze the current git status and suggest next steps.
@@ -62,6 +74,7 @@ Analyze the current git status and suggest next steps.
 ## Namespacing
 
 Commands are organized by namespace:
+
 - `/project:command-name` - Project-specific commands (this directory)
 - `/personal:command-name` - Personal commands from ~/.claude/commands/
 - `/command-name` - Built-in Claude Code commands
@@ -96,6 +109,7 @@ Include specific line numbers and code examples in your feedback.
 ## Integration with EOL RAG Framework
 
 Our custom commands extend Claude Code for RAG development:
+
 - **PRP commands**: Generate comprehensive implementation blueprints
 - **Quality commands**: Validate Python code and RAG performance
 - **Context-aware**: Leverage .claude/context/ knowledge base

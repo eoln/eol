@@ -68,6 +68,7 @@ context:
 ```
 
 Then start with:
+
 ```bash
 eol-rag-context serve --config config.yaml
 ```
@@ -91,6 +92,7 @@ redis:
 ```
 
 **Redis Stack Setup:**
+
 ```bash
 # Using Docker
 docker run -d --name redis-stack \
@@ -112,6 +114,7 @@ sudo apt-get install redis-stack-server
 Choose between local and cloud-based embedding providers.
 
 **Sentence Transformers (Local):**
+
 ```yaml
 embedding:
   provider: "sentence_transformers"
@@ -124,6 +127,7 @@ embedding:
 ```
 
 **OpenAI (Cloud):**
+
 ```yaml
 embedding:
   provider: "openai"
@@ -154,7 +158,7 @@ indexing:
   max_file_size_mb: 50            # Skip files larger than this
   parse_code_structure: true       # Use AST for code files
   extract_metadata: true           # Extract file metadata
-  
+
   # File patterns to include
   file_patterns:
     - "*.py"       # Python files
@@ -168,7 +172,7 @@ indexing:
     - "*.json"     # JSON files
     - "*.yaml"     # YAML files
     - "*.yml"      # YAML files
-  
+
   # Patterns to exclude
   exclude_patterns:
     - "*.pyc"
@@ -200,6 +204,7 @@ caching:
 ```
 
 **Hit Rate Optimization:**
+
 - **Target 31%**: Research shows this is optimal for semantic queries
 - **Adaptive Threshold**: Automatically adjusts similarity threshold
 - **TTL Balance**: Longer TTL = more hits but stale data
@@ -215,10 +220,10 @@ context:
   context_overlap: 200            # Overlap between context chunks
   hierarchy_weight: 0.3           # Weight for hierarchical relevance
   include_metadata: true          # Include chunk metadata
-  
+
   # Context assembly strategy
   assembly_strategy: "hierarchical"  # "flat" or "hierarchical"
-  
+
   # Result ranking
   ranking:
     semantic_weight: 0.7          # Semantic similarity weight
@@ -314,6 +319,7 @@ Use --validate-only to check configuration without starting server.
 ```
 
 **Validation Command:**
+
 ```bash
 # Check configuration without starting
 eol-rag-context serve --config config.yaml --validate-only
@@ -322,6 +328,7 @@ eol-rag-context serve --config config.yaml --validate-only
 ## Performance Tuning
 
 ### Memory Optimization
+
 ```yaml
 embedding:
   batch_size: 16                  # Reduce for limited memory
@@ -329,12 +336,13 @@ embedding:
 
 indexing:
   chunk_size: 500                 # Smaller chunks = less memory
-  
+
 caching:
   max_cache_size: 100             # Reduce cache size
 ```
 
 ### Speed Optimization
+
 ```yaml
 embedding:
   batch_size: 64                  # Increase batch size
@@ -342,12 +350,13 @@ embedding:
 
 indexing:
   parse_code_structure: false     # Disable AST parsing
-  
+
 redis:
   max_connections: 200            # Increase connection pool
 ```
 
 ### Quality Optimization
+
 ```yaml
 embedding:
   model: "all-mpnet-base-v2"      # Higher quality model
@@ -365,32 +374,40 @@ caching:
 ### Common Configuration Issues
 
 **Redis Connection Failed:**
+
 ```
 Error: Redis connection failed: Connection refused
 ```
+
 - Verify Redis Stack is running: `redis-cli ping`
 - Check URL format: `redis://host:port/db`
 - Ensure Redis Stack (not regular Redis) for vector search
 
 **Embedding Model Not Found:**
+
 ```
 Error: Model 'invalid-model' not found
 ```
+
 - Check available models: `eol-rag-context list-models`
 - Verify model name spelling and provider
 
 **Out of Memory:**
+
 ```
 Error: CUDA out of memory
 ```
+
 - Reduce batch size: `batch_size: 8`
 - Switch to CPU: `device: "cpu"`
 - Use smaller model: `model: "all-MiniLM-L6-v2"`
 
 **Slow Indexing:**
+
 ```
 Warning: Indexing taking longer than expected
 ```
+
 - Reduce file size limit: `max_file_size_mb: 10`
 - Disable code parsing: `parse_code_structure: false`
 - Increase batch size: `batch_size: 64`

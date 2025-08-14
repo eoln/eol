@@ -6,17 +6,18 @@ This script validates the documentation quality and coverage for the EOL RAG Con
 It checks docstring coverage, validates links, and ensures documentation standards are met.
 """
 
+import argparse
 import ast
+import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
-import importlib.util
-import inspect
-import argparse
-from rich.console import Console
-from rich.table import Table
+
 from rich import print as rprint
+from rich.console import Console
 from rich.progress import track
+from rich.table import Table
 
 console = Console()
 

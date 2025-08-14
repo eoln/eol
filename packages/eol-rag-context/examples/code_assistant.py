@@ -7,9 +7,9 @@ It indexes a codebase and provides intelligent context for code-related queries.
 """
 
 import asyncio
-from pathlib import Path
 import sys
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add parent directory to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))

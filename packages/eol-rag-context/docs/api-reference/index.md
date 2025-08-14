@@ -9,63 +9,81 @@ The EOL RAG Context API is organized into several core modules, each responsible
 ### Core Modules
 
 #### 🎯 [Server](server.md)
+
 The main MCP server implementation that orchestrates all components and provides the primary API interface.
+
 - `EOLRAGContextServer` - Main server class
 - MCP protocol implementation
 - Request/response models
 - Tool registration and management
 
 #### ⚙️ [Configuration](config.md)
+
 Configuration management system with validation and environment variable support.
+
 - `RAGConfig` - Main configuration class
 - Configuration validation
 - Environment variable integration
 - Default settings management
 
 #### 🗄️ [Redis Client](redis-client.md)
+
 Redis Stack integration for vector storage and retrieval.
+
 - `RedisVectorStore` - Vector database operations
 - Document storage and retrieval
 - Vector similarity search
 - Hierarchical search capabilities
 
 #### 📄 [Document Processor](document-processor.md)
+
 Intelligent document processing with format-specific handlers.
+
 - `DocumentProcessor` - Main processing class
 - Format-specific processors (Markdown, PDF, Code, JSON)
 - Chunking strategies
 - Metadata extraction
 
 #### 📚 [Indexer](indexer.md)
+
 Document indexing engine with hierarchical organization.
+
 - `DocumentIndexer` - Indexing orchestration
 - File and directory indexing
 - Batch processing
 - Index statistics and management
 
 #### 🧠 [Embeddings](embeddings.md)
+
 Embedding generation and management with multiple provider support.
+
 - `EmbeddingManager` - Provider abstraction
 - Sentence Transformers integration
 - OpenAI embeddings support
 - Batch processing and caching
 
 #### 💾 [Semantic Cache](semantic-cache.md)
+
 Intelligent caching system with semantic similarity matching.
+
 - `SemanticCache` - Cache implementation
 - Similarity-based retrieval
 - Cache optimization (31% hit rate target)
 - Performance metrics
 
 #### 🕸️ [Knowledge Graph](knowledge-graph.md)
+
 Automatic knowledge graph construction and querying.
+
 - `KnowledgeGraphBuilder` - Graph construction
 - Entity extraction
 - Relationship discovery
 - Graph querying and visualization
 
 #### 👁️ [File Watcher](file-watcher.md)
+
 Real-time file monitoring with intelligent reindexing.
+
 - `FileWatcher` - File system monitoring
 - Change detection and debouncing
 - Selective reindexing

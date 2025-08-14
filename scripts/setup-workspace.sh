@@ -23,7 +23,7 @@ if ! command -v uv &> /dev/null; then
     print_warning "UV not found. Installing UV..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="$HOME/.cargo/bin:$PATH"
-    
+
     if ! command -v uv &> /dev/null; then
         print_error "Failed to install UV. Please install manually: https://docs.astral.sh/uv/"
         exit 1

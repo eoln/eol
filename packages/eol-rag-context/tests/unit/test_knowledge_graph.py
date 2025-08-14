@@ -220,27 +220,27 @@ See [documentation](https://example.com/docs) for more details.
         python_code = """
         import os
         from typing import List, Dict
-        
+
         class AuthenticationManager:
             '''Handles user authentication.'''
-            
+
             def __init__(self, config: Dict[str, str]):
                 self.config = config
                 self.sessions = {}
-            
+
             def authenticate(self, username: str, password: str) -> bool:
                 '''Authenticate user credentials.'''
                 return self._validate_credentials(username, password)
-            
+
             def _validate_credentials(self, username: str, password: str) -> bool:
                 # Implementation here
                 return True
-        
+
         def create_session(user_id: str) -> str:
             '''Create new user session.'''
             session_id = generate_session_id()
             return session_id
-        
+
         def logout(session_id: str) -> None:
             '''Logout user session.'''
             cleanup_session(session_id)

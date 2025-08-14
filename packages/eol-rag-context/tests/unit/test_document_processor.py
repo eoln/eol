@@ -138,10 +138,7 @@ Third paragraph with more information."""
 
         # Check that line numbers increase
         if len(chunks) >= 2:
-            assert (
-                chunks[1]["metadata"]["start_line"]
-                > chunks[0]["metadata"]["start_line"]
-            )
+            assert chunks[1]["metadata"]["start_line"] > chunks[0]["metadata"]["start_line"]
 
     @pytest.mark.asyncio
     async def test_process_nonexistent_file(self, processor):
@@ -354,9 +351,7 @@ class TestDocumentProcessorAdvanced:
         assert doc.doc_type == "text"
 
     @pytest.mark.asyncio
-    async def test_programming_language_detection(
-        self, processor_with_custom_config, temp_dir
-    ):
+    async def test_programming_language_detection(self, processor_with_custom_config, temp_dir):
         """Test programming language detection through actual file processing."""
         processor = processor_with_custom_config
 
@@ -444,9 +439,7 @@ Deep content."""
         """Test text chunking with semantic chunking disabled."""
         processor = processor_with_custom_config
         processor.chunk_config.use_semantic_chunking = False
-        processor.chunk_config.max_chunk_size = (
-            20  # Very small for testing - words not characters
-        )
+        processor.chunk_config.max_chunk_size = 20  # Very small for testing - words not characters
         processor.chunk_config.chunk_overlap = 3  # Set a reasonable overlap in words
 
         # Create content with enough words to force splitting (30+ words for 20-word chunks)
@@ -455,9 +448,7 @@ Deep content."""
         chunks = processor._chunk_text(content)
 
         assert len(chunks) > 1  # Should have multiple chunks due to word count
-        assert all(
-            chunk["type"] == "token" for chunk in chunks
-        )  # Fixed chunking uses "token" type
+        assert all(chunk["type"] == "token" for chunk in chunks)  # Fixed chunking uses "token" type
         # Check that chunks have reasonable content
         for chunk in chunks:
             assert len(chunk["content"]) > 0
@@ -487,15 +478,10 @@ class MyClass:
         # Check line numbers are set
         assert chunks[0]["metadata"]["start_line"] == 1
         if len(chunks) > 1:
-            assert (
-                chunks[1]["metadata"]["start_line"]
-                > chunks[0]["metadata"]["start_line"]
-            )
+            assert chunks[1]["metadata"]["start_line"] > chunks[0]["metadata"]["start_line"]
 
     @pytest.mark.asyncio
-    async def test_process_very_small_file(
-        self, processor_with_custom_config, temp_dir
-    ):
+    async def test_process_very_small_file(self, processor_with_custom_config, temp_dir):
         """Test processing very small files."""
         processor = processor_with_custom_config
         small_file = temp_dir / "small.txt"
@@ -550,9 +536,7 @@ class MyClass:
             assert len(chunks[1]["content"]) > 0
 
     @pytest.mark.asyncio
-    async def test_process_code_with_syntax_errors(
-        self, processor_with_custom_config, temp_dir
-    ):
+    async def test_process_code_with_syntax_errors(self, processor_with_custom_config, temp_dir):
         """Test processing code files with syntax errors."""
         processor = processor_with_custom_config
         # Python code with syntax errors
@@ -581,9 +565,7 @@ print("Wrong indentation")"""
         """Test processor initialization with different configurations."""
         # Test with custom configs (DocumentProcessor requires both configs)
         custom_doc_config = DocumentConfig(max_file_size_mb=5, extract_metadata=False)
-        custom_chunk_config = ChunkingConfig(
-            max_chunk_size=256, use_semantic_chunking=False
-        )
+        custom_chunk_config = ChunkingConfig(max_chunk_size=256, use_semantic_chunking=False)
 
         processor = DocumentProcessor(custom_doc_config, custom_chunk_config)
         assert processor.doc_config.max_file_size_mb == 5
@@ -605,9 +587,7 @@ print("Wrong indentation")"""
         processor = processor_with_custom_config
         # Create a binary file (e.g., an image)
         binary_file = temp_dir / "image.png"
-        binary_data = (
-            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
-        )
+        binary_data = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
         binary_file.write_bytes(binary_data)
 
         # Should return None or handle gracefully
@@ -824,9 +804,7 @@ Final content."""
         ):
             with patch("eol.rag_context.document_processor.Language") as mock_language:
                 with patch("eol.rag_context.document_processor.Parser") as mock_parser:
-                    with patch(
-                        "eol.rag_context.document_processor.TREE_SITTER_AVAILABLE", True
-                    ):
+                    with patch("eol.rag_context.document_processor.TREE_SITTER_AVAILABLE", True):
                         parsers = processor_extra._init_code_parsers()
                         # Should return parser dictionary
                         assert isinstance(parsers, dict)

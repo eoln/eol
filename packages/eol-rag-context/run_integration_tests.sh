@@ -51,15 +51,15 @@ echo -e "${GREEN}✓${NC} Virtual environment activated"
 if ! check_redis; then
     echo -e "${YELLOW}Redis Stack not running or RediSearch not available${NC}"
     echo "Starting Redis Stack Server..."
-    
+
     # Stop any existing Redis
     redis-cli shutdown 2>/dev/null || true
     sleep 2
-    
+
     # Start Redis Stack
     redis-stack-server --daemonize yes
     sleep 3
-    
+
     if check_redis; then
         echo -e "${GREEN}✓${NC} Redis Stack Server started"
     else
@@ -74,7 +74,7 @@ fi
 if [ ! -d "tests/test_data" ]; then
     echo -e "${YELLOW}Test data not found, creating...${NC}"
     mkdir -p tests/test_data
-    
+
     # Create minimal test files
     echo "# Test Document" > tests/test_data/test.md
     echo "def test(): pass" > tests/test_data/test.py
@@ -132,9 +132,9 @@ if [ -f test_results/integration.xml ]; then
     FAILURES=$(grep -o 'failures="[0-9]*"' test_results/integration.xml | head -1 | grep -o '[0-9]*')
     ERRORS=$(grep -o 'errors="[0-9]*"' test_results/integration.xml | head -1 | grep -o '[0-9]*')
     SKIPPED=$(grep -o 'skipped="[0-9]*"' test_results/integration.xml | head -1 | grep -o '[0-9]*' || echo "0")
-    
+
     PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
-    
+
     echo "Total Tests: $TOTAL"
     if [ "$PASSED" -gt 0 ]; then
         echo -e "${GREEN}✓ Passed: $PASSED${NC}"
@@ -159,7 +159,7 @@ if [ -f test_results/coverage.xml ]; then
     COV=$(grep -o 'line-rate="[0-9.]*"' test_results/coverage.xml | head -1 | grep -o '[0-9.]*')
     COV_PCT=$(echo "$COV * 100" | bc 2>/dev/null || echo "0")
     COV_INT=${COV_PCT%.*}
-    
+
     if [ "$COV_INT" -ge 80 ]; then
         echo -e "${GREEN}✓ Coverage: ${COV_INT}%${NC}"
     else

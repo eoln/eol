@@ -61,9 +61,8 @@ async def check_redis_connection():
 async def test_tutorial_example():
     """Test a simple tutorial example with real Redis."""
     from eol.rag_context import EOLRAGContextServer
-    from eol.rag_context.config import RAGConfig, RedisConfig
+    from eol.rag_context.config import IndexConfig, RAGConfig, RedisConfig
     from eol.rag_context.redis_client import RedisVectorStore
-    from eol.rag_context.config import IndexConfig
 
     print("\n📚 Testing tutorial example with real Redis...")
 

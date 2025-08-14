@@ -154,7 +154,7 @@ fi
 # Verify Redis is running
 if redis-cli ping > /dev/null 2>&1; then
     print_status 0 "Redis Stack Server is running"
-    
+
     # Check for RediSearch module
     if redis-cli MODULE LIST | grep -q search; then
         print_status 0 "RediSearch module is loaded"
@@ -215,15 +215,15 @@ def calculate_factorial(n: int) -> int:
 
 class Calculator:
     """Simple calculator class."""
-    
+
     def __init__(self):
         self.result = 0
-    
+
     def add(self, a: float, b: float) -> float:
         """Add two numbers."""
         self.result = a + b
         return self.result
-    
+
     def multiply(self, a: float, b: float) -> float:
         """Multiply two numbers."""
         self.result = a * b

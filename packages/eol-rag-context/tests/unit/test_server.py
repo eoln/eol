@@ -1,9 +1,10 @@
 """Fixed unit tests for server module - testing only actual functionality."""
 
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
-from pathlib import Path
 import sys
+from pathlib import Path
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 

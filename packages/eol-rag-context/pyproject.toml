@@ -18,17 +18,17 @@ dependencies = [
     # Redis and vector search
     "redis>=5.0.0",
     "numpy>=1.24.0",
-    
+
     # Configuration and validation
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-    
+
     # MCP server
     "fastmcp[email]>=2.0.0",
-    
+
     # Async support
     "aiofiles>=23.0.0",
-    
+
     # Document processing
     "beautifulsoup4>=4.12.0",
     "markdown>=3.5.0",
@@ -37,17 +37,17 @@ dependencies = [
     "pypdf>=4.0.0",
     "python-docx>=1.0.0",
     "lxml>=4.9.0",
-    
+
     # Code parsing
     "tree-sitter>=0.20.0",
     "tree-sitter-python>=0.20.0",
     "tree-sitter-javascript>=0.20.0",
-    
+
     # Graph and utilities
     "networkx>=3.0",
     "watchdog>=3.0.0",
     "gitignore-parser>=0.1.0",
-    
+
     # CLI (optional, but included for standalone usage)
     "typer>=0.9.0",
     "rich>=13.9.4",

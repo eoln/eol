@@ -7,6 +7,7 @@ The EOL project uses **UV** (by Astral) as its primary dependency management too
 ## Quick Start
 
 ### Initial Setup
+
 ```bash
 # Install UV (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -19,6 +20,7 @@ source .venv/bin/activate
 ```
 
 ### Daily Workflow
+
 ```bash
 # Sync all dependencies
 ./scripts/sync-deps.sh
@@ -63,7 +65,9 @@ eol/
 ### 1. Three-Tier System
 
 #### Tier 1: Shared Dependencies (`requirements/base.txt`)
+
 Core dependencies used across multiple packages:
+
 - `pydantic` - Data validation
 - `typer` - CLI framework
 - `rich` - Terminal formatting
@@ -71,13 +75,17 @@ Core dependencies used across multiple packages:
 - `pyyaml` - YAML processing
 
 #### Tier 2: Package-Specific Dependencies
+
 Each package's `pyproject.toml` declares its specific needs:
+
 - `eol-core` - Minimal dependencies
 - `eol-cli` - CLI-specific tools
 - `eol-rag-context` - Redis, MCP, document processing
 
 #### Tier 3: Development Dependencies (`requirements/dev.txt`)
+
 Shared development tools:
+
 - Testing: `pytest`, `pytest-cov`
 - Linting: `black`, `ruff`, `mypy`
 - Documentation: `mkdocs`, `mkdocstrings`
@@ -86,11 +94,13 @@ Shared development tools:
 ### 2. Version Management
 
 #### Constraints File (`requirements/constraints.txt`)
+
 - Pins exact versions for reproducibility
 - Updated via `./scripts/update-deps.sh`
 - Shared across all packages
 
 #### Update Strategy
+
 ```bash
 # Update patch versions only (1.2.3 → 1.2.4)
 ./scripts/update-deps.sh patch
@@ -111,6 +121,7 @@ Shared development tools:
 ### 3. Workspace Dependencies
 
 Internal packages can depend on each other:
+
 ```toml
 # In eol-cli/pyproject.toml
 [tool.uv.sources]
@@ -121,6 +132,7 @@ eol-rag-context = { workspace = true }
 ## UV Commands Reference
 
 ### Basic Commands
+
 ```bash
 # Create virtual environment
 uv venv
@@ -145,6 +157,7 @@ uv pip check
 ```
 
 ### Workspace Commands
+
 ```bash
 # Sync all workspace packages
 uv sync --all-packages
@@ -162,6 +175,7 @@ uv pip compile requirements/base.txt -o requirements/base.lock
 ## Security Scanning
 
 ### Manual Security Checks
+
 ```bash
 # Run all security checks
 ./scripts/check-deps.sh
@@ -173,6 +187,7 @@ bandit -r packages/*/src
 ```
 
 ### Automated Security (CI/CD)
+
 - Runs on every PR affecting dependencies
 - Weekly scheduled scans
 - Creates security reports as artifacts
@@ -183,6 +198,7 @@ bandit -r packages/*/src
 ### GitHub Actions Workflows
 
 #### `.github/workflows/dependencies.yml`
+
 - **Triggers**: On dependency changes, weekly schedule
 - **Jobs**:
   - `dependency-check`: Validates dependencies across Python versions
@@ -191,6 +207,7 @@ bandit -r packages/*/src
   - `validate-workspace`: Ensures workspace integrity
 
 ### Pre-commit Hooks
+
 ```bash
 # Install pre-commit
 pip install pre-commit
@@ -207,6 +224,7 @@ pre-commit run --all-files
 ### Common Issues
 
 #### 1. UV Not Found
+
 ```bash
 # Install UV
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -215,6 +233,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
 #### 2. Dependency Conflicts
+
 ```bash
 # Check conflicts
 uv pip check
@@ -227,6 +246,7 @@ uv pip install -c requirements/constraints.txt -r requirements/base.txt
 ```
 
 #### 3. Import Errors
+
 ```bash
 # Ensure virtual environment is active
 source .venv/bin/activate
@@ -236,6 +256,7 @@ uv pip install -e packages/eol-rag-context
 ```
 
 #### 4. Version Mismatch
+
 ```bash
 # Force sync with constraints
 uv pip sync requirements/constraints.txt
@@ -247,7 +268,8 @@ rm -rf .venv
 
 ## Best Practices
 
-### DO:
+### DO
+
 ✅ Always use UV for dependency management
 ✅ Keep constraints.txt updated
 ✅ Run security checks before merging
@@ -255,7 +277,8 @@ rm -rf .venv
 ✅ Test across Python versions (3.11, 3.12)
 ✅ Document new dependencies in pyproject.toml
 
-### DON'T:
+### DON'T
+
 ❌ Use pip directly (use `uv pip` instead)
 ❌ Install without constraints in production
 ❌ Mix dependency management tools
@@ -265,6 +288,7 @@ rm -rf .venv
 ## Adding New Dependencies
 
 ### To a Specific Package
+
 ```bash
 cd packages/eol-rag-context
 uv pip install new-package
@@ -274,6 +298,7 @@ uv pip freeze | grep new-package >> ../../requirements/constraints.txt
 ```
 
 ### To Shared Dependencies
+
 1. Add to `requirements/base.txt` or `requirements/dev.txt`
 2. Add version to `requirements/constraints.txt`
 3. Run `./scripts/sync-deps.sh`
@@ -282,6 +307,7 @@ uv pip freeze | grep new-package >> ../../requirements/constraints.txt
 ## Migration from pip/poetry
 
 ### From requirements.txt
+
 ```bash
 # Convert existing requirements
 cat old-requirements.txt >> requirements/base.txt
@@ -292,6 +318,7 @@ uv pip freeze > requirements/constraints.txt
 ```
 
 ### From Poetry
+
 ```bash
 # Export from Poetry
 poetry export -f requirements.txt > old-requirements.txt
@@ -308,16 +335,19 @@ poetry export -f requirements.txt > old-requirements.txt
 ## Monitoring and Maintenance
 
 ### Weekly Tasks
+
 - Review security scan results
 - Check for outdated packages
 - Update patch versions
 
 ### Monthly Tasks
+
 - Update minor versions
 - Review and clean unused dependencies
 - Update development tools
 
 ### Quarterly Tasks
+
 - Consider major version updates
 - Audit dependency tree
 - Review dependency strategy
@@ -332,6 +362,7 @@ poetry export -f requirements.txt > old-requirements.txt
 ## Support
 
 For dependency-related issues:
+
 1. Check this documentation
 2. Run `./scripts/check-deps.sh` for diagnostics
 3. Review CI/CD logs for automated checks

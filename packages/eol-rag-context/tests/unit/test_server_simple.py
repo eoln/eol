@@ -241,9 +241,7 @@ class TestServerMCPEndpoints:
         srv.semantic_cache.set = AsyncMock()
 
         # Mock the search context request
-        request = server.SearchContextRequest(
-            query="test query", max_results=5, min_relevance=0.7
-        )
+        request = server.SearchContextRequest(query="test query", max_results=5, min_relevance=0.7)
 
         # The search_context tool is attached to the MCP server
         # We can test the logic by calling it directly if it exists

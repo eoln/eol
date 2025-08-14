@@ -3,11 +3,13 @@
 ## Naming Convention
 
 All completed plans must use date prefix:
+
 ```
 YYYYMMDD_plan-name.md
 ```
 
 Examples:
+
 - `20250113_claude-folder-enhancement.md`
 - `20250114_semantic-caching-implementation.md`
 - `20250115_vector-search-optimization.md`
@@ -21,6 +23,7 @@ Examples:
 - Merge PR after review and approval
 
 ## Completion Checklist
+
 - [ ] All tasks marked complete
 - [ ] Lessons learned documented
 - [ ] Context files updated
@@ -29,6 +32,7 @@ Examples:
 - [ ] Documentation updated
 
 ## Archival
+
 - Keep plans for future reference
 - Include final outcomes
 - Note any follow-up items

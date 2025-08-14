@@ -17,6 +17,7 @@ These commands provide rapid quality checks during development, supplementing th
 ## Integration with PRP Workflow
 
 These quality commands are used throughout the PRP execution process:
+
 1. **During Development**: Use `quick-check` frequently
 2. **Phase Completion**: Run `full-validation` after each phase
 3. **Before PR**: Execute complete validation suite

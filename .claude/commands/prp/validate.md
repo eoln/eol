@@ -15,6 +15,7 @@ Comprehensive validation of PRP implementations against quality standards, perfo
 ```
 
 ### Examples
+
 ```bash
 # Full validation of completed implementation
 /prp:validate .claude/plans/completed/prp-semantic-caching.md --full
@@ -29,12 +30,14 @@ Comprehensive validation of PRP implementations against quality standards, perfo
 ## Validation Levels
 
 ### Quick Validation (--quick)
+
 - Basic syntax checks
 - Import verification
 - Type hint presence
 - Test existence
 
 ### Full Validation (--full)
+
 - Complete quality gates
 - Test coverage analysis
 - Performance benchmarks
@@ -42,6 +45,7 @@ Comprehensive validation of PRP implementations against quality standards, perfo
 - Integration testing
 
 ### Performance Validation (--performance)
+
 - Throughput benchmarks
 - Latency measurements
 - Memory usage analysis
@@ -54,6 +58,7 @@ Follows the validation requirements from [`.claude/context/planning-methodology.
 ### 1. Code Quality Validation
 
 #### Python Standards
+
 ```bash
 # Format checking
 black src/ tests/ --check
@@ -69,6 +74,7 @@ mypy src/ --strict
 ```
 
 #### Code Metrics
+
 ```python
 # Complexity analysis
 from radon.complexity import cc_visit
@@ -79,6 +85,7 @@ assert all(f.complexity < 10 for f in complexity)
 ### 2. Test Coverage Validation
 
 #### Coverage Requirements
+
 ```bash
 # Run tests with coverage
 pytest tests/ --cov=eol.rag_context --cov-report=term
@@ -88,6 +95,7 @@ pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ```
 
 #### Test Quality
+
 ```python
 # Verify test patterns
 - Async tests properly marked
@@ -99,6 +107,7 @@ pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ### 3. Domain Performance Validation
 
 #### Document Processing
+
 ```python
 async def validate_indexing_performance():
     """Validate indexing meets targets"""
@@ -109,6 +118,7 @@ async def validate_indexing_performance():
 ```
 
 #### Vector Search
+
 ```python
 async def validate_search_latency():
     """Validate search performance"""
@@ -117,12 +127,13 @@ async def validate_search_latency():
         start = time.time()
         await redis_store.search_similar(query)
         latencies.append((time.time() - start) * 1000)
-    
+
     p95 = np.percentile(latencies, 95)
     assert p95 < 100, f"P95 latency {p95}ms > 100ms"
 ```
 
 #### Cache Performance
+
 ```python
 def validate_cache_hit_rate():
     """Validate semantic cache effectiveness"""
@@ -135,26 +146,28 @@ def validate_cache_hit_rate():
 ### 4. Redis Integration Validation
 
 #### Connection Health
+
 ```python
 async def validate_redis_connection():
     """Validate Redis connectivity and pooling"""
     # Check connection pool
     assert redis_client.connection_pool.max_connections == 50
-    
+
     # Test connectivity
     await redis_client.ping()
-    
+
     # Verify indexes exist
     indexes = await redis_client.ft().list()
     assert "doc_index" in indexes
 ```
 
 #### Vector Operations
+
 ```python
 async def validate_vector_operations():
     """Validate vector index configuration"""
     info = await redis_client.ft("doc_index").info()
-    
+
     # Check index configuration
     assert info["index_definition"]["algorithm"] == "HNSW"
     assert info["attributes"]["embedding"]["dim"] == 384
@@ -163,6 +176,7 @@ async def validate_vector_operations():
 ### 5. Documentation Validation
 
 #### Code Documentation
+
 ```python
 # Check docstring coverage
 from interrogate import coverage
@@ -171,6 +185,7 @@ assert cov > 90, f"Docstring coverage {cov}% < 90%"
 ```
 
 #### API Documentation
+
 ```bash
 # Validate API docs generation
 python -m pydoc -w src/eol/rag_context
@@ -227,18 +242,21 @@ assert os.path.exists("rag_context.html")
 ## Validation Rules
 
 ### Critical (Must Pass)
+
 - All tests passing
 - Coverage >80%
 - No security vulnerabilities
 - Type checking passes
 
 ### Important (Should Pass)
+
 - Performance targets met
 - Documentation >90% coverage
 - Complexity <10 per function
 - No deprecated patterns
 
 ### Advisory (Nice to Have)
+
 - Cache hit rate >35%
 - Memory usage optimized
 - Batch size tuning
@@ -247,6 +265,7 @@ assert os.path.exists("rag_context.html")
 ## Command Options
 
 ### Validation Scope
+
 ```bash
 # Validate specific phase
 /prp:validate plan.md --phase=2
@@ -259,6 +278,7 @@ assert os.path.exists("rag_context.html")
 ```
 
 ### Output Options
+
 ```bash
 # Generate detailed report
 /prp:validate plan.md --report=detailed
@@ -273,12 +293,14 @@ assert os.path.exists("rag_context.html")
 ## Success Criteria
 
 ### Implementation Complete
+
 - [ ] All PRP tasks marked complete
 - [ ] Quality gates passed
 - [ ] Performance targets met
 - [ ] Documentation updated
 
 ### Ready for Production
+
 - [ ] Full validation passed
 - [ ] Security scan clean
 - [ ] Load testing successful

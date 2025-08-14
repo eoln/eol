@@ -44,9 +44,7 @@ class TestKnowledgeGraphCoverage:
             return_value=np.random.rand(384).astype(np.float32)
         )
 
-        builder = KnowledgeGraphBuilder(
-            redis_store=mock_redis, embedding_manager=mock_embeddings
-        )
+        builder = KnowledgeGraphBuilder(redis_store=mock_redis, embedding_manager=mock_embeddings)
         return builder
 
     @pytest.mark.asyncio
@@ -75,9 +73,7 @@ class TestKnowledgeGraphCoverage:
         assert len(builder.entities) >= 0
 
     @pytest.mark.asyncio
-    async def test_extract_content_entities_different_types(
-        self, builder_with_mock_redis
-    ):
+    async def test_extract_content_entities_different_types(self, builder_with_mock_redis):
         """Test _extract_content_entities to cover lines 497-504."""
         builder = builder_with_mock_redis
 
@@ -92,9 +88,7 @@ class TestKnowledgeGraphCoverage:
         )
 
         # Test text type (default)
-        await builder._extract_content_entities(
-            "Plain text content", "doc3", {"file_type": "text"}
-        )
+        await builder._extract_content_entities("Plain text content", "doc3", {"file_type": "text"})
 
         # Test with no file_type (should default to text)
         await builder._extract_content_entities("Content without type", "doc4", {})
@@ -136,9 +130,7 @@ Content for section 1
 Content for section 2
 """
 
-        await builder._extract_markdown_entities(
-            markdown_content, "doc1", {"source_id": "test"}
-        )
+        await builder._extract_markdown_entities(markdown_content, "doc1", {"source_id": "test"})
 
         # Should extract section entities
         assert builder.graph.number_of_nodes() >= 0
@@ -150,9 +142,7 @@ Content for section 2
 
         text_content = "This is a sample text with important concepts and terms."
 
-        await builder._extract_text_entities(
-            text_content, "doc1", {"source_id": "test"}
-        )
+        await builder._extract_text_entities(text_content, "doc1", {"source_id": "test"})
 
         # Should extract concept entities
         assert builder.graph.number_of_nodes() >= 0
@@ -266,9 +256,7 @@ Content for section 2
 
         # Add relationships in a chain
         for i in range(4):
-            builder.graph.add_edge(
-                f"e{i}", f"e{i+1}", type=RelationType.RELATES_TO.value
-            )
+            builder.graph.add_edge(f"e{i}", f"e{i+1}", type=RelationType.RELATES_TO.value)
 
         # _compute_graph_metrics doesn't exist, use get_graph_stats which does
         metrics = builder.get_graph_stats()

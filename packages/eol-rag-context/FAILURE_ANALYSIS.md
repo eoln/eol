@@ -3,6 +3,7 @@
 ## Failure Categories
 
 ### Category 1: Missing Fields (7 failures)
+
 **Root Cause**: Document chunks missing expected fields
 
 1. **Missing `metadata` field in chunks**
@@ -18,6 +19,7 @@
    - Expected: `{"language": "python"}`
 
 ### Category 2: Return Type Mismatches (10 failures)
+
 **Root Cause**: Methods returning wrong types
 
 1. **`index_file` returns `int` instead of result object**
@@ -32,6 +34,7 @@
    - Expected: Result object with statistics
 
 ### Category 3: Async/Await Issues (6 failures)
+
 **Root Cause**: Incorrect async patterns with Redis
 
 1. **`await` on sync Redis methods**
@@ -40,6 +43,7 @@
    - Issue: Using await on `hgetall()` which returns dict directly
 
 ### Category 4: Type Conversion Issues (3 failures)
+
 **Root Cause**: Incorrect type handling
 
 1. **Path vs String confusion**
@@ -52,6 +56,7 @@
    - Issue: Trying to store None values in Redis
 
 ### Category 5: API Signature Mismatches (5 failures)
+
 **Root Cause**: Method signatures don't match test expectations
 
 1. **`index_folder` unexpected keyword**
@@ -59,12 +64,13 @@
    - Test passes `source_id` but method doesn't accept it
 
 2. **Wrong doc_type values**
-   - Current: Returns "json" 
+   - Current: Returns "json"
    - Expected: "structured"
 
 ## Priority Fixes
 
 ### Priority 1: Add metadata to chunks (Fixes 7 tests)
+
 ```python
 # In document_processor.py
 def _create_chunk(content, type, **kwargs):
@@ -81,6 +87,7 @@ def _create_chunk(content, type, **kwargs):
 ```
 
 ### Priority 2: Create IndexResult class (Fixes 10 tests)
+
 ```python
 # In indexer.py
 @dataclass
@@ -89,7 +96,7 @@ class IndexResult:
     chunks: int = 0
     files: int = 0
     errors: List[str] = field(default_factory=list)
-    
+
 # Update index_file return
 async def index_file(self, file_path, source_id=None, ...):
     # ... existing code ...
@@ -102,6 +109,7 @@ async def index_file(self, file_path, source_id=None, ...):
 ```
 
 ### Priority 3: Fix async/await patterns (Fixes 6 tests)
+
 ```python
 # In indexer.py:714
 # Change from:
@@ -111,6 +119,7 @@ data = self.redis.redis.hgetall(source_key)
 ```
 
 ### Priority 4: Handle Path/string conversion (Fixes 3 tests)
+
 ```python
 # In indexer.py:378
 # Add type checking:
@@ -122,24 +131,28 @@ file_path = file_path.resolve()
 ## Test Groups by Fix
 
 ### After Fix 1 (metadata): Should pass
+
 - test_process_text_file
-- test_process_markdown_file  
+- test_process_markdown_file
 - test_process_python_file
 - test_chunking_strategies
 - test_concurrent_processing
 
 ### After Fix 2 (IndexResult): Should pass
+
 - test_index_single_file
 - test_index_folder
 - test_concurrent_indexing
 - test_indexing_stats
 
 ### After Fix 3 (async): Should pass
+
 - test_incremental_indexing
 - test_error_recovery
 - test_hierarchical_indexing
 
 ### After Fix 4 (Path): Should pass
+
 - test_indexing_single_file (tutorial)
 - test_folder_scanner
 

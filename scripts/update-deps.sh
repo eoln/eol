@@ -44,9 +44,9 @@ print_info "Backed up constraints to requirements/constraints.txt.backup"
 update_version() {
     local current_version=$1
     local update_type=$2
-    
+
     IFS='.' read -r major minor patch <<< "$current_version"
-    
+
     case $update_type in
         patch)
             echo "$major.$minor.$((patch + 1))"
@@ -112,7 +112,7 @@ for package in packages/*; do
     if [ -f "$package/pyproject.toml" ]; then
         package_name=$(basename "$package")
         print_info "Updating $package_name dependencies..."
-        
+
         if [ "$DRY_RUN" == "false" ]; then
             cd "$package"
             uv pip install $UPGRADE_STRATEGY -e .
@@ -127,11 +127,11 @@ done
 if [ "$DRY_RUN" == "false" ]; then
     print_info "Generating new constraints file..."
     uv pip freeze > requirements/constraints.txt.new
-    
+
     # Compare constraints
     print_info "Changes in constraints:"
     diff requirements/constraints.txt.backup requirements/constraints.txt.new || true
-    
+
     # Run tests to verify updates
     print_info "Running basic tests to verify updates..."
     python -c "
@@ -149,11 +149,11 @@ except ImportError as e:
     print(f'✗ Import failed: {e}')
     sys.exit(1)
 "
-    
+
     # Run security check
     print_info "Running security check on updated dependencies..."
     ./scripts/check-deps.sh || true
-    
+
     # If all good, update constraints
     mv requirements/constraints.txt.new requirements/constraints.txt
     print_success "Constraints file updated"

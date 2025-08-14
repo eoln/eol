@@ -33,9 +33,7 @@ class TestKnowledgeGraphExtra:
             return_value=np.random.rand(384).astype(np.float32)
         )
 
-        builder = KnowledgeGraphBuilder(
-            redis_store=mock_redis, embedding_manager=mock_embeddings
-        )
+        builder = KnowledgeGraphBuilder(redis_store=mock_redis, embedding_manager=mock_embeddings)
         return builder
 
     @pytest.mark.asyncio
@@ -118,11 +116,7 @@ class TestKnowledgeGraphExtra:
             graph_builder.graph.add_node(
                 entity_id,
                 name=entity.name,
-                type=(
-                    entity.type.value
-                    if hasattr(entity.type, "value")
-                    else str(entity.type)
-                ),
+                type=(entity.type.value if hasattr(entity.type, "value") else str(entity.type)),
             )
 
         assert len(graph_builder.entities) == 3
@@ -141,9 +135,7 @@ class TestKnowledgeGraphExtra:
         graph_builder.graph.add_node("e2", name="E2", type="function")
         graph_builder.graph.add_node("e3", name="E3", type="class")
 
-        graph_builder.graph.add_edge(
-            "e1", "e2", type=RelationType.RELATES_TO, weight=1.0
-        )
+        graph_builder.graph.add_edge("e1", "e2", type=RelationType.RELATES_TO, weight=1.0)
         graph_builder.graph.add_edge("e2", "e3", type=RelationType.USES, weight=1.0)
 
         # Graph is mocked, check if add_edge has 'called' attribute or just pass
@@ -157,17 +149,13 @@ class TestKnowledgeGraphExtra:
     async def test_get_subgraph(self, graph_builder):
         """Test query_subgraph method."""
         # Mock embedding generation
-        graph_builder.embeddings.get_embedding.return_value = np.random.rand(
-            384
-        ).astype(np.float32)
+        graph_builder.embeddings.get_embedding.return_value = np.random.rand(384).astype(np.float32)
 
         # Mock Redis search to return no results
         graph_builder.redis.search_similar = AsyncMock(return_value=[])
 
         # Call query_subgraph which exists
-        result = await graph_builder.query_subgraph(
-            query="test", max_depth=1, max_entities=5
-        )
+        result = await graph_builder.query_subgraph(query="test", max_depth=1, max_entities=5)
 
         assert result is not None
         # KnowledgeSubgraph has entities and relationships attributes
@@ -257,9 +245,7 @@ class TestKnowledgeGraphExtra:
         await graph_builder._store_graph()
 
         # Verify redis methods were called
-        assert (
-            graph_builder.redis.redis.hset.called or True
-        )  # May not be called if graph empty
+        assert graph_builder.redis.redis.hset.called or True  # May not be called if graph empty
 
     def test_merge_graphs(self, graph_builder):
         """Test graph composition."""

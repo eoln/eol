@@ -1,8 +1,8 @@
 # Test Coverage Analysis - EOL RAG Context
 
-**Date**: August 13, 2025  
-**Current Coverage**: 58.98% (Unit Tests) | 25.31% (Integration Tests)  
-**Target Coverage**: 80% minimum  
+**Date**: August 13, 2025
+**Current Coverage**: 58.98% (Unit Tests) | 25.31% (Integration Tests)
+**Target Coverage**: 80% minimum
 **Gap to Target**: 21.02%
 
 ## Executive Summary
@@ -35,16 +35,19 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ## Key Issues Identified
 
 ### 1. Redis Connection Failures
+
 - **Impact**: All integration tests failing due to Redis connection errors
 - **Error**: `ConnectionError: [Errno 61] Connect call failed ('127.0.0.1', 6379)`
 - **Affected Tests**: 42 integration tests erroring out
 
 ### 2. Mock Configuration Issues
+
 - **Impact**: 10 file watcher tests failing with `StopIteration` errors
 - **Issue**: Incorrect mock setup in fixture `handler`
 - **File**: `tests/test_file_watcher.py:135`
 
 ### 3. Missing Async Support
+
 - **Impact**: Multiple MCP server and semantic cache tests failing
 - **Issue**: Missing async Redis client mocks
 - **Affected**: `test_mcp_server.py`, `test_semantic_cache.py`
@@ -52,7 +55,9 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ## Specific Coverage Gaps
 
 ### redis_client.py (13.69% coverage)
+
 **Uncovered Functions**:
+
 - Connection management (lines 269-308)
 - Vector operations (lines 344-427)
 - Batch operations (lines 472-504)
@@ -61,14 +66,18 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 - Cleanup operations (lines 765-801)
 
 ### embeddings.py (48.15% coverage)
+
 **Uncovered Functions**:
+
 - OpenAI provider implementation (lines 82-108)
 - Local model support (lines 112-125)
 - Batch embedding generation (lines 187-199)
 - Error handling and retries (lines 233-246)
 
 ### document_processor.py (54.31% coverage)
+
 **Uncovered Functions**:
+
 - AST-based code chunking (lines 475-505)
 - Semantic text chunking (lines 509-527)
 - JSON/YAML processing (lines 531-565)
@@ -76,7 +85,9 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 - Content validation (lines 775-790)
 
 ### server.py (54.84% coverage)
+
 **Uncovered Functions**:
+
 - Tool implementations (lines 277-303, 419-435)
 - Resource handlers (lines 471-498)
 - Prompt generation (lines 579-621)
@@ -87,6 +98,7 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ### Immediate Actions (Week 1)
 
 1. **Fix Redis Connection Issues**
+
    ```bash
    # Ensure Redis is running for tests
    docker-compose -f docker-compose.test.yml up -d
@@ -94,6 +106,7 @@ The current test coverage of 58.98% for unit tests falls significantly below the
    ```
 
 2. **Fix Mock Configuration**
+
    ```python
    # Fix file_watcher fixture
    @pytest.fixture
@@ -131,12 +144,13 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ### Medium-term Actions (Week 3-4)
 
 7. **Create Test Utilities**
+
    ```python
    # tests/utils/fixtures.py
    @pytest.fixture
    async def mock_redis():
        """Provides a fully mocked Redis client"""
-       
+
    @pytest.fixture
    async def test_documents():
        """Provides sample documents for testing"""
@@ -157,18 +171,21 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ## Test Implementation Priority
 
 ### Phase 1: Foundation (Target: 70% coverage)
+
 1. Fix all failing tests
 2. Add Redis client unit tests
 3. Complete embeddings provider tests
 4. Add basic document processor tests
 
 ### Phase 2: Comprehensive (Target: 80% coverage)
+
 1. Add edge case tests
 2. Implement error scenario tests
 3. Add concurrent operation tests
 4. Complete server tool tests
 
 ### Phase 3: Excellence (Target: 85%+ coverage)
+
 1. Add performance benchmarks
 2. Implement stress tests
 3. Add integration test scenarios
@@ -177,6 +194,7 @@ The current test coverage of 58.98% for unit tests falls significantly below the
 ## Example Test Implementations
 
 ### Redis Client Test Example
+
 ```python
 # tests/test_redis_client_unit.py
 import pytest
@@ -191,12 +209,12 @@ class TestRedisStoreUnit:
             store = RedisStore()
             await store.connect_async()
             yield store
-    
+
     async def test_store_document(self, mock_redis_store):
         doc = {"id": "test", "content": "test content"}
         result = await mock_redis_store.store_document(doc)
         assert result is True
-    
+
     async def test_search_similar(self, mock_redis_store):
         mock_redis_store.async_redis.ft.return_value.search = AsyncMock(
             return_value=Mock(docs=[Mock(id="doc1", score=0.9)])
@@ -206,6 +224,7 @@ class TestRedisStoreUnit:
 ```
 
 ### Document Processor Test Example
+
 ```python
 # tests/test_document_processor_comprehensive.py
 class TestDocumentProcessorComprehensive:
@@ -225,12 +244,14 @@ class TestDocumentProcessorComprehensive:
 ## Monitoring Progress
 
 ### Weekly Metrics
+
 - Run coverage reports weekly
 - Track coverage trend
 - Identify new gaps
 - Review test failures
 
 ### Success Criteria
+
 - [ ] Unit test coverage ≥ 80%
 - [ ] Integration test coverage ≥ 60%
 - [ ] All critical paths tested
@@ -257,5 +278,5 @@ The estimated timeline to reach 80% coverage is 3-4 weeks with focused effort on
 
 ---
 
-*Generated by PRP Analysis Tool*  
+*Generated by PRP Analysis Tool*
 *For questions or updates, see .claude/context/quality-gates.md*

@@ -3,6 +3,7 @@
 ## Basic Type Hints
 
 ### Function Signatures
+
 ```python
 from typing import List, Dict, Optional, Union, Tuple, Any
 from typing import Callable, Awaitable, TypeVar, Generic
@@ -21,6 +22,7 @@ async def process_text(
 ## Advanced Typing
 
 ### TypedDict for Structured Data
+
 ```python
 from typing import TypedDict, NotRequired
 
@@ -38,16 +40,17 @@ def process_document(metadata: DocumentMetadata) -> None:
 ```
 
 ### Protocol for Duck Typing
+
 ```python
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable
 class Embeddable(Protocol):
     """Protocol for objects that can be embedded"""
-    
+
     async def to_embedding(self) -> List[float]:
         ...
-    
+
     def get_content(self) -> str:
         ...
 
@@ -59,16 +62,17 @@ async def embed_item(item: Embeddable) -> List[float]:
 ## Generics
 
 ### Generic Classes
+
 ```python
 T = TypeVar('T')
 
 class Cache(Generic[T]):
     def __init__(self) -> None:
         self._items: Dict[str, T] = {}
-    
+
     async def get(self, key: str) -> Optional[T]:
         return self._items.get(key)
-    
+
     async def set(self, key: str, value: T) -> None:
         self._items[key] = value
 
@@ -80,6 +84,7 @@ doc_cache: Cache[Document] = Cache()
 ## Type Aliases
 
 ### Complex Type Definitions
+
 ```python
 from typing import Alias
 
@@ -111,7 +116,7 @@ ModelProvider = Literal["openai", "anthropic", "local"]
 class Config:
     chunk_strategy: ChunkStrategy
     model: Union[ModelProvider, str]  # Known providers or custom
-    
+
     def __init__(
         self,
         chunk_strategy: ChunkStrategy = "semantic",
@@ -124,6 +129,7 @@ class Config:
 ## Mypy Configuration
 
 ### pyproject.toml
+
 ```toml
 [tool.mypy]
 python_version = "3.11"
@@ -148,6 +154,7 @@ disallow_untyped_defs = false
 ## Common Patterns
 
 ### Optional vs Union[T, None]
+
 ```python
 # Preferred: use Optional for clarity
 def get_value(key: str) -> Optional[str]:
@@ -159,6 +166,7 @@ def get_value(key: str) -> Union[str, None]:
 ```
 
 ### Callable Types
+
 ```python
 from typing import Callable, Awaitable
 
@@ -176,6 +184,7 @@ async def process_with_callback(
 ```
 
 ## Best Practices
+
 1. Use type hints for all public APIs
 2. Use `Optional` for nullable values
 3. Prefer `TypedDict` over raw dicts

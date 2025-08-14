@@ -1,12 +1,15 @@
 # EOL RAG Framework - Project Context for AI Assistants
 
 ## Overview
+
 EOL is a Retrieval-Augmented Generation (RAG) framework for building intelligent, context-aware AI applications. The framework provides production-ready tools for document indexing, semantic search, and dynamic context retrieval using Redis as a high-performance vector database. The `eol-rag-context` MCP server is the core component that enables applications to leverage RAG capabilities through the Model Context Protocol.
 
 ## Key Components
 
 ### eol-rag-context MCP Server
+
 The core RAG service that provides:
+
 - **Document Processing**: Intelligent chunking and hierarchical indexing (concepts → sections → chunks)
 - **Vector Search**: High-performance semantic search using Redis vector database
 - **Semantic Caching**: Reduces LLM API calls with intelligent response caching (31% hit rate target)
@@ -17,12 +20,14 @@ The core RAG service that provides:
 ## Core Principles
 
 ### 1. Context-First Development
+
 - Leverage Redis v8 vector database for context storage
 - Implement semantic caching (target: 31% hit rate)
 - Use content-aware chunking (AST for code, semantic for text)
 - Manage LLM context window efficiently
 
 ### 2. RAG-First Architecture
+
 - Every component designed for optimal RAG performance
 - Hierarchical document structure for multi-level retrieval
 - Content-aware processing (AST for code, semantic for text)
@@ -32,6 +37,7 @@ The core RAG service that provides:
 ## Technical Stack
 
 ### Core Technologies
+
 - **Language**: Python 3.11+
 - **Vector Database**: Redis v8 with vector search
 - **LLM Integration**: Multi-provider (Anthropic, OpenAI, local)
@@ -39,6 +45,7 @@ The core RAG service that provides:
 - **License**: GPL-3.0
 
 ### Key Libraries
+
 - **Redis**: `redis[vector]`, `redisvl` for vector operations
 - **CLI**: `typer`, `rich` for terminal interface
 - **MCP**: `fastmcp` for Model Context Protocol
@@ -47,6 +54,7 @@ The core RAG service that provides:
 ## Nested CLAUDE.md Architecture
 
 The `.claude/` folder uses nested CLAUDE.md files for directory-specific behavior:
+
 - Each subdirectory may contain its own CLAUDE.md with local rules
 - Subdirectory rules override parent rules for that context
 - Always check for local CLAUDE.md when entering directories
@@ -54,6 +62,7 @@ The `.claude/` folder uses nested CLAUDE.md files for directory-specific behavio
 ## Context Engineering
 
 Four strategies for effective AI assistance:
+
 - **WRITE**: Persistent memory via `.claude/plans/`
 - **SELECT**: Dynamic context loading from `.claude/context/`
 - **COMPRESS**: Optimize context window usage (<80%)
@@ -106,6 +115,7 @@ eol/
 ## Code Style and Conventions
 
 ### Python Code
+
 - Use type hints for all function signatures
 - Async/await for I/O operations
 - Dataclasses for data structures
@@ -113,11 +123,13 @@ eol/
 - Comprehensive docstrings with examples
 
 ### File Naming
+
 - Python modules: lowercase with underscores
 - Classes: PascalCase
 - Functions/variables: snake_case
 
 ### Error Handling
+
 - Custom exception classes for each error type
 - Always provide context in error messages
 - Implement retry logic with exponential backoff
@@ -176,18 +188,40 @@ except RedisError as e:
 ## Testing Requirements
 
 ### Test Coverage
+
 - Minimum 80% code coverage
 - All public APIs must have tests
 - Both unit and integration tests required
 
+### Test Isolation Standards
+
+- **NEVER modify global state** (like `sys.modules`) at module import time
+- Use pytest fixtures with proper setup/teardown for all mocking
+- Ensure tests pass regardless of execution order
+- Create centralized mock utilities in `conftest.py`
+
 ### Test Patterns
+
 ```python
-# Use fixtures for setup
-@pytest.fixture
-async def setup():
-    # Setup code
-    yield resources
-    # Teardown code
+# Use fixtures for setup with proper isolation
+@pytest.fixture(autouse=True)
+def mock_external_dependencies():
+    # Save original modules
+    original_modules = {}
+    for module in ['networkx', 'redis']:
+        if module in sys.modules:
+            original_modules[module] = sys.modules[module]
+
+    # Install mocks with __spec__ for Python 3.13 compatibility
+    mock_module = MagicMock()
+    mock_module.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
+    sys.modules["networkx"] = mock_module
+
+    yield  # Run test
+
+    # Cleanup: restore original modules
+    for module_name in original_modules:
+        sys.modules[module_name] = original_modules[module_name]
 
 # Test both success and failure cases
 async def test_operation_success(setup):
@@ -196,6 +230,13 @@ async def test_operation_success(setup):
 async def test_operation_failure(setup):
     # Test error handling
 ```
+
+### Mock Design Principles
+
+- Mock objects must accurately simulate real API behavior
+- Include `__spec__` attributes for Python 3.13+ compatibility
+- Handle optional parameters and return types correctly
+- Use consistent mock implementations across all tests
 
 ## Security Considerations
 
@@ -217,6 +258,7 @@ async def test_operation_failure(setup):
 ## Common Patterns
 
 ### RAG Pipeline Implementation
+
 ```python
 # Initialize RAG components
 indexer = DocumentIndexer(redis_store, embedding_manager)
@@ -232,6 +274,7 @@ response = await llm.generate(prompt=query, context=context)
 ```
 
 ### Health Checking
+
 ```python
 # Implement health checks for all services
 async def health_check() -> Dict[str, Any]:
@@ -251,10 +294,13 @@ async def health_check() -> Dict[str, Any]:
 3. **Monitor Redis**: Use RedisInsight on port 8001
 4. **Track context usage**: Check window status regularly
 5. **Profile performance**: Use `cProfile` for bottlenecks
+6. **Debug test isolation**: Run tests individually vs together to catch contamination
+7. **Python version compatibility**: Test with `python3.11`, `python3.12`, `python3.13` locally
 
 ## Do's and Don'ts
 
-### DO:
+### DO
+
 - ✅ Write comprehensive docstrings
 - ✅ Handle errors gracefully
 - ✅ Use type hints everywhere
@@ -262,14 +308,21 @@ async def health_check() -> Dict[str, Any]:
 - ✅ Document dependencies
 - ✅ Optimize for context window
 - ✅ Use semantic caching
+- ✅ Use pytest fixtures for test isolation
+- ✅ Add `__spec__` to mocked modules for Python 3.13+
+- ✅ Test across multiple Python versions
 
-### DON'T:
+### DON'T
+
 - ❌ Hardcode credentials
 - ❌ Skip error handling
 - ❌ Exceed context window limits
 - ❌ Use synchronous I/O
 - ❌ Forget dependency resolution
 - ❌ Skip tests
+- ❌ Modify `sys.modules` at module import time in tests
+- ❌ Create test dependencies on execution order
+- ❌ Use incompatible mock implementations across test files
 
 ## Getting Help
 
@@ -281,7 +334,9 @@ async def health_check() -> Dict[str, Any]:
 ## CI/CD Best Practices
 
 ### Always Check PR Status After Pushing
+
 **IMPORTANT**: After pushing any changes, immediately check PR checks status to discover CI/CD failures ASAP:
+
 ```bash
 gh pr checks <PR_NUMBER>  # Check status of all checks
 gh run list --branch <BRANCH>  # List recent workflow runs
@@ -289,6 +344,7 @@ gh run view <RUN_ID> --log-failed  # View failed job logs
 ```
 
 This allows you to:
+
 - Fix issues quickly before they block merges
 - Catch environment-specific problems (e.g., Python version differences)
 - Ensure tests pass in the CI environment, not just locally
@@ -296,6 +352,7 @@ This allows you to:
 ## Contributing
 
 When contributing to EOL:
+
 1. Follow the code style guide
 2. Write tests for new features
 3. Update documentation

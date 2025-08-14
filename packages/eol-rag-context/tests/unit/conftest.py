@@ -13,6 +13,10 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 import numpy as np
 import pytest
 
+from eol.rag_context.config import RAGConfig, RedisConfig
+from eol.rag_context.document_processor import DocumentProcessor
+from eol.rag_context.indexer import DocumentIndexer
+
 
 class MockMultiDiGraph:
     """Mock implementation of NetworkX MultiDiGraph for testing."""
@@ -54,9 +58,7 @@ class MockMultiDiGraph:
     def remove_node(self, node_id):
         if node_id in self._nodes:
             del self._nodes[node_id]
-            self._edges = [
-                (s, t, a) for s, t, a in self._edges if s != node_id and t != node_id
-            ]
+            self._edges = [(s, t, a) for s, t, a in self._edges if s != node_id and t != node_id]
 
     def number_of_nodes(self):
         return len(self._nodes)
@@ -150,9 +152,7 @@ def mock_external_dependencies():
     mock_redis.asyncio = MagicMock()
     mock_redis.asyncio.__spec__ = importlib.machinery.ModuleSpec("redis.asyncio", None)
     mock_redis.commands = MagicMock()
-    mock_redis.commands.__spec__ = importlib.machinery.ModuleSpec(
-        "redis.commands", None
-    )
+    mock_redis.commands.__spec__ = importlib.machinery.ModuleSpec("redis.commands", None)
     mock_redis.commands.search = MagicMock()
     mock_redis.commands.search.__spec__ = importlib.machinery.ModuleSpec(
         "redis.commands.search", None
@@ -162,17 +162,15 @@ def mock_external_dependencies():
         "redis.commands.search.field", None
     )
     mock_redis.commands.search.indexDefinition = MagicMock()
-    mock_redis.commands.search.indexDefinition.__spec__ = (
-        importlib.machinery.ModuleSpec("redis.commands.search.indexDefinition", None)
+    mock_redis.commands.search.indexDefinition.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.commands.search.indexDefinition", None
     )
     mock_redis.commands.search.query = MagicMock()
     mock_redis.commands.search.query.__spec__ = importlib.machinery.ModuleSpec(
         "redis.commands.search.query", None
     )
     mock_redis.exceptions = MagicMock()
-    mock_redis.exceptions.__spec__ = importlib.machinery.ModuleSpec(
-        "redis.exceptions", None
-    )
+    mock_redis.exceptions.__spec__ = importlib.machinery.ModuleSpec("redis.exceptions", None)
 
     sys.modules["redis"] = mock_redis
     sys.modules["redis.asyncio"] = mock_redis.asyncio
@@ -189,13 +187,9 @@ def mock_external_dependencies():
     watchdog_mock = MagicMock()
     watchdog_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog", None)
     watchdog_observers_mock = MagicMock()
-    watchdog_observers_mock.__spec__ = importlib.machinery.ModuleSpec(
-        "watchdog.observers", None
-    )
+    watchdog_observers_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog.observers", None)
     watchdog_events_mock = MagicMock()
-    watchdog_events_mock.__spec__ = importlib.machinery.ModuleSpec(
-        "watchdog.events", None
-    )
+    watchdog_events_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog.events", None)
 
     # Create FileSystemEventHandler mock that can be instantiated
     class MockEventHandler:
@@ -224,11 +218,6 @@ def mock_external_dependencies():
             sys.modules[module_name] = original_modules[module_name]
         elif module_name in sys.modules:
             del sys.modules[module_name]
-
-
-from eol.rag_context.config import RAGConfig, RedisConfig
-from eol.rag_context.document_processor import DocumentProcessor
-from eol.rag_context.indexer import DocumentIndexer
 
 
 @pytest.fixture
@@ -311,9 +300,7 @@ def redis_store() -> Mock:
         """Mock scan to return matching keys."""
         if match:
             prefix = match.replace("*", "")
-            matching_keys = [
-                k for k in state.stored_data.keys() if k.startswith(prefix)
-            ]
+            matching_keys = [k for k in state.stored_data.keys() if k.startswith(prefix)]
         else:
             matching_keys = list(state.stored_data.keys())
         # Always return byte-encoded keys in scan results
@@ -369,12 +356,8 @@ def redis_store() -> Mock:
 def mock_embedding_manager(test_config: RAGConfig) -> Mock:
     """Create mock embedding manager."""
     manager = Mock()
-    manager.get_embedding = AsyncMock(
-        return_value=np.random.randn(384).astype(np.float32)
-    )
-    manager.get_embeddings = AsyncMock(
-        return_value=np.random.randn(10, 384).astype(np.float32)
-    )
+    manager.get_embedding = AsyncMock(return_value=np.random.randn(384).astype(np.float32))
+    manager.get_embeddings = AsyncMock(return_value=np.random.randn(10, 384).astype(np.float32))
     manager.clear_cache = Mock()
     manager.get_cache_stats = Mock(return_value={"hits": 0, "misses": 0})
     return manager
@@ -472,9 +455,7 @@ async def indexed_documents(
     from eol.rag_context.indexer import DocumentIndexer
 
     processor = DocumentProcessor(test_config.document, test_config.chunking)
-    indexer = DocumentIndexer(
-        test_config, processor, mock_embedding_manager, redis_store
-    )
+    indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
 
     # Mock some indexed documents
     indexer.stats = {
@@ -546,9 +527,7 @@ async def server(test_config):
 
     server.knowledge_graph.build_from_documents = AsyncMock()
     server.knowledge_graph.query_subgraph = AsyncMock(
-        return_value=Mock(
-            entities=[], relationships=[], central_entities=[], metadata={}
-        )
+        return_value=Mock(entities=[], relationships=[], central_entities=[], metadata={})
     )
     server.knowledge_graph.get_graph_stats = Mock(return_value={"entity_count": 0})
 

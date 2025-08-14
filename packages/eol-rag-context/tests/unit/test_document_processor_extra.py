@@ -3,14 +3,12 @@ Extra tests for document_processor to achieve 80% coverage.
 """
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-import yaml
 
 from eol.rag_context.config import ChunkingConfig, DocumentConfig
-from eol.rag_context.document_processor import DocumentProcessor, ProcessedDocument
+from eol.rag_context.document_processor import DocumentProcessor
 
 
 class TestDocumentProcessorExtra:
@@ -179,9 +177,7 @@ features:
         processor.chunk_config.chunk_overlap = 5
 
         # Create content that will exceed max_chunk_size
-        large_paragraph = (
-            "This is a very long paragraph " * 20
-        )  # Much longer than 50 chars
+        large_paragraph = "This is a very long paragraph " * 20  # Much longer than 50 chars
         content = f"{large_paragraph}\n\n{large_paragraph}"
 
         chunks = processor._chunk_text(content)
@@ -194,7 +190,7 @@ features:
             assert "type" in chunk
             assert chunk["type"] == "semantic"
             if "is_split" in chunk["metadata"]:
-                assert chunk["metadata"]["is_split"] == True
+                assert chunk["metadata"]["is_split"] is True
 
     def test_chunk_text_fixed_mode_with_overlap(self, processor):
         """Test fixed chunking with proper overlap."""
@@ -288,10 +284,8 @@ features:
         binary_file.write_bytes(b"\x00\x01\x02\x03")
 
         # Mock MIME type detection to return binary
-        with patch.object(
-            processor.mime, "from_file", return_value="application/octet-stream"
-        ):
-            result = await processor.process_file(binary_file)
+        with patch.object(processor.mime, "from_file", return_value="application/octet-stream"):
+            await processor.process_file(binary_file)
             # Binary files might be skipped or processed minimally
             # Just check it doesn't crash
 

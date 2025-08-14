@@ -47,9 +47,7 @@ class MockMultiDiGraph:
     def remove_node(self, node_id):
         if node_id in self._nodes:
             del self._nodes[node_id]
-            self._edges = [
-                (s, t, a) for s, t, a in self._edges if s != node_id and t != node_id
-            ]
+            self._edges = [(s, t, a) for s, t, a in self._edges if s != node_id and t != node_id]
 
     def number_of_nodes(self):
         return len(self._nodes)

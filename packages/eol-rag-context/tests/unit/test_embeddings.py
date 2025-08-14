@@ -4,7 +4,7 @@ Test embeddings module.
 Tests cover both sentence-transformers and mock embedding providers.
 """
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pytest
@@ -88,13 +88,11 @@ class TestEmbeddingManager:
         manager = EmbeddingManager(config, redis_client=None)
         # Mock the provider
         manager.provider = AsyncMock()
-        manager.provider.embed = AsyncMock(
-            return_value=np.random.randn(1, 32).astype(np.float32)
-        )
+        manager.provider.embed = AsyncMock(return_value=np.random.randn(1, 32).astype(np.float32))
         manager.provider.embed_batch = AsyncMock(
-            side_effect=lambda texts, batch_size=None: np.random.randn(
-                len(texts), 32
-            ).astype(np.float32)
+            side_effect=lambda texts, batch_size=None: np.random.randn(len(texts), 32).astype(
+                np.float32
+            )
         )
         return manager
 
@@ -347,9 +345,7 @@ class TestEmbeddingManagerAdvanced:
 
         assert result.shape == (3, 128)
         # Should call embed_batch for uncached texts only
-        manager.provider.embed_batch.assert_called_once_with(
-            ["new text 1", "new text 2"]
-        )
+        manager.provider.embed_batch.assert_called_once_with(["new text 1", "new text 2"])
 
         # Should cache the new embeddings
         assert mock_redis.setex.call_count == 2
@@ -386,7 +382,7 @@ class TestEmbeddingManagerAdvanced:
         config = EmbeddingConfig(provider="openai", openai_api_key="test-key")
 
         with patch("eol.rag_context.embeddings.OpenAIProvider") as mock_provider_class:
-            manager = EmbeddingManager(config)
+            EmbeddingManager(config)
             mock_provider_class.assert_called_once_with(config)
 
     @pytest.mark.asyncio
@@ -434,9 +430,7 @@ class TestSentenceTransformerProviderAdvanced:
 
         # Mock sentence_transformers module
         mock_model = MagicMock()
-        mock_model.encode = MagicMock(
-            return_value=np.random.randn(2, 384).astype(np.float32)
-        )
+        mock_model.encode = MagicMock(return_value=np.random.randn(2, 384).astype(np.float32))
 
         mock_st_class = MagicMock(return_value=mock_model)
 
@@ -457,8 +451,8 @@ class TestSentenceTransformerProviderAdvanced:
             mock_model.encode.assert_called_once()
             args, kwargs = mock_model.encode.call_args
             assert args[0] == ["text1", "text2"]
-            assert kwargs["normalize_embeddings"] == True
-            assert kwargs["show_progress_bar"] == False
+            assert kwargs["normalize_embeddings"] is True
+            assert kwargs["show_progress_bar"] is False
 
     @pytest.mark.asyncio
     async def test_batch_processing_large(self):
@@ -483,9 +477,7 @@ class TestSentenceTransformerProviderAdvanced:
 
     def test_executor_initialization(self):
         """Test that ThreadPoolExecutor is initialized."""
-        config = EmbeddingConfig(
-            provider="sentence-transformers", model_name="test-model"
-        )
+        config = EmbeddingConfig(provider="sentence-transformers", model_name="test-model")
 
         with patch.dict("sys.modules", {"sentence_transformers": None}):
             provider = SentenceTransformerProvider(config)

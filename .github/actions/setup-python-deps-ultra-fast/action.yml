@@ -54,46 +54,61 @@ runs:
           venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-
           venv-${{ runner.os }}-py${{ inputs.python-version }}-
 
-    # Try to download pre-built wheel cache (graceful fallback)
+    # Try to download pre-built wheel cache using GitHub CLI (cross-workflow compatible)
     - name: Check for wheel cache availability
       id: check-wheels
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      working-directory: ${{ inputs.working-directory }}
       run: |
         echo "🔍 Checking for pre-built wheel cache availability..."
         echo "WHEELS_AVAILABLE=false" >> $GITHUB_ENV
-        echo "WHEEL_CACHE_STATUS=not_attempted" >> $GITHUB_ENV
+        echo "WHEEL_CACHE_STATUS=checking" >> $GITHUB_ENV
 
-    - name: Download wheel cache
-      id: download-wheels
-      uses: actions/download-artifact@v4
-      continue-on-error: true
-      with:
-        name: wheels-py${{ inputs.python-version }}
-        path: /tmp/wheels-cache
+        # Try to find recent wheel cache artifacts using GitHub CLI
+        echo "🔎 Looking for wheel cache from recent dependency optimization runs..."
 
-    - name: Extract and validate wheel cache
-      if: always()
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        if [ "${{ steps.download-wheels.outcome }}" = "success" ]; then
-          echo "📦 Extracting pre-built wheel cache..."
-          if tar xzf /tmp/wheels-cache/wheels-py${{ inputs.python-version }}.tar.gz 2>/dev/null; then
-            if [ -d ".wheels-py${{ inputs.python-version }}" ] && [ "$(ls -A .wheels-py${{ inputs.python-version }} 2>/dev/null | wc -l)" -gt 0 ]; then
-              echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
-              echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
-              echo "WHEEL_CACHE_STATUS=success" >> $GITHUB_ENV
-              echo "✅ Using pre-built wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages"
+        # Search for recent successful workflow runs that created wheel caches
+        if gh api repos/${{ github.repository }}/actions/workflows --jq '.workflows[] | select(.name == "Dependency Optimization") | .id' > /dev/null 2>&1; then
+          echo "📋 Found Dependency Optimization workflow"
+
+          # Get the most recent successful run ID
+          recent_run=$(gh api repos/${{ github.repository }}/actions/workflows/dependency-optimization.yml/runs \
+            --jq '.workflow_runs[] | select(.conclusion == "success") | .id' | head -1 2>/dev/null || echo "")
+
+          if [ -n "$recent_run" ]; then
+            echo "🎯 Found recent successful run: $recent_run"
+
+            # Try to download the artifact using GitHub CLI
+            if gh run download "$recent_run" --name "wheels-py${{ inputs.python-version }}" --dir /tmp/wheels-cache 2>/dev/null; then
+              echo "📦 Successfully downloaded wheel cache from run $recent_run"
+
+              # Extract and validate
+              if tar xzf /tmp/wheels-cache/wheels-py${{ inputs.python-version }}.tar.gz 2>/dev/null; then
+                if [ -d ".wheels-py${{ inputs.python-version }}" ] && [ "$(ls -A .wheels-py${{ inputs.python-version }} 2>/dev/null | wc -l)" -gt 0 ]; then
+                  echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
+                  echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
+                  echo "WHEEL_CACHE_STATUS=success" >> $GITHUB_ENV
+                  echo "✅ Using pre-built wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages (from run $recent_run)"
+                else
+                  echo "WHEEL_CACHE_STATUS=empty" >> $GITHUB_ENV
+                fi
+              else
+                echo "WHEEL_CACHE_STATUS=extract_failed" >> $GITHUB_ENV
+              fi
             else
-              echo "⚠️ Wheel cache extracted but empty/invalid"
-              echo "WHEEL_CACHE_STATUS=empty" >> $GITHUB_ENV
+              echo "WHEEL_CACHE_STATUS=download_failed" >> $GITHUB_ENV
             fi
           else
-            echo "⚠️ Failed to extract wheel cache"
-            echo "WHEEL_CACHE_STATUS=extract_failed" >> $GITHUB_ENV
+            echo "WHEEL_CACHE_STATUS=no_recent_runs" >> $GITHUB_ENV
           fi
         else
-          echo "ℹ️ No pre-built wheel cache available, using PyPI with caching"
+          echo "WHEEL_CACHE_STATUS=no_workflow" >> $GITHUB_ENV
+        fi
+
+        # Final fallback status
+        if [ "$WHEEL_CACHE_STATUS" = "checking" ]; then
           echo "WHEEL_CACHE_STATUS=unavailable" >> $GITHUB_ENV
         fi
 
@@ -201,17 +216,27 @@ runs:
             echo "  ⚡ Installation Method: Pre-built wheel cache (ULTRA-FAST)"
             echo "  📊 Performance: ~5-10s dependency setup"
             ;;
-          unavailable)
+          no_workflow)
             echo "  📦 Installation Method: PyPI with aggressive caching"
             echo "  📊 Performance: ~30-60s dependency setup (first run), ~10-20s (cached)"
-            echo "  💡 Tip: Wheel cache will be available after weekly optimization runs"
+            echo "  💡 Tip: Dependency Optimization workflow not found - wheels unavailable"
+            ;;
+          no_recent_runs)
+            echo "  📦 Installation Method: PyPI with aggressive caching"
+            echo "  📊 Performance: ~30-60s dependency setup (first run), ~10-20s (cached)"
+            echo "  💡 Tip: No recent successful wheel builds - trigger dependency optimization"
+            ;;
+          download_failed)
+            echo "  📦 Installation Method: PyPI with aggressive caching"
+            echo "  📊 Performance: ~30-60s dependency setup (first run), ~10-20s (cached)"
+            echo "  ⚠️ Issue: Wheel cache download failed - check artifact retention"
             ;;
           empty|extract_failed)
             echo "  ⚠️ Installation Method: PyPI fallback (wheel cache corrupted)"
             echo "  📊 Performance: ~30-60s dependency setup"
-            echo "  🔧 Action: Consider re-running dependency optimization workflow"
+            echo "  🔧 Action: Re-run dependency optimization workflow to rebuild cache"
             ;;
-          *)
+          unavailable|*)
             echo "  📦 Installation Method: PyPI with caching (default)"
             echo "  📊 Performance: ~30-60s dependency setup"
             ;;

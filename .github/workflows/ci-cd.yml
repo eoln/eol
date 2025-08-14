@@ -186,25 +186,32 @@ jobs:
         grep -v "^-e " temp-requirements.txt > filtered-requirements.txt || true
         mv filtered-requirements.txt temp-requirements.txt
 
-        # Add test dependencies
+        # Add CI/CD dependencies from pyproject.toml
+        # This ensures all CI tools are in the wheel cache
         cat >> temp-requirements.txt << EOF
-        pytest
-        pytest-asyncio
-        pytest-cov
-        pytest-timeout
-        pytest-xdist
-        pytest-benchmark
-        redis
-        redisvl
-        sentence-transformers
-        aioredis
-        watchdog
-        gitignore-parser
-        black
-        isort
-        flake8
-        bandit
-        safety
+        pytest>=7.4.0
+        pytest-asyncio>=0.21.0
+        pytest-cov>=4.1.0
+        pytest-timeout>=2.1.0
+        pytest-xdist>=3.3.0
+        pytest-benchmark>=4.0.0
+        coverage>=7.3.0
+        black>=23.0.0
+        isort>=5.12.0
+        flake8>=6.1.0
+        ruff>=0.1.0
+        mypy>=1.5.0
+        bandit>=1.7.5
+        safety>=3.0.0
+        pip-audit>=2.6.0
+        redis>=5.0.0
+        redisvl>=0.1.0
+        sentence-transformers>=2.2.0
+        aioredis>=2.0.0
+        watchdog>=3.0.0
+        gitignore-parser>=0.1.0
+        pip-tools>=7.3.0
+        pipdeptree>=2.13.0
         EOF
 
         # Create temporary venv and install pip
@@ -462,8 +469,14 @@ jobs:
         path: test-results/
         merge-multiple: true
 
-    - name: Install coverage tools
-      run: pip install coverage
+    - name: Install uv and coverage tools
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        cd ${{ env.PACKAGE_PATH }}
+        uv venv .venv
+        uv pip install --python .venv/bin/python -e ".[ci]"
+        echo "Coverage tools installed with uv"
 
     - name: Analyze unit test coverage
       working-directory: test-results
@@ -608,8 +621,14 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install security tools
-      run: pip install safety bandit pip-audit
+    - name: Install uv and security tools
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        cd ${{ env.PACKAGE_PATH }}
+        uv venv .venv
+        uv pip install --python .venv/bin/python -e ".[ci]"
+        echo "Security tools installed with uv"
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
@@ -630,6 +649,8 @@ jobs:
     - name: Dependency vulnerability check
       working-directory: ${{ env.PACKAGE_PATH }}
       run: |
+        source .venv/bin/activate
+
         echo "🔍 Running pip-audit..."
         pip-audit -r requirements.txt --format=json --output=pip-audit-report.json || true
 

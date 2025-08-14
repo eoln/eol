@@ -344,15 +344,15 @@ jobs:
         # Download wheels using pip
         echo "⬇️ Downloading wheels for $(wc -l < temp-requirements.txt) packages..."
 
-        # Create temporary venv
+        # Create temporary venv and install pip
         uv venv temp-venv --python ${{ matrix.python-version }}
+        uv pip install --python temp-venv/bin/python pip
 
         # Use pip download to get wheels
         if ! temp-venv/bin/pip download \
           --dest .wheels-py${{ matrix.python-version }} \
           -r temp-requirements.txt \
-          --prefer-binary \
-          --no-deps; then
+          --prefer-binary; then
           echo "❌ Failed to download wheels"
           exit 1
         fi

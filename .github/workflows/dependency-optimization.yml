@@ -1,15 +1,10 @@
-name: Dependency Optimization
+# DEPRECATED: Functionality merged into ci-cd.yml
+# This workflow is disabled to prevent duplication
+name: Dependency Optimization (DISABLED)
 
 on:
   workflow_dispatch:
-    inputs:
-      force_rebuild:
-        description: 'Force rebuild even if cache exists'
-        required: false
-        default: 'false'
-        type: boolean
-  schedule:
-    - cron: '0 6 * * 0'  # Weekly on Sunday
+    # Only allow manual trigger for emergency use
 
 jobs:
   build-wheel-cache:

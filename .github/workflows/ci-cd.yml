@@ -1,10 +1,35 @@
-# DEPRECATED: Functionality merged into ci-cd.yml
-# This workflow is disabled to prevent duplication
-name: EOL RAG Context - Complete CI/CD (DISABLED)
+name: CI/CD Pipeline
 
 on:
+  push:
+    branches: [ main, develop, feat/*, fix/* ]
+    paths:
+      - 'packages/**'
+      - '.github/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'README.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/**'
+      - '.github/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly on Sunday for maintenance
   workflow_dispatch:
-    # Only allow manual trigger for emergency use
+    inputs:
+      build_wheels:
+        description: 'Build wheel cache for ultra-fast CI/CD'
+        required: false
+        default: 'true'
+        type: boolean
+      run_security_audit:
+        description: 'Run comprehensive security audit'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   PACKAGE_PATH: packages/eol-rag-context
@@ -16,14 +41,15 @@ env:
 
 jobs:
   # =========================================
-  # Pre-flight & Dependency Setup
+  # Setup & Validation
   # =========================================
   setup:
-    name: 🔧 Setup & Dependencies
+    name: 🔧 Setup & Validation
     runs-on: ubuntu-latest
     outputs:
-      cache-key: ${{ steps.cache.outputs.cache-key }}
       package-changed: ${{ steps.changes.outputs.package }}
+      dependency-changed: ${{ steps.changes.outputs.dependencies }}
+      wheel-cache-needed: ${{ steps.wheel-decision.outputs.needed }}
 
     steps:
     - name: Checkout code
@@ -41,6 +67,10 @@ jobs:
             - '.github/workflows/**'
             - '.github/actions/**'
             - '.github/scripts/**'
+          dependencies:
+            - '**/pyproject.toml'
+            - '**/requirements*.txt'
+            - 'uv.lock'
 
     - name: Validate project structure
       if: steps.changes.outputs.package == 'true'
@@ -63,115 +93,65 @@ jobs:
         echo "✅ Project structure validation passed"
 
     - name: Set up Python
-      if: steps.changes.outputs.package == 'true'
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Generate cache key
-      if: steps.changes.outputs.package == 'true'
-      id: cache
+    - name: Install UV
       run: |
-        echo "cache-key=deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}" >> $GITHUB_OUTPUT
-
-    - name: Cache dependencies
-      if: steps.changes.outputs.package == 'true'
-      id: cache-deps
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/pip
-          ~/.cache/uv
-          ~/.local/share/uv
-          ~/.cache/huggingface
-          ~/.cache/torch
-          ${{ env.PACKAGE_PATH }}/.venv
-        key: ${{ steps.cache.outputs.cache-key }}
-        restore-keys: |
-          deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
-
-    - name: Install dependencies
-      if: steps.changes.outputs.package == 'true' && steps.cache-deps.outputs.cache-hit != 'true'
-      working-directory: ${{ env.PACKAGE_PATH }}
-      run: |
-        # Install uv for fast package management
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$PATH"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-        # Create virtual environment
-        uv venv .venv
-
-        # Install ALL dependencies for all test types at once
-        uv pip install --python .venv/bin/python \
-          pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist pytest-benchmark \
-          redis redisvl sentence-transformers aioredis \
-          watchdog gitignore-parser \
-          black isort flake8 bandit safety \
-          -r requirements.txt
-
-        # Pre-download sentence transformer models
-        .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
-
-        echo "✅ Dependencies installed and cached"
-
-  # =========================================
-  # Code Quality Checks
-  # =========================================
-  quality:
-    name: 📊 Code Quality
-    runs-on: ubuntu-latest
-    needs: setup
-    if: needs.setup.outputs.package-changed == 'true'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Restore dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/pip
-          ~/.cache/uv
-          ~/.local/share/uv
-          ~/.cache/huggingface
-          ~/.cache/torch
-          ${{ env.PACKAGE_PATH }}/.venv
-        key: ${{ needs.setup.outputs.cache-key }}
-
-    - name: Run quality checks
-      working-directory: ${{ env.PACKAGE_PATH }}
+    - name: Validate workspace
       run: |
-        source .venv/bin/activate
+        echo "🔍 Validating UV workspace configuration..."
+        uv --version
 
-        echo "🔍 Code formatting (Black)..."
-        black --check --diff src/ tests/
+        # Check workspace structure
+        test -f pyproject.toml || (echo "Root pyproject.toml missing" && exit 1)
+        test -f uv.toml || (echo "uv.toml missing" && exit 1)
 
-        echo "🔍 Import sorting (isort)..."
-        isort --check-only --diff src/ tests/
+        # Validate each package
+        for package in packages/*; do
+          if [ -d "$package" ]; then
+            echo "Validating $package..."
+            test -f "$package/pyproject.toml" || (echo "$package/pyproject.toml missing" && exit 1)
+          fi
+        done
 
-        echo "🔍 Linting (flake8)..."
-        flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+        # Test workspace sync
+        uv sync --all-packages --dry-run
+        echo "✅ Workspace validation passed"
 
-        echo "🔍 Security scan (bandit)..."
-        bandit -r src/ -ll
+    - name: Check dependency conflicts
+      if: steps.changes.outputs.dependencies == 'true'
+      run: |
+        uv venv temp-check
+        source temp-check/bin/activate
+        pip install -r ${{ env.PACKAGE_PATH }}/requirements.txt
+        uv pip check
 
-        echo "🔍 Dependency security (safety)..."
-        safety check || true
+    - name: Decide wheel cache building
+      id: wheel-decision
+      run: |
+        if [ "${{ github.event_name }}" = "schedule" ] ||
+           [ "${{ github.event.inputs.build_wheels }}" = "true" ] ||
+           [ "${{ steps.changes.outputs.dependencies }}" = "true" ]; then
+          echo "needed=true" >> $GITHUB_OUTPUT
+          echo "🏗️ Wheel cache building needed"
+        else
+          echo "needed=false" >> $GITHUB_OUTPUT
+          echo "⏭️ Wheel cache building skipped"
+        fi
 
   # =========================================
-  # Unit Tests (Matrix)
+  # Build Wheel Caches (Conditional)
   # =========================================
-  unit-tests:
-    name: 🧪 Unit Tests (Python ${{ matrix.python-version }})
+  build-wheel-caches:
+    name: 🏗️ Build Wheel Cache (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     needs: setup
-    if: needs.setup.outputs.package-changed == 'true'
+    if: needs.setup.outputs.wheel-cache-needed == 'true'
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
@@ -186,19 +166,125 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache dependencies
-      uses: actions/cache@v4
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Create wheel cache
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        echo "🔄 Creating optimized wheel cache for Python ${{ matrix.python-version }}..."
+
+        # Create wheel download directory
+        mkdir -p .wheels-py${{ matrix.python-version }}
+
+        # Create requirements from lock file
+        uv export --no-hashes > temp-requirements.txt
+
+        # Remove editable installs (they won't work for wheel caching)
+        grep -v "^-e " temp-requirements.txt > filtered-requirements.txt || true
+        mv filtered-requirements.txt temp-requirements.txt
+
+        # Add test dependencies
+        cat >> temp-requirements.txt << EOF
+        pytest
+        pytest-asyncio
+        pytest-cov
+        pytest-timeout
+        pytest-xdist
+        pytest-benchmark
+        redis
+        redisvl
+        sentence-transformers
+        aioredis
+        watchdog
+        gitignore-parser
+        black
+        isort
+        flake8
+        bandit
+        safety
+        EOF
+
+        # Create temporary venv and install pip
+        uv venv temp-venv --python ${{ matrix.python-version }}
+        uv pip install --python temp-venv/bin/python pip
+
+        # Download wheels
+        echo "⬇️ Downloading wheels for $(wc -l < temp-requirements.txt) packages..."
+        temp-venv/bin/pip download \
+          --dest .wheels-py${{ matrix.python-version }} \
+          -r temp-requirements.txt \
+          --prefer-binary
+
+        # Create compressed archive
+        wheel_count=$(ls -1 .wheels-py${{ matrix.python-version }}/*.whl 2>/dev/null | wc -l)
+        tar czf wheels-py${{ matrix.python-version }}.tar.gz .wheels-py${{ matrix.python-version }}
+
+        archive_size=$(du -sh wheels-py${{ matrix.python-version }}.tar.gz | cut -f1)
+        echo "✅ Wheel cache created: $archive_size, $wheel_count packages"
+
+    - name: Upload wheel cache
+      uses: actions/upload-artifact@v4
       with:
-        path: |
-          ~/.cache/pip
-          ~/.cache/uv
-          ~/.local/share/uv
-          ~/.cache/huggingface
-          ~/.cache/torch
-          ${{ env.PACKAGE_PATH }}/.venv-${{ matrix.python-version }}
-        key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/uv.lock') }}
-        restore-keys: |
-          deps-${{ runner.os }}-py${{ matrix.python-version }}-
+        name: wheels-py${{ matrix.python-version }}
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        retention-days: 30
+
+  # =========================================
+  # Code Quality Checks
+  # =========================================
+  code-quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        test-type: quality
+        working-directory: ${{ env.PACKAGE_PATH }}
+
+    - name: Run quality checks
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
+
+        echo "🔍 Code formatting (Black)..."
+        black --check --diff src/ tests/
+
+        echo "🔍 Import sorting (isort)..."
+        isort --check-only --diff src/ tests/
+
+        echo "🔍 Linting (flake8)..."
+        flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+
+        echo "🔍 Security scan (bandit)..."
+        bandit -r src/ -ll
+
+  # =========================================
+  # Unit Tests (Matrix)
+  # =========================================
+  unit-tests:
+    name: 🧪 Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [setup, build-wheel-caches]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Setup dependencies (ultra-fast)
       uses: ./.github/actions/setup-python-deps-ultra-fast
@@ -239,7 +325,7 @@ jobs:
     name: 🔄 Integration Tests
     runs-on: ubuntu-latest
     needs: [setup, unit-tests]
-    if: needs.setup.outputs.package-changed == 'true'
+    if: always() && needs.setup.outputs.package-changed == 'true'
 
     services:
       redis:
@@ -256,11 +342,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Setup dependencies (ultra-fast)
       uses: ./.github/actions/setup-python-deps-ultra-fast
@@ -297,14 +378,6 @@ jobs:
           --timeout=300 \
           -m integration
 
-    - name: Generate test summary
-      if: always()
-      working-directory: ${{ env.PACKAGE_PATH }}
-      run: |
-        python ${{ github.workspace }}/.github/scripts/test_summary.py \
-          integration-test-results.xml \
-          "Integration Tests" || true
-
     - name: Upload integration test results
       if: always()
       uses: actions/upload-artifact@v4
@@ -321,7 +394,7 @@ jobs:
     name: ⚡ Performance Tests
     runs-on: ubuntu-latest
     needs: [setup, integration-tests]
-    if: needs.setup.outputs.package-changed == 'true'
+    if: always() && needs.setup.outputs.package-changed == 'true'
 
     services:
       redis:
@@ -337,11 +410,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Setup dependencies (ultra-fast)
       uses: ./.github/actions/setup-python-deps-ultra-fast
@@ -362,13 +430,6 @@ jobs:
           --benchmark-json=performance-results.json \
           -m performance || true
 
-    - name: Generate performance summary
-      if: always()
-      working-directory: ${{ env.PACKAGE_PATH }}
-      run: |
-        python ${{ github.workspace }}/.github/scripts/performance_summary.py \
-          performance-results.json || echo "No performance results"
-
     - name: Upload performance results
       if: always()
       uses: actions/upload-artifact@v4
@@ -377,9 +438,9 @@ jobs:
         path: ${{ env.PACKAGE_PATH }}/performance-results.json
 
   # =========================================
-  # Coverage Analysis - Separate Unit & Integration Metrics
+  # Coverage Analysis
   # =========================================
-  coverage:
+  coverage-analysis:
     name: 📈 Coverage Analysis
     runs-on: ubuntu-latest
     needs: [unit-tests, integration-tests]
@@ -402,8 +463,7 @@ jobs:
         merge-multiple: true
 
     - name: Install coverage tools
-      run: |
-        pip install coverage
+      run: pip install coverage
 
     - name: Analyze unit test coverage
       working-directory: test-results
@@ -486,17 +546,6 @@ jobs:
           echo "INTEGRATION_COVERAGE_PASS=$integration_pass" >> $GITHUB_ENV
         fi
 
-    - name: Upload coverage reports
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-reports
-        path: |
-          test-results/unit-coverage-final.xml
-          test-results/integration-coverage-final.xml
-          test-results/unit-coverage-badge.json
-          test-results/integration-coverage-badge.json
-
     - name: Commit coverage badges
       if: github.ref == 'refs/heads/main'
       working-directory: test-results
@@ -525,14 +574,25 @@ jobs:
           echo "No badge changes to commit"
         fi
 
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          test-results/unit-coverage-final.xml
+          test-results/integration-coverage-final.xml
+          test-results/unit-coverage-badge.json
+          test-results/integration-coverage-badge.json
+
   # =========================================
-  # Security Scan
+  # Security Audit
   # =========================================
-  security:
-    name: 🔒 Security Scan
+  security-audit:
+    name: 🔒 Security Audit
     runs-on: ubuntu-latest
     needs: setup
-    if: needs.setup.outputs.package-changed == 'true'
+    if: needs.setup.outputs.package-changed == 'true' || github.event.inputs.run_security_audit == 'true'
 
     permissions:
       actions: read
@@ -542,6 +602,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install security tools
+      run: pip install safety bandit pip-audit
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
@@ -559,31 +627,33 @@ jobs:
         sarif_file: 'trivy-results.sarif'
         category: 'trivy-security-scan'
 
-    - name: Generate security summary
-      if: always()
-      run: |
-        python ${{ github.workspace }}/.github/scripts/security_scan_summary.py \
-          trivy-results.sarif || echo "Security scan completed"
-
     - name: Dependency vulnerability check
       working-directory: ${{ env.PACKAGE_PATH }}
       run: |
-        pip install safety
-        python ${{ github.workspace }}/.github/scripts/dependency_parser.py \
-          pyproject.toml temp-requirements.txt || echo "Could not parse dependencies"
+        echo "🔍 Running pip-audit..."
+        pip-audit -r requirements.txt --format=json --output=pip-audit-report.json || true
 
-        if [ -f temp-requirements.txt ]; then
-          safety check -r temp-requirements.txt || echo "⚠️ Vulnerabilities found"
-          rm temp-requirements.txt
-        fi
+        echo "🔍 Running bandit security scan..."
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          trivy-results.sarif
+          ${{ env.PACKAGE_PATH }}/pip-audit-report.json
+          ${{ env.PACKAGE_PATH }}/bandit-report.json
 
   # =========================================
-  # Final Quality Gate
+  # Quality Gate
   # =========================================
   quality-gate:
     name: 🚦 Quality Gate
     runs-on: ubuntu-latest
-    needs: [quality, unit-tests, integration-tests, coverage, security]
+    needs: [code-quality, unit-tests, integration-tests, coverage-analysis, security-audit]
     if: always() && needs.setup.outputs.package-changed == 'true'
 
     steps:
@@ -592,11 +662,11 @@ jobs:
         echo "🚦 Quality Gate Decision..."
 
         # Check results
-        quality_result="${{ needs.quality.result }}"
+        quality_result="${{ needs.code-quality.result }}"
         unit_result="${{ needs.unit-tests.result }}"
         integration_result="${{ needs.integration-tests.result }}"
-        coverage_result="${{ needs.coverage.result }}"
-        security_result="${{ needs.security.result }}"
+        coverage_result="${{ needs.coverage-analysis.result }}"
+        security_result="${{ needs.security-audit.result }}"
 
         echo "📊 Results:"
         echo "• Code Quality: $quality_result"

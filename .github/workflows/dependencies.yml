@@ -1,33 +1,10 @@
-name: Dependency Management
+# DEPRECATED: Functionality merged into ci-cd.yml
+# This workflow is disabled to prevent duplication
+name: Dependency Management (DISABLED)
 
 on:
-  push:
-    paths:
-      - '**/pyproject.toml'
-      - '**/requirements*.txt'
-      - 'requirements/**'
-      - 'uv.toml'
-      - '.github/workflows/dependencies.yml'
-  pull_request:
-    paths:
-      - '**/pyproject.toml'
-      - '**/requirements*.txt'
-      - 'requirements/**'
-      - 'uv.toml'
-  schedule:
-    - cron: '0 0 * * 1'  # Weekly on Monday
   workflow_dispatch:
-    inputs:
-      build_wheels:
-        description: 'Build wheel cache for ultra-fast CI/CD'
-        required: false
-        default: 'true'
-        type: boolean
-      force_rebuild:
-        description: 'Force rebuild even if cache exists'
-        required: false
-        default: 'false'
-        type: boolean
+    # Only allow manual trigger for emergency use
 
 permissions:
   contents: read

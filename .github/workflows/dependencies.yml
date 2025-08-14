@@ -317,6 +317,10 @@ jobs:
           exit 1
         fi
 
+        # Remove editable installs (they won't work for wheel caching)
+        grep -v "^-e " temp-requirements.txt > filtered-requirements.txt || true
+        mv filtered-requirements.txt temp-requirements.txt
+
         echo "📋 Generated requirements from uv.lock:"
         head -10 temp-requirements.txt
 

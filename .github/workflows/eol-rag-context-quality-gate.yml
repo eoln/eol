@@ -337,22 +337,7 @@ jobs:
         echo "📊 Integration Test Summary:"
 
         if [ -f integration-test-results.xml ]; then
-          python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('integration-test-results.xml')
-          root = tree.getroot()
-          tests = int(root.get('tests', 0))
-          failures = int(root.get('failures', 0))
-          errors = int(root.get('errors', 0))
-          passed = tests - failures - errors
-
-          print(f'📊 Integration Tests: {passed}/{tests} passed ({passed/tests*100:.1f}%)')
-
-          if failures > 0 or errors > 0:
-              print(f'❌ {failures} failures, {errors} errors')
-          else:
-              print('✅ All integration tests passed!')
-          "
+          python -c "import xml.etree.ElementTree as ET; tree = ET.parse('integration-test-results.xml'); root = tree.getroot(); tests = int(root.get('tests', 0)); failures = int(root.get('failures', 0)); errors = int(root.get('errors', 0)); passed = tests - failures - errors; print(f'📊 Integration Tests: {passed}/{tests} passed ({passed/tests*100:.1f}%}'); print(f'❌ {failures} failures, {errors} errors') if failures > 0 or errors > 0 else print('✅ All integration tests passed!')"
         fi
 
     - name: Upload integration test results
@@ -421,16 +406,7 @@ jobs:
         # Display performance results if available
         if [ -f performance-results.json ]; then
           echo "📊 Performance Results:"
-          python -c "
-          import json
-          with open('performance-results.json', 'r') as f:
-              data = json.load(f)
-              for benchmark in data.get('benchmarks', []):
-                  name = benchmark['name']
-                  stats = benchmark['stats']
-                  mean = stats['mean']
-                  print(f'⚡ {name}: {mean:.3f}s average')
-          " || echo "Performance data processing failed"
+          python -c "import json; data = json.load(open('performance-results.json', 'r')); [print(f'⚡ {b["name"]}: {b["stats"]["mean"]:.3f}s average') for b in data.get('benchmarks', [])]" || echo "Performance data processing failed"
         fi
 
     - name: Upload performance results
@@ -514,70 +490,14 @@ jobs:
       run: |
         echo "🎯 Checking coverage against quality gate..."
 
-        python -c "
-        import json
-        import sys
-        import xml.etree.ElementTree as ET
-
-        # Read coverage from JSON (more reliable than XML parsing)
-        try:
-            with open('final-coverage.json', 'r') as f:
-                data = json.load(f)
-                coverage = data.get('totals', {}).get('percent_covered', 0)
-        except:
-            # Fallback to XML parsing
-            tree = ET.parse('final-coverage.xml')
-            root = tree.getroot()
-            coverage = float(root.get('line-rate', 0)) * 100
-
-        threshold = ${{ env.COVERAGE_THRESHOLD }}
-
-        print(f'📊 Final Coverage: {coverage:.1f}%')
-        print(f'🎯 Required Threshold: {threshold}%')
-
-        if coverage >= threshold:
-            print(f'✅ SUCCESS: Coverage {coverage:.1f}% meets threshold {threshold}%')
-            print('::notice title=Coverage Success::Coverage target achieved!')
-        else:
-            gap = threshold - coverage
-            print(f'❌ FAILURE: Coverage {coverage:.1f}% is {gap:.1f}% below threshold {threshold}%')
-            print(f'::error title=Coverage Failure::Coverage {coverage:.1f}% is below required {threshold}%')
-            sys.exit(1)
-        "
+        python -c "import json, sys, xml.etree.ElementTree as ET; data = json.load(open('final-coverage.json', 'r')) if 'final-coverage.json' else {}; coverage = data.get('totals', {}).get('percent_covered', 0) if data else float(ET.parse('final-coverage.xml').getroot().get('line-rate', 0)) * 100; threshold = ${{ env.COVERAGE_THRESHOLD }}; print(f'📊 Final Coverage: {coverage:.1f}%'); print(f'🎯 Required Threshold: {threshold}%'); print(f'✅ SUCCESS: Coverage {coverage:.1f}% meets threshold {threshold}%') if coverage >= threshold else (print(f'❌ FAILURE: Coverage {coverage:.1f}% is {threshold - coverage:.1f}% below threshold {threshold}%'), print(f'::error title=Coverage Failure::Coverage {coverage:.1f}% is below required {threshold}%'), sys.exit(1))"
 
     - name: Generate coverage badge
       working-directory: ${{ env.PACKAGE_PATH }}
       run: |
         echo "🏷️ Generating coverage badge..."
 
-        python -c "
-        import json
-
-        with open('final-coverage.json', 'r') as f:
-            data = json.load(f)
-            coverage = data.get('totals', {}).get('percent_covered', 0)
-
-        # Determine badge color
-        if coverage >= 80:
-            color = 'brightgreen'
-        elif coverage >= 60:
-            color = 'yellow'
-        else:
-            color = 'red'
-
-        # Create simple badge data
-        badge_data = {
-            'schemaVersion': 1,
-            'label': 'coverage',
-            'message': f'{coverage:.1f}%',
-            'color': color
-        }
-
-        with open('coverage-badge.json', 'w') as f:
-            json.dump(badge_data, f, indent=2)
-
-        print(f'Generated coverage badge: {coverage:.1f}% ({color})')
-        "
+        python -c "import json; data = json.load(open('final-coverage.json', 'r')); coverage = data.get('totals', {}).get('percent_covered', 0); color = 'brightgreen' if coverage >= 80 else 'yellow' if coverage >= 60 else 'red'; badge_data = {'schemaVersion': 1, 'label': 'coverage', 'message': f'{coverage:.1f}%', 'color': color}; json.dump(badge_data, open('coverage-badge.json', 'w'), indent=2); print(f'Generated coverage badge: {coverage:.1f}% ({color})')"
 
     - name: Upload coverage reports
       if: always()
@@ -641,20 +561,7 @@ jobs:
         if [ -f trivy-results.sarif ]; then
           echo "✅ SARIF report generated successfully"
           # Extract basic info from SARIF (if available)
-          python -c "
-          import json
-          try:
-              with open('trivy-results.sarif', 'r') as f:
-                  data = json.load(f)
-              runs = data.get('runs', [])
-              if runs:
-                  results = runs[0].get('results', [])
-                  print(f'📊 Security scan found {len(results)} issues')
-              else:
-                  print('📊 No security issues found')
-          except:
-              print('📊 Security scan completed (details in SARIF file)')
-          " || echo "📊 Security scan completed"
+          python -c "import json; data = json.load(open('trivy-results.sarif', 'r')) if True else {}; runs = data.get('runs', []); results = runs[0].get('results', []) if runs else []; print(f'📊 Security scan found {len(results)} issues') if runs else print('📊 No security issues found')" || echo "📊 Security scan completed (details in SARIF file)" || echo "📊 Security scan completed"
         else
           echo "⚠️ SARIF report not found"
         fi
@@ -668,15 +575,7 @@ jobs:
         pip install safety tomli
 
         # Create a temporary requirements file from pyproject.toml
-        python -c "
-        import tomli
-        with open('pyproject.toml', 'rb') as f:
-            data = tomli.load(f)
-        deps = data.get('project', {}).get('dependencies', [])
-        with open('temp-requirements.txt', 'w') as f:
-            for dep in deps:
-                f.write(dep + '\n')
-        " 2>/dev/null || echo "Could not parse pyproject.toml"
+        python -c "import tomli; data = tomli.load(open('pyproject.toml', 'rb')); deps = data.get('project', {}).get('dependencies', []); open('temp-requirements.txt', 'w').writelines([dep + '\n' for dep in deps])" 2>/dev/null || echo "Could not parse pyproject.toml"
 
         # Run safety check
         if [ -f temp-requirements.txt ]; then

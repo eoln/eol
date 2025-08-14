@@ -196,6 +196,13 @@ def mock_external_dependencies():
     watchdog_events_mock.__spec__ = importlib.machinery.ModuleSpec(
         "watchdog.events", None
     )
+    
+    # Create FileSystemEventHandler mock that can be instantiated
+    class MockEventHandler:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    watchdog_events_mock.FileSystemEventHandler = MockEventHandler
 
     sys.modules["watchdog"] = watchdog_mock
     sys.modules["watchdog.observers"] = watchdog_observers_mock

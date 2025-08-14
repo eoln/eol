@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    environment:
+      - REDIS_ARGS=--save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - redis-data:/data
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./pytest.ini:/app/pytest.ini:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - test-results:/app/test-results
+    command: |
+      bash -c "
+        # Wait for Redis to be fully ready
+        until redis-cli -h redis -p 6379 MODULE LIST | grep search; do
+          echo 'Waiting for Redis Search module...'
+          sleep 2
+        done
+
+        # Run integration tests
+        python -m pytest tests/integration/ \
+          -v \
+          --tb=short \
+          -n auto \
+          --cov=eol.rag_context \
+          --cov-report=term \
+          --cov-report=xml:/app/test-results/coverage.xml \
+          --junit-xml=/app/test-results/junit.xml \
+          --timeout=300
+      "
+
+volumes:
+  redis-data:
+  test-results:

@@ -258,31 +258,46 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Cache pip packages
+    - name: Cache pip packages and wheels
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-integration-${{ hashFiles('**/pyproject.toml') }}
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+        key: ${{ runner.os }}-pip-integration-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-integration-
           ${{ runner.os }}-pip-
 
-    - name: Install dependencies
+    - name: Cache sentence transformer models
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/torch
+          ~/.cache/huggingface
+        key: ${{ runner.os }}-models-all-MiniLM-L6-v2
+        restore-keys: |
+          ${{ runner.os }}-models-
+
+    - name: Install uv for fast dependency installation
+      run: |
+        if ! command -v uv &> /dev/null; then
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        fi
+
+    - name: Install dependencies with uv (optimized)
       working-directory: ${{ env.PACKAGE_PATH }}
       run: |
-        python -m pip install --upgrade pip
-        pip install uv
+        # Use uv for ultra-fast parallel installation
+        uv pip install --system --compile-bytecode \
+          pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist \
+          redis redisvl sentence-transformers aioredis \
+          watchdog gitignore-parser \
+          -r requirements.txt
 
-        # Install all project dependencies for integration tests
-        uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout
-        uv pip install --system -r requirements.txt
-        uv pip install --system sentence-transformers  # For embeddings
-        uv pip install --system aioredis  # For async Redis operations
-
-        # Optional dependencies for comprehensive testing
-        uv pip install --system watchdog gitignore-parser || true
-
-        echo "📦 Installed full dependencies for integration tests"
+        echo "📦 Dependencies installed with uv (parallel mode)"
 
     - name: Install Redis CLI
       run: |
@@ -309,18 +324,20 @@ jobs:
         echo "🧹 Clearing Redis data for clean test state..."
         redis-cli -h localhost -p 6379 FLUSHALL
 
-    - name: Run integration tests
+    - name: Run integration tests (parallel)
       working-directory: ${{ env.PACKAGE_PATH }}
       env:
         PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
         REDIS_HOST: localhost
         REDIS_PORT: 6379
       run: |
-        echo "🔄 Running integration tests..."
+        echo "🔄 Running integration tests in parallel mode..."
 
         python -m pytest tests/integration/ \
           -v \
           --tb=short \
+          -n auto \
+          --maxprocesses=4 \
           --cov=eol.rag_context \
           --cov-append \
           --cov-report=term \

@@ -23,7 +23,7 @@ brew install --cask redis-stack-server
 # Install libmagic (for file type detection)
 brew install libmagic
 
-# Optional: Install uv for faster package management
+# Install uv (primary package manager)
 brew install uv
 ```
 
@@ -40,30 +40,36 @@ docker run -d -p 6379:6379 redis/redis-stack:latest
 # Install libmagic
 sudo apt install libmagic1
 
-# Optional: Install uv
+# Install uv (primary package manager)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ## Installation Methods
 
-### Method 1: Using uv (Recommended - Ultra Fast)
+### Method 1: Using uv (Primary Method - Ultra Fast)
 
-[uv](https://github.com/astral-sh/uv) is a blazing-fast Python package manager written in Rust.
+[uv](https://github.com/astral-sh/uv) is the primary package manager for this project - a blazing-fast Python package manager written in Rust.
 
 ```bash
 # Install uv if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Create virtual environment and install
+# Sync workspace dependencies (recommended for monorepo)
+uv sync
+
+# Or create virtual environment and install manually
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -e .
 
-# Or install with dev dependencies
+# Install with dev dependencies
 uv pip install -e ".[dev]"
+
+# Install with CI/CD dependencies (for testing)
+uv pip install -e ".[ci]"
 ```
 
-### Method 2: Using pip with pyproject.toml
+### Method 2: Using pip (Alternative)
 
 ```bash
 # Create virtual environment
@@ -80,7 +86,7 @@ pip install -e ".[dev]"
 pip install -e ".[all]"
 ```
 
-### Method 3: Using pip with requirements.txt
+### Method 3: Using pip with requirements.txt (Legacy)
 
 ```bash
 # Create virtual environment
@@ -97,17 +103,17 @@ pip install -r requirements-dev.txt
 ### Method 4: Using Make (Convenience Commands)
 
 ```bash
-# Install package
-make install
+# Install using uv (primary method)
+make install-uv
 
 # Install with dev dependencies
 make install-dev
 
-# Install using uv (creates venv automatically)
-make install-uv
-
 # Complete development setup
 make dev
+
+# Install with pip (alternative)
+make install
 ```
 
 ## Dependency Groups
@@ -128,23 +134,35 @@ The project uses `pyproject.toml` to manage dependencies in groups:
 #### Development (`dev`)
 
 ```bash
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
+# or with pip: pip install -e ".[dev]"
 ```
 
-Includes: pytest, black, ruff, mypy, coverage tools
+Includes: pytest, black, ruff, mypy, coverage tools, documentation tools
 
 #### Testing (`test`)
 
 ```bash
-pip install -e ".[test]"
+uv pip install -e ".[test]"
+# or with pip: pip install -e ".[test]"
 ```
 
 Includes: pytest and testing utilities
 
+#### CI/CD (`ci`)
+
+```bash
+uv pip install -e ".[ci]"
+# or with pip: pip install -e ".[ci]"
+```
+
+Includes: All CI/CD tools, testing frameworks, security scanners
+
 #### Local Embeddings (`embeddings-local`)
 
 ```bash
-pip install -e ".[embeddings-local]"
+uv pip install -e ".[embeddings-local]"
+# or with pip: pip install -e ".[embeddings-local]"
 ```
 
 Includes: sentence-transformers for local embedding generation
@@ -152,7 +170,8 @@ Includes: sentence-transformers for local embedding generation
 #### OpenAI Embeddings (`embeddings-openai`)
 
 ```bash
-pip install -e ".[embeddings-openai]"
+uv pip install -e ".[embeddings-openai]"
+# or with pip: pip install -e ".[embeddings-openai]"
 ```
 
 Includes: openai client for OpenAI embeddings
@@ -160,7 +179,8 @@ Includes: openai client for OpenAI embeddings
 #### All Optional Dependencies
 
 ```bash
-pip install -e ".[all]"
+uv pip install -e ".[all]"
+# or with pip: pip install -e ".[all]"
 ```
 
 ## Setting Up for Development
@@ -184,8 +204,10 @@ make dev
 1. **Install dependencies:**
 
 ```bash
-make install-dev
+make install-uv  # Uses uv (recommended)
 # or
+uv pip install -e ".[dev]"
+# or with pip:
 pip install -e ".[dev]"
 ```
 
@@ -218,6 +240,9 @@ redis-cli MODULE LIST | grep search  # Should show search module
 
 # Verify package installation
 python -c "import eol.rag_context; print('OK')"
+
+# Verify uv installation
+uv --version
 
 # Run test suite
 make test
@@ -255,7 +280,8 @@ brew install libmagic
 sudo apt install libmagic1
 
 # Then reinstall python-magic
-pip install --force-reinstall python-magic
+uv pip install --force-reinstall python-magic
+# or with pip: pip install --force-reinstall python-magic
 ```
 
 #### 2. Redis connection failed
@@ -290,7 +316,8 @@ docker run -d -p 6379:6379 redis/redis-stack:latest
 **Solution:** Reinstall tree-sitter languages
 
 ```bash
-pip install --force-reinstall tree-sitter tree-sitter-python tree-sitter-javascript
+uv pip install --force-reinstall tree-sitter tree-sitter-python tree-sitter-javascript
+# or with pip: pip install --force-reinstall tree-sitter tree-sitter-python tree-sitter-javascript
 ```
 
 ### Getting Help
@@ -318,9 +345,14 @@ RUN apt-get update && apt-get install -y \
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Install with uv for speed
-RUN pip install uv && \
-    uv pip install -e .
+# Install uv for fast package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Install dependencies with uv
+RUN uv venv /venv && \
+    /venv/bin/pip install -e .
+ENV PATH="/venv/bin:$PATH"
 
 CMD ["python", "-m", "eol.rag_context.server"]
 ```

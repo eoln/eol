@@ -1,0 +1,570 @@
+name: EOL RAG Context - Complete CI/CD
+
+on:
+  push:
+    branches: [ main, develop, feat/*, fix/* ]
+    paths:
+      - 'packages/eol-rag-context/**'
+      - '.github/workflows/eol-rag-context.yml'
+      - '.github/actions/setup-python-deps/**'
+      - '.github/scripts/**'
+
+env:
+  PACKAGE_PATH: packages/eol-rag-context
+  PYTHON_VERSION: '3.11'
+  COVERAGE_THRESHOLD: 80
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
+
+jobs:
+  # =========================================
+  # Pre-flight & Dependency Setup
+  # =========================================
+  setup:
+    name: 🔧 Setup & Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache.outputs.cache-key }}
+      package-changed: ${{ steps.changes.outputs.package }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Detect changes
+      uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          package:
+            - 'packages/eol-rag-context/**'
+            - '.github/workflows/**'
+            - '.github/actions/**'
+            - '.github/scripts/**'
+
+    - name: Validate project structure
+      if: steps.changes.outputs.package == 'true'
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        echo "🔍 Validating project structure..."
+        required_files=(
+          "pyproject.toml"
+          "src/eol/rag_context/__init__.py"
+          "tests/conftest.py"
+          "tests/integration/conftest.py"
+          "pytest.ini"
+        )
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing required file: $file"
+            exit 1
+          fi
+        done
+        echo "✅ Project structure validation passed"
+
+    - name: Set up Python
+      if: steps.changes.outputs.package == 'true'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Generate cache key
+      if: steps.changes.outputs.package == 'true'
+      id: cache
+      run: |
+        echo "cache-key=deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+    - name: Cache dependencies
+      if: steps.changes.outputs.package == 'true'
+      id: cache-deps
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+          ~/.cache/huggingface
+          ~/.cache/torch
+          ${{ env.PACKAGE_PATH }}/.venv
+        key: ${{ steps.cache.outputs.cache-key }}
+        restore-keys: |
+          deps-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+
+    - name: Install dependencies
+      if: steps.changes.outputs.package == 'true' && steps.cache-deps.outputs.cache-hit != 'true'
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        # Install uv for fast package management
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+
+        # Create virtual environment
+        uv venv .venv
+
+        # Install ALL dependencies for all test types at once
+        uv pip install --python .venv/bin/python \
+          pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist pytest-benchmark \
+          redis redisvl sentence-transformers aioredis \
+          watchdog gitignore-parser \
+          black isort flake8 bandit safety \
+          -r requirements.txt
+
+        # Pre-download sentence transformer models
+        .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
+
+        echo "✅ Dependencies installed and cached"
+
+  # =========================================
+  # Code Quality Checks
+  # =========================================
+  quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Restore dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+          ~/.cache/huggingface
+          ~/.cache/torch
+          ${{ env.PACKAGE_PATH }}/.venv
+        key: ${{ needs.setup.outputs.cache-key }}
+
+    - name: Run quality checks
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        source .venv/bin/activate
+
+        echo "🔍 Code formatting (Black)..."
+        black --check --diff src/ tests/
+
+        echo "🔍 Import sorting (isort)..."
+        isort --check-only --diff src/ tests/
+
+        echo "🔍 Linting (flake8)..."
+        flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+
+        echo "🔍 Security scan (bandit)..."
+        bandit -r src/ -ll
+
+        echo "🔍 Dependency security (safety)..."
+        safety check || true
+
+  # =========================================
+  # Unit Tests (Matrix)
+  # =========================================
+  unit-tests:
+    name: 🧪 Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+          ~/.cache/huggingface
+          ~/.cache/torch
+          ${{ env.PACKAGE_PATH }}/.venv-${{ matrix.python-version }}
+        key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+        restore-keys: |
+          deps-${{ runner.os }}-py${{ matrix.python-version }}-
+
+    - name: Setup dependencies
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        if [ ! -d ".venv-${{ matrix.python-version }}" ]; then
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv .venv-${{ matrix.python-version }}
+          uv pip install --python .venv-${{ matrix.python-version }}/bin/python \
+            pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist \
+            sentence-transformers -r requirements.txt
+        fi
+
+    - name: Run unit tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+      run: |
+        source .venv-${{ matrix.python-version }}/bin/activate
+
+        python -m pytest tests/unit/ \
+          -v --tb=short \
+          -n auto --maxprocesses=4 \
+          --cov=eol.rag_context \
+          --cov-report=xml:unit-coverage-${{ matrix.python-version }}.xml \
+          --cov-report=html:unit-coverage-${{ matrix.python-version }} \
+          --junit-xml=unit-test-results-${{ matrix.python-version }}.xml \
+          --timeout=300
+
+    - name: Upload unit test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-test-results-${{ matrix.python-version }}
+        path: |
+          ${{ env.PACKAGE_PATH }}/unit-test-results-${{ matrix.python-version }}.xml
+          ${{ env.PACKAGE_PATH }}/unit-coverage-${{ matrix.python-version }}.xml
+
+  # =========================================
+  # Integration Tests
+  # =========================================
+  integration-tests:
+    name: 🔄 Integration Tests
+    runs-on: ubuntu-latest
+    needs: [setup, unit-tests]
+    if: needs.setup.outputs.package-changed == 'true'
+
+    services:
+      redis:
+        image: redis/redis-stack:latest
+        ports:
+          - 6379:6379
+          - 8001:8001
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Restore dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+          ~/.cache/huggingface
+          ~/.cache/torch
+          ${{ env.PACKAGE_PATH }}/.venv
+        key: ${{ needs.setup.outputs.cache-key }}
+
+    - name: Install Redis CLI
+      run: |
+        sudo apt-get update && sudo apt-get install -y redis-tools
+
+    - name: Wait for Redis
+      run: |
+        echo "⏳ Waiting for Redis Stack..."
+        timeout 30s bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
+        redis-cli -h localhost -p 6379 MODULE LIST | grep search || exit 1
+        echo "✅ Redis Stack ready"
+
+    - name: Run integration tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+      run: |
+        source .venv/bin/activate
+
+        # Clear Redis data
+        redis-cli -h localhost -p 6379 FLUSHALL
+
+        # Run integration tests
+        python -m pytest tests/integration/ \
+          -v --tb=short \
+          -n auto --maxprocesses=4 \
+          --cov=eol.rag_context --cov-append \
+          --cov-report=xml:integration-coverage.xml \
+          --cov-report=html:integration-coverage \
+          --junit-xml=integration-test-results.xml \
+          --timeout=300 \
+          -m integration
+
+    - name: Generate test summary
+      if: always()
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        python ${{ github.workspace }}/.github/scripts/test_summary.py \
+          integration-test-results.xml \
+          "Integration Tests" || true
+
+    - name: Upload integration test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-test-results
+        path: |
+          ${{ env.PACKAGE_PATH }}/integration-test-results.xml
+          ${{ env.PACKAGE_PATH }}/integration-coverage.xml
+
+  # =========================================
+  # Performance Tests
+  # =========================================
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    needs: [setup, integration-tests]
+    if: needs.setup.outputs.package-changed == 'true'
+
+    services:
+      redis:
+        image: redis/redis-stack:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Restore dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          ~/.local/share/uv
+          ~/.cache/huggingface
+          ~/.cache/torch
+          ${{ env.PACKAGE_PATH }}/.venv
+        key: ${{ needs.setup.outputs.cache-key }}
+
+    - name: Install additional performance dependencies
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        source .venv/bin/activate
+        pip install pytest-benchmark
+
+    - name: Run performance tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+      run: |
+        source .venv/bin/activate
+
+        python -m pytest tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics \
+          -v --tb=short \
+          --benchmark-json=performance-results.json \
+          -m performance || true
+
+    - name: Generate performance summary
+      if: always()
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        python ${{ github.workspace }}/.github/scripts/performance_summary.py \
+          performance-results.json || echo "No performance results"
+
+    - name: Upload performance results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: ${{ env.PACKAGE_PATH }}/performance-results.json
+
+  # =========================================
+  # Coverage Analysis
+  # =========================================
+  coverage:
+    name: 📈 Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Download all test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-test-results*'
+        path: test-results/
+        merge-multiple: true
+
+    - name: Install coverage tools
+      run: |
+        pip install coverage
+
+    - name: Merge coverage reports
+      working-directory: test-results
+      run: |
+        echo "📊 Merging coverage reports..."
+
+        # Find and copy all coverage XML files
+        find . -name '*coverage*.xml' -exec cp {} . \; 2>/dev/null || true
+
+        # Try to combine coverage if .coverage files exist
+        coverage combine 2>/dev/null || true
+
+        # Generate final coverage report
+        if ls *.xml 1> /dev/null 2>&1; then
+          # Use the most recent coverage file
+          LATEST_COVERAGE=$(ls -t *coverage*.xml | head -1)
+          cp "$LATEST_COVERAGE" final-coverage.xml
+          echo "✅ Using coverage from: $LATEST_COVERAGE"
+        else
+          echo "⚠️ No coverage files found"
+          # Create dummy coverage file
+          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > final-coverage.xml
+        fi
+
+    - name: Check coverage threshold
+      run: |
+        python ${{ github.workspace }}/.github/scripts/coverage_check.py \
+          test-results/final-coverage.xml \
+          ${{ env.COVERAGE_THRESHOLD }} \
+          --badge test-results/coverage-badge.json
+
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: final-coverage
+        path: |
+          test-results/final-coverage.xml
+          test-results/coverage-badge.json
+
+  # =========================================
+  # Security Scan
+  # =========================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true'
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: ${{ env.PACKAGE_PATH }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: 'trivy-security-scan'
+
+    - name: Generate security summary
+      if: always()
+      run: |
+        python ${{ github.workspace }}/.github/scripts/security_scan_summary.py \
+          trivy-results.sarif || echo "Security scan completed"
+
+    - name: Dependency vulnerability check
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        pip install safety
+        python ${{ github.workspace }}/.github/scripts/dependency_parser.py \
+          pyproject.toml temp-requirements.txt || echo "Could not parse dependencies"
+
+        if [ -f temp-requirements.txt ]; then
+          safety check -r temp-requirements.txt || echo "⚠️ Vulnerabilities found"
+          rm temp-requirements.txt
+        fi
+
+  # =========================================
+  # Final Quality Gate
+  # =========================================
+  quality-gate:
+    name: 🚦 Quality Gate
+    runs-on: ubuntu-latest
+    needs: [quality, unit-tests, integration-tests, coverage, security]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Quality gate decision
+      run: |
+        echo "🚦 Quality Gate Decision..."
+
+        # Check results
+        quality_result="${{ needs.quality.result }}"
+        unit_result="${{ needs.unit-tests.result }}"
+        integration_result="${{ needs.integration-tests.result }}"
+        coverage_result="${{ needs.coverage.result }}"
+        security_result="${{ needs.security.result }}"
+
+        echo "📊 Results:"
+        echo "• Code Quality: $quality_result"
+        echo "• Unit Tests: $unit_result"
+        echo "• Integration Tests: $integration_result"
+        echo "• Coverage: $coverage_result"
+        echo "• Security: $security_result"
+
+        # Determine overall result
+        failed_gates=""
+        [ "$quality_result" = "failure" ] && failed_gates="$failed_gates quality"
+        [ "$unit_result" = "failure" ] && failed_gates="$failed_gates unit-tests"
+        [ "$integration_result" = "failure" ] && failed_gates="$failed_gates integration-tests"
+        [ "$coverage_result" = "failure" ] && failed_gates="$failed_gates coverage"
+        [ "$security_result" = "failure" ] && failed_gates="$failed_gates security"
+
+        if [ -n "$failed_gates" ]; then
+          echo "❌ QUALITY GATE FAILED"
+          echo "Failed gates:$failed_gates"
+          echo "::error title=Quality Gate Failed::Failed gates:$failed_gates"
+          exit 1
+        else
+          echo "✅ QUALITY GATE PASSED"
+          echo "::notice title=Quality Gate Success::All checks passed!"
+        fi

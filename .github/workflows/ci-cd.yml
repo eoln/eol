@@ -326,20 +326,35 @@ jobs:
           ${{ env.PACKAGE_PATH }}/unit-coverage-${{ matrix.python-version }}.xml
 
   # =========================================
-  # Integration Tests
+  # Integration Tests (Matrix)
   # =========================================
   integration-tests:
-    name: 🔄 Integration Tests
+    name: 🔄 Integration Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     needs: [setup, build-wheel-caches]
     if: always() && needs.setup.outputs.package-changed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+        include:
+          # Use different Redis ports for each Python version to avoid conflicts
+          - python-version: '3.11'
+            redis-port: 6379
+            redis-ui-port: 8001
+          - python-version: '3.12'
+            redis-port: 6380
+            redis-ui-port: 8002
+          - python-version: '3.13'
+            redis-port: 6381
+            redis-ui-port: 8003
+      fail-fast: false
 
     services:
       redis:
         image: redis/redis-stack:latest
         ports:
-          - 6379:6379
-          - 8001:8001
+          - ${{ matrix.redis-port }}:6379
+          - ${{ matrix.redis-ui-port }}:8001
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
@@ -353,35 +368,36 @@ jobs:
     - name: Setup dependencies (ultra-fast)
       uses: ./.github/actions/setup-python-deps-ultra-fast
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
         test-type: integration
         working-directory: ${{ env.PACKAGE_PATH }}
 
     - name: Wait for Redis
       run: |
-        echo "⏳ Waiting for Redis Stack..."
-        timeout 30s bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
-        redis-cli -h localhost -p 6379 MODULE LIST | grep search || exit 1
-        echo "✅ Redis Stack ready"
+        echo "⏳ Waiting for Redis Stack on port ${{ matrix.redis-port }}..."
+        timeout 30s bash -c 'until redis-cli -h localhost -p ${{ matrix.redis-port }} ping; do sleep 1; done'
+        redis-cli -h localhost -p ${{ matrix.redis-port }} MODULE LIST | grep search || exit 1
+        echo "✅ Redis Stack ready on port ${{ matrix.redis-port }}"
 
     - name: Run integration tests
       working-directory: ${{ env.PACKAGE_PATH }}
       env:
         PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+        REDIS_PORT: ${{ matrix.redis-port }}
       run: |
-        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
+        source .venv-${{ matrix.python-version }}/bin/activate
 
         # Clear Redis data
-        redis-cli -h localhost -p 6379 FLUSHALL
+        redis-cli -h localhost -p ${{ matrix.redis-port }} FLUSHALL
 
-        # Run integration tests
+        # Run integration tests with custom Redis port
         python -m pytest tests/integration/ \
           -v --tb=short \
           -n auto --maxprocesses=4 \
           --cov=eol.rag_context --cov-append \
-          --cov-report=xml:integration-coverage.xml \
-          --cov-report=html:integration-coverage \
-          --junit-xml=integration-test-results.xml \
+          --cov-report=xml:integration-coverage-${{ matrix.python-version }}.xml \
+          --cov-report=html:integration-coverage-${{ matrix.python-version }} \
+          --junit-xml=integration-test-results-${{ matrix.python-version }}.xml \
           --timeout=300 \
           -m integration
 
@@ -389,10 +405,10 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: integration-test-results
+        name: integration-test-results-${{ matrix.python-version }}
         path: |
-          ${{ env.PACKAGE_PATH }}/integration-test-results.xml
-          ${{ env.PACKAGE_PATH }}/integration-coverage.xml
+          ${{ env.PACKAGE_PATH }}/integration-test-results-${{ matrix.python-version }}.xml
+          ${{ env.PACKAGE_PATH }}/integration-coverage-${{ matrix.python-version }}.xml
 
   # =========================================
   # Performance Tests
@@ -514,9 +530,19 @@ jobs:
       run: |
         echo "📊 Analyzing integration test coverage..."
 
-        if [ -f "integration-coverage.xml" ]; then
-          cp integration-coverage.xml integration-coverage-final.xml
-          echo "✅ Using integration coverage"
+        # Find integration coverage files (from all Python versions)
+        integration_files=($(find . -name 'integration-coverage-*.xml' 2>/dev/null))
+
+        if [ ${#integration_files[@]} -gt 0 ]; then
+          # Use the coverage from the primary Python version (3.11)
+          if [ -f "integration-coverage-3.11.xml" ]; then
+            cp integration-coverage-3.11.xml integration-coverage-final.xml
+            echo "✅ Using integration coverage from Python 3.11"
+          else
+            # Fallback to first available integration coverage
+            cp "${integration_files[0]}" integration-coverage-final.xml
+            echo "✅ Using integration coverage from: ${integration_files[0]}"
+          fi
 
           # Check integration coverage threshold
           echo "🎯 Checking integration test coverage against ${INTEGRATION_COVERAGE_THRESHOLD}% threshold..."

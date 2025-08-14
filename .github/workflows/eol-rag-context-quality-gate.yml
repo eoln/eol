@@ -2,7 +2,7 @@ name: EOL RAG Context - Quality Gate
 
 on:
   push:
-    branches: [ main, develop, feat/*, fix/* ]
+    branches: [ main, develop, feat/*, fix/*, feat/test-coverage-80 ]
     paths:
       - 'packages/eol-rag-context/**'
       - '.github/workflows/eol-rag-context-quality-gate.yml'
@@ -161,7 +161,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
         
     steps:
     - name: Checkout code
@@ -192,7 +192,7 @@ jobs:
         
         # Install project dependencies from requirements files
         uv pip install --system -r requirements.txt
-        uv pip install --system sentence-transformers  # For embeddings in tests
+        uv pip install --system sentence-transformers aioredis  # Additional test dependencies
         
         # Note: unittest.mock is part of Python standard library (no install needed)
         
@@ -205,10 +205,7 @@ jobs:
       run: |
         echo "🧪 Running unit tests with Python ${{ matrix.python-version }}..."
         
-        python -m pytest \
-          tests/test_config.py \
-          tests/test_embeddings.py \
-          tests/test_document_processor.py \
+        python -m pytest tests/unit/ \
           -v \
           --tb=short \
           --timeout=300 \
@@ -217,8 +214,7 @@ jobs:
           --cov-report=term \
           --cov-report=xml:unit-coverage-${{ matrix.python-version }}.xml \
           --cov-report=html:unit-coverage-${{ matrix.python-version }} \
-          --junit-xml=unit-test-results-${{ matrix.python-version }}.xml \
-          -m "not integration"
+          --junit-xml=unit-test-results-${{ matrix.python-version }}.xml
     
     - name: Upload unit test results
       if: always()

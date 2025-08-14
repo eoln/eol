@@ -54,7 +54,15 @@ runs:
           venv-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.test-type }}-
           venv-${{ runner.os }}-py${{ inputs.python-version }}-
 
-    # Try to download pre-built wheel cache
+    # Try to download pre-built wheel cache (graceful fallback)
+    - name: Check for wheel cache availability
+      id: check-wheels
+      shell: bash
+      run: |
+        echo "🔍 Checking for pre-built wheel cache availability..."
+        echo "WHEELS_AVAILABLE=false" >> $GITHUB_ENV
+        echo "WHEEL_CACHE_STATUS=not_attempted" >> $GITHUB_ENV
+
     - name: Download wheel cache
       id: download-wheels
       uses: actions/download-artifact@v4
@@ -63,17 +71,30 @@ runs:
         name: wheels-py${{ inputs.python-version }}
         path: /tmp/wheels-cache
 
-    - name: Extract wheel cache
-      if: steps.download-wheels.outcome == 'success'
+    - name: Extract and validate wheel cache
+      if: always()
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "📦 Extracting pre-built wheel cache..."
-        tar xzf /tmp/wheels-cache/wheels-py${{ inputs.python-version }}.tar.gz
-        if [ -d ".wheels-py${{ inputs.python-version }}" ]; then
-          echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
-          echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
-          echo "✅ Using pre-built wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages"
+        if [ "${{ steps.download-wheels.outcome }}" = "success" ]; then
+          echo "📦 Extracting pre-built wheel cache..."
+          if tar xzf /tmp/wheels-cache/wheels-py${{ inputs.python-version }}.tar.gz 2>/dev/null; then
+            if [ -d ".wheels-py${{ inputs.python-version }}" ] && [ "$(ls -A .wheels-py${{ inputs.python-version }} 2>/dev/null | wc -l)" -gt 0 ]; then
+              echo "WHEELS_AVAILABLE=true" >> $GITHUB_ENV
+              echo "WHEEL_DIR=$PWD/.wheels-py${{ inputs.python-version }}" >> $GITHUB_ENV
+              echo "WHEEL_CACHE_STATUS=success" >> $GITHUB_ENV
+              echo "✅ Using pre-built wheels: $(ls .wheels-py${{ inputs.python-version }} | wc -l) packages"
+            else
+              echo "⚠️ Wheel cache extracted but empty/invalid"
+              echo "WHEEL_CACHE_STATUS=empty" >> $GITHUB_ENV
+            fi
+          else
+            echo "⚠️ Failed to extract wheel cache"
+            echo "WHEEL_CACHE_STATUS=extract_failed" >> $GITHUB_ENV
+          fi
+        else
+          echo "ℹ️ No pre-built wheel cache available, using PyPI with caching"
+          echo "WHEEL_CACHE_STATUS=unavailable" >> $GITHUB_ENV
         fi
 
     - name: Install uv
@@ -170,9 +191,28 @@ runs:
     - name: Report setup method
       shell: bash
       run: |
-        if [ "$WHEELS_AVAILABLE" = "true" ]; then
-          echo "⚡ Dependencies installed from wheel cache (ultra-fast!)"
-        else
-          echo "📦 Dependencies installed from PyPI (with caching)"
-        fi
-        echo "Environment: .venv-${{ inputs.python-version }}"
+        echo "🔧 Dependency Setup Summary:"
+        echo "  Python Version: ${{ inputs.python-version }}"
+        echo "  Test Type: ${{ inputs.test-type }}"
+        echo "  Environment: .venv-${{ inputs.python-version }}"
+
+        case "$WHEEL_CACHE_STATUS" in
+          success)
+            echo "  ⚡ Installation Method: Pre-built wheel cache (ULTRA-FAST)"
+            echo "  📊 Performance: ~5-10s dependency setup"
+            ;;
+          unavailable)
+            echo "  📦 Installation Method: PyPI with aggressive caching"
+            echo "  📊 Performance: ~30-60s dependency setup (first run), ~10-20s (cached)"
+            echo "  💡 Tip: Wheel cache will be available after weekly optimization runs"
+            ;;
+          empty|extract_failed)
+            echo "  ⚠️ Installation Method: PyPI fallback (wheel cache corrupted)"
+            echo "  📊 Performance: ~30-60s dependency setup"
+            echo "  🔧 Action: Consider re-running dependency optimization workflow"
+            ;;
+          *)
+            echo "  📦 Installation Method: PyPI with caching (default)"
+            echo "  📊 Performance: ~30-60s dependency setup"
+            ;;
+        esac

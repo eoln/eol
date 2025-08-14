@@ -1,5 +1,5 @@
-name: 'Setup Python Dependencies'
-description: 'Unified dependency installation for all test jobs'
+name: 'Setup Python Dependencies (Fast)'
+description: 'Ultra-fast dependency setup using artifacts and aggressive caching'
 inputs:
   python-version:
     description: 'Python version to use'
@@ -12,6 +12,10 @@ inputs:
     description: 'Working directory for installation'
     required: false
     default: 'packages/eol-rag-context'
+  use-artifacts:
+    description: 'Try to use pre-built dependency artifacts'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -21,7 +25,36 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
+    # Try to download pre-built dependency bundle first
+    - name: Download dependency bundle
+      if: inputs.use-artifacts == 'true'
+      id: download-bundle
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: dep-cache-py${{ inputs.python-version }}
+        path: /tmp/dep-bundle
+
+    - name: Extract dependency bundle
+      if: steps.download-bundle.outcome == 'success'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📦 Extracting pre-built dependency bundle..."
+        tar xzf /tmp/dep-bundle/dep-cache-py${{ inputs.python-version }}.tar.gz
+
+        # Link the virtual environment
+        if [ -d ".dep-cache-${{ inputs.python-version }}" ]; then
+          echo "✅ Using pre-built dependencies"
+          source .dep-cache-${{ inputs.python-version }}/bin/activate
+          echo "VIRTUAL_ENV=$PWD/.dep-cache-${{ inputs.python-version }}" >> $GITHUB_ENV
+          echo "$PWD/.dep-cache-${{ inputs.python-version }}/bin" >> $GITHUB_PATH
+          echo "DEPS_FROM_ARTIFACT=true" >> $GITHUB_ENV
+        fi
+
+    # Fallback to regular installation if artifact not available
     - name: Cache pip packages and wheels
+      if: steps.download-bundle.outcome != 'success'
       uses: actions/cache@v4
       with:
         path: |
@@ -35,7 +68,7 @@ runs:
           ${{ runner.os }}-pip-
 
     - name: Cache sentence transformer models
-      if: inputs.test-type == 'integration' || inputs.test-type == 'coverage'
+      if: (inputs.test-type == 'integration' || inputs.test-type == 'coverage') && steps.download-bundle.outcome != 'success'
       uses: actions/cache@v4
       with:
         path: |
@@ -46,6 +79,7 @@ runs:
           ${{ runner.os }}-models-
 
     - name: Install uv for fast dependency installation
+      if: steps.download-bundle.outcome != 'success'
       shell: bash
       run: |
         if ! command -v uv &> /dev/null; then
@@ -54,16 +88,18 @@ runs:
         fi
 
     - name: Install base dependencies
+      if: steps.download-bundle.outcome != 'success'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
+        echo "📦 Installing dependencies from scratch..."
         # Base dependencies for all test types
         uv pip install --system --compile-bytecode \
           pytest pytest-asyncio pytest-timeout pytest-xdist \
           -r requirements.txt
 
     - name: Install unit test dependencies
-      if: inputs.test-type == 'unit'
+      if: inputs.test-type == 'unit' && steps.download-bundle.outcome != 'success'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -72,7 +108,7 @@ runs:
           sentence-transformers
 
     - name: Install integration test dependencies
-      if: inputs.test-type == 'integration'
+      if: inputs.test-type == 'integration' && steps.download-bundle.outcome != 'success'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -84,7 +120,7 @@ runs:
           watchdog gitignore-parser
 
     - name: Install performance test dependencies
-      if: inputs.test-type == 'performance'
+      if: inputs.test-type == 'performance' && steps.download-bundle.outcome != 'success'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -93,7 +129,7 @@ runs:
           sentence-transformers
 
     - name: Install coverage test dependencies
-      if: inputs.test-type == 'coverage'
+      if: inputs.test-type == 'coverage' && steps.download-bundle.outcome != 'success'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -113,7 +149,16 @@ runs:
         fi
 
     - name: Pre-download models for integration tests
-      if: inputs.test-type == 'integration' || inputs.test-type == 'coverage'
+      if: (inputs.test-type == 'integration' || inputs.test-type == 'coverage') && steps.download-bundle.outcome != 'success'
       shell: bash
       run: |
         python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
+
+    - name: Report installation method
+      shell: bash
+      run: |
+        if [ "$DEPS_FROM_ARTIFACT" = "true" ]; then
+          echo "✅ Dependencies loaded from artifact (super fast!)"
+        else
+          echo "📦 Dependencies installed from cache/fresh"
+        fi

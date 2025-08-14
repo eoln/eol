@@ -7,11 +7,20 @@ RUN apt-get update && apt-get install -y \
     git \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies upfront
-RUN pip install --no-cache-dir \
-    uv \
+# Install uv for fast package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Create virtual environment and install Python dependencies with uv
+RUN uv venv /venv
+ENV VIRTUAL_ENV=/venv
+ENV PATH="/venv/bin:$PATH"
+
+# Install Python dependencies with uv (much faster than pip)
+RUN uv pip install \
     pytest \
     pytest-asyncio \
     pytest-cov \

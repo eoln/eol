@@ -1,20 +1,23 @@
 # Test Coverage Improvement to 80% - Product Requirements Prompt
 
 ## Overview
+
 Comprehensive plan to increase test coverage from 68.18% to 80% for both unit and integration tests in the eol-rag-context package, focusing on critical low-coverage modules and fixing existing test failures.
 
-**Created**: 2025-08-13  
-**Status**: Pending  
-**Priority**: High  
-**Estimated Duration**: 2 weeks  
+**Created**: 2025-08-13
+**Status**: Pending
+**Priority**: High
+**Estimated Duration**: 2 weeks
 **Scope**: Unit tests, integration tests, and test infrastructure improvements
 
 ## Implementation Confidence Score: 9/10
+
 *Based on clear coverage gaps identified, existing test patterns, and straightforward implementation path*
 
 ## Research Summary
 
 ### Current Coverage Analysis
+
 - **Current Coverage**: 68.18% (with Redis running)
 - **Target Coverage**: 80% minimum
 - **Gap to Close**: 11.82%
@@ -22,6 +25,7 @@ Comprehensive plan to increase test coverage from 68.18% to 80% for both unit an
 - **Total Test Files**: 11 unit test files, 5 integration test suites
 
 ### Critical Low Coverage Modules
+
 | Module | Current Coverage | Lines to Cover | Priority |
 |--------|-----------------|----------------|----------|
 | `redis_client.py` | 46.39% | 85/185 | HIGH |
@@ -32,6 +36,7 @@ Comprehensive plan to increase test coverage from 68.18% to 80% for both unit an
 | `semantic_cache.py` | 71.04% | 40/171 | MEDIUM |
 
 ### Existing Test Patterns Found
+
 ```python
 # Async test pattern from conftest.py
 @pytest.fixture
@@ -41,7 +46,7 @@ async def redis_store(redis_config):
     yield store
     await store.cleanup()
 
-# Mock pattern from test_embeddings.py  
+# Mock pattern from test_embeddings.py
 @pytest.fixture
 def mock_embedding_provider():
     provider = Mock(spec=EmbeddingProvider)
@@ -59,6 +64,7 @@ async def test_chunking_strategies(chunk_size, overlap):
 ```
 
 ### Key Dependencies Identified
+
 - **Testing Framework**: pytest, pytest-asyncio, pytest-cov
 - **Mocking**: unittest.mock, AsyncMock
 - **Fixtures**: conftest.py with shared fixtures
@@ -68,6 +74,7 @@ async def test_chunking_strategies(chunk_size, overlap):
 ## Architecture Overview
 
 ### Test Structure (Directory-Specific Fixtures)
+
 ```
 tests/
 ├── conftest.py              # MINIMAL shared utilities only
@@ -101,6 +108,7 @@ tests/
 ```
 
 ### Fixture Isolation Strategy
+
 - **Root conftest.py**: Only truly shared, non-I/O utilities
 - **Unit conftest.py**: Fast, mocked, deterministic fixtures
 - **Integration conftest.py**: Real services, slower, environmental
@@ -110,28 +118,31 @@ tests/
 ## Implementation Tasks
 
 ### Phase 1: Fix Failing Tests (Days 1-2)
+
 - [x] **Standardize on Python 3.13 across project and CI**
+
   ```bash
   # Update .pre-commit-config.yaml to use Python 3.13
   # Change language_version from python3.11 to python3.13
   sed -i 's/language_version: python3.11/language_version: python3.13/g' .pre-commit-config.yaml
-  
+
   # Verify the change
   grep "language_version" .pre-commit-config.yaml
-  
+
   # Update GitHub Actions workflow to include Python 3.13 in test matrix
   # Edit .github/workflows/test.yml to add python-version: ["3.11", "3.12", "3.13"]
-  
+
   # Clean and reinstall hooks
   pre-commit clean
   pre-commit install --install-hooks
   pre-commit run --all-files  # Test all hooks work
-  
+
   # Verify Python version consistency
   python --version  # Should show 3.13.x
   ```
 
 - [x] **Update GitHub Actions workflow for Python 3.13 matrix**
+
   ```yaml
   # Update .github/workflows/test.yml (or create if missing)
   # Add Python 3.13 to test matrix: ["3.11", "3.12", "3.13"]
@@ -141,16 +152,18 @@ tests/
   ```
 
 - [x] **Reorganize test structure with proper fixture separation**
+
   ```bash
   # Create unit test directory and move existing unit tests
   mkdir -p tests/unit
   mv tests/test_*.py tests/unit/
-  
+
   # Keep integration tests in their directory
   # tests/integration/ already exists with proper conftest.py
   ```
 
 - [x] **Fix file_watcher fixture issues**
+
   ```python
   # Fix mock configuration in tests/test_file_watcher.py
   @pytest.fixture
@@ -162,7 +175,8 @@ tests/
       return FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
   ```
 
-- [ ] **Fix MCP server async mock issues**
+- [x] **Fix MCP server async mock issues**
+
   ```python
   # Properly mock async MCP server
   @pytest.fixture
@@ -173,7 +187,8 @@ tests/
       return server
   ```
 
-- [ ] **Fix semantic cache Redis mocks**
+- [x] **Fix semantic cache Redis mocks**
+
   ```python
   # tests/conftest.py - Unit test fixtures (MOCKED)
   @pytest.fixture
@@ -186,6 +201,7 @@ tests/
   ```
 
 - [x] **Create dedicated unit test fixtures directory**
+
   ```python
   # tests/conftest.py - MINIMAL shared utilities only
   @pytest.fixture
@@ -194,7 +210,7 @@ tests/
       temp_path = Path(tempfile.mkdtemp())
       yield temp_path
       shutil.rmtree(temp_path)
-  
+
   # tests/unit/conftest.py - Unit-specific fixtures (MOCKED)
   @pytest.fixture
   def mock_redis_store():
@@ -203,7 +219,7 @@ tests/
       store.search_similar = AsyncMock(return_value=[])
       store.vector_search = AsyncMock(return_value=[])
       return store
-      
+
   @pytest.fixture
   def unit_test_config(temp_dir: Path):
       """Unit test config with cache disabled."""
@@ -211,7 +227,7 @@ tests/
       config.data_dir = temp_dir / "data"
       config.cache.enabled = False  # No real I/O for units
       return config
-  
+
   # tests/integration/conftest.py - Integration-specific fixtures (REAL)
   @pytest.fixture
   async def real_redis_store(redis_config):
@@ -225,14 +241,16 @@ tests/
 ### Phase 2: High Priority Module Tests (Days 3-5)
 
 #### redis_client.py (+20% coverage needed)
+
 - [ ] **Test connection management**
+
   ```python
   async def test_connection_pooling():
       store = RedisVectorStore(config)
       await store.connect_async()
       assert store.pool.max_connections == 50
       await store.disconnect()
-  
+
   async def test_connection_retry():
       store = RedisVectorStore(bad_config)
       with pytest.raises(ConnectionError):
@@ -240,12 +258,13 @@ tests/
   ```
 
 - [ ] **Test vector operations**
+
   ```python
   async def test_vector_index_creation():
       await store.create_index("test_index", dimension=384)
       info = await store.get_index_info("test_index")
       assert info["dimension"] == 384
-  
+
   async def test_vector_search():
       embedding = np.random.rand(384)
       results = await store.vector_search(embedding, k=5)
@@ -253,12 +272,13 @@ tests/
   ```
 
 - [ ] **Test batch operations**
+
   ```python
   async def test_batch_insert():
       documents = [create_test_doc(i) for i in range(100)]
       result = await store.batch_insert(documents)
       assert result.success_count == 100
-  
+
   async def test_pipeline_operations():
       async with store.pipeline() as pipe:
           for i in range(10):
@@ -268,14 +288,16 @@ tests/
   ```
 
 #### embeddings.py (+20% coverage needed)
+
 - [ ] **Test all provider types**
+
   ```python
   @pytest.mark.parametrize("provider_type", ["openai", "anthropic", "local", "huggingface"])
   async def test_embedding_providers(provider_type):
       provider = EmbeddingManager.create_provider(provider_type)
       embedding = await provider.embed("test text")
       assert embedding.shape == (384,)
-  
+
   async def test_openai_provider_with_mock():
       with patch("openai.AsyncClient") as mock_client:
           mock_client.embeddings.create = AsyncMock(
@@ -287,13 +309,14 @@ tests/
   ```
 
 - [ ] **Test batch processing**
+
   ```python
   async def test_batch_embeddings():
       texts = ["text1", "text2", "text3"]
       embeddings = await manager.embed_batch(texts, batch_size=2)
       assert len(embeddings) == 3
       assert all(e.shape == (384,) for e in embeddings)
-  
+
   async def test_embedding_cache():
       text = "cached text"
       emb1 = await manager.embed(text)
@@ -302,7 +325,9 @@ tests/
   ```
 
 #### document_processor.py (+15% coverage needed)
+
 - [ ] **Test all chunking strategies**
+
   ```python
   @pytest.mark.parametrize("strategy,expected_chunks", [
       ("fixed", 10),
@@ -319,6 +344,7 @@ tests/
   ```
 
 - [ ] **Test file format processing**
+
   ```python
   @pytest.mark.parametrize("file_type,processor_method", [
       ("test.json", "process_json"),
@@ -337,7 +363,9 @@ tests/
 ### Phase 3: Medium Priority Tests (Days 6-7)
 
 #### server.py (+15% coverage needed)
+
 - [ ] **Test all MCP tools**
+
   ```python
   async def test_index_directory_tool():
       server = MCPServer()
@@ -346,7 +374,7 @@ tests/
           "recursive": True
       })
       assert result["status"] == "success"
-  
+
   async def test_search_context_tool():
       result = await server.tools["search_context"]({
           "query": "test query",
@@ -356,12 +384,13 @@ tests/
   ```
 
 - [ ] **Test resource handlers**
+
   ```python
   async def test_context_resource():
       resource = await server.get_resource("context://current")
       assert resource["type"] == "context"
       assert "content" in resource
-  
+
   async def test_stats_resource():
       stats = await server.get_resource("stats://indexing")
       assert "documents_indexed" in stats
@@ -369,14 +398,16 @@ tests/
   ```
 
 #### file_watcher.py (+10% coverage needed)
+
 - [ ] **Test file system events**
+
   ```python
   async def test_file_created_event():
       handler = FileChangeHandler(watcher, path, source_id)
       event = FileCreatedEvent("/test/new_file.py")
       await handler.on_created(event)
       assert watcher.index_file.called
-  
+
   async def test_file_modified_event():
       event = FileModifiedEvent("/test/modified.py")
       await handler.on_modified(event)
@@ -386,6 +417,7 @@ tests/
 ### Phase 4: Integration Test Improvements (Days 8-9)
 
 - [ ] **Ensure Redis Stack is available**
+
   ```python
   # integration/conftest.py
   @pytest.fixture(scope="session")
@@ -398,6 +430,7 @@ tests/
   ```
 
 - [ ] **Add retry logic for flaky tests**
+
   ```python
   @pytest.mark.flaky(retries=3, delay=1)
   async def test_concurrent_operations():
@@ -405,6 +438,7 @@ tests/
   ```
 
 - [ ] **Create test data generators**
+
   ```python
   @pytest.fixture
   def test_documents():
@@ -417,6 +451,7 @@ tests/
 ### Phase 5: Coverage Validation & Documentation (Days 10)
 
 - [ ] **Run coverage analysis**
+
   ```bash
   # Run full test suite with coverage
   pytest tests/ --cov=eol.rag_context \
@@ -427,14 +462,15 @@ tests/
   ```
 
 - [ ] **Document test patterns**
+
   ```markdown
   # Testing Guidelines
-  
+
   ## Unit Tests
   - Mock all external dependencies
   - Test edge cases and error conditions
   - Use parametrized tests for multiple scenarios
-  
+
   ## Integration Tests
   - Require Redis Stack Server
   - Test end-to-end workflows
@@ -444,6 +480,7 @@ tests/
 ## Quality Gates
 
 ### Test Quality Metrics
+
 ```bash
 # Lint test code
 flake8 tests/ --max-line-length=100
@@ -460,6 +497,7 @@ open coverage/html/index.html
 ```
 
 ### Performance Validation
+
 ```python
 # Benchmark critical operations
 @pytest.mark.benchmark
@@ -467,13 +505,14 @@ async def test_indexing_performance(benchmark):
     result = await benchmark(index_documents, test_docs)
     assert result.avg_time < 0.1  # <100ms per doc
 
-@pytest.mark.benchmark  
+@pytest.mark.benchmark
 async def test_search_latency(benchmark):
     result = await benchmark(search_similar, "query")
     assert result.avg_time < 0.1  # <100ms
 ```
 
 ### Continuous Integration
+
 ```yaml
 # .github/workflows/test.yml updates - Python 3.13 matrix support
 name: Tests
@@ -485,33 +524,33 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]  # Add 3.13 support
-        
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        
+
     - name: Install Redis Stack
       run: |
         curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
         sudo apt-get update
         sudo apt-get install redis-stack-server
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip uv
         uv pip install -e ".[test]"
-        
+
     - name: Start Redis Stack
       run: redis-stack-server --daemonize yes
-      
+
     - name: Run tests with coverage
       run: |
         pytest tests/ --cov=eol.rag_context --cov-fail-under=80 --cov-report=xml
-        
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       if: matrix.python-version == '3.13'  # Only upload once
@@ -523,18 +562,21 @@ jobs:
 ## Success Metrics
 
 ### Coverage Targets
+
 - [x] Overall coverage ≥ 80%
 - [x] Branch coverage ≥ 70%
 - [x] Critical modules ≥ 75% coverage
 - [x] No untested public APIs
 
 ### Test Quality
+
 - [x] All tests passing (0 failures)
 - [x] No flaky tests
 - [x] Test execution < 60 seconds
 - [x] Clear test names and documentation
 
 ### Module-Specific Targets
+
 | Module | Target Coverage | Critical Functions Covered |
 |--------|----------------|---------------------------|
 | `redis_client.py` | 75% | connect, search, index |
@@ -546,6 +588,7 @@ jobs:
 ## Risk Mitigation
 
 ### Technical Risks
+
 - **Python Version Standardization**: CRITICAL - Standardize on Python 3.13 across pre-commit, CI, and development
 - **CI Matrix Compatibility**: Ensure tests pass on Python 3.11, 3.12, and 3.13
 - **Redis Dependency**: Create comprehensive mocks for unit tests
@@ -554,6 +597,7 @@ jobs:
 - **Test Isolation**: Clean up after each test to prevent interference
 
 ### Process Risks
+
 - **Time Constraints**: Focus on high-impact modules first
 - **Flaky Tests**: Add retry logic and proper timeouts
 - **Environment Issues**: Document Redis setup clearly
@@ -562,10 +606,12 @@ jobs:
 ## Implementation Timeline
 
 ### Week 1 (Days 1-5)
+
 - Day 1-2: Fix all failing tests
 - Day 3-5: Implement high-priority module tests
 
 ### Week 2 (Days 6-10)
+
 - Day 6-7: Complete medium-priority tests
 - Day 8-9: Improve integration tests
 - Day 10: Validate coverage and document
@@ -573,12 +619,14 @@ jobs:
 ## References
 
 ### Internal Documentation
+
 - `.claude/findings/20250813_test_coverage_analysis.md` - Coverage gap analysis
 - `.claude/findings/20250813_redis_test_setup_guide.md` - Redis setup guide
 - `tests/integration/TESTING_GUIDE.md` - Integration test guide
 - `.claude/context/python/testing-strategies.md` - Python test patterns
 
 ### External Resources
+
 - [pytest documentation](https://docs.pytest.org/)
 - [pytest-asyncio guide](https://pytest-asyncio.readthedocs.io/)
 - [pytest-cov documentation](https://pytest-cov.readthedocs.io/)
@@ -587,22 +635,26 @@ jobs:
 ## Task Dependencies
 
 ### Critical First Tasks (MUST Complete Before All Others)
+
 - Standardize on Python 3.13 across project and CI
 - Update GitHub Actions workflow for Python 3.13 matrix
 
 ### Independent Tasks (Can Start After Python Standardization)
+
 - Reorganize test structure with proper fixture separation
 - Fix file_watcher fixture issues
-- Fix MCP server async mock issues  
+- Fix MCP server async mock issues
 - Fix semantic cache Redis mocks
 - Document test patterns
 
 ### Sequential Dependencies
+
 - Test connection management → Test vector operations → Test batch operations (redis_client)
 - Test all provider types → Test batch processing (embeddings)
 - Test all chunking strategies → Test file format processing (document_processor)
 
 ### Parallel Execution Opportunities
+
 - Phase 1 fixes can be done in parallel
 - Unit tests for different modules can be developed concurrently
 - Documentation can proceed alongside test development
@@ -610,6 +662,7 @@ jobs:
 ## Git Branch Strategy
 
 ### Execution Plan
+
 1. **Plan Approval**: Move from draft/ to ready/
 2. **Branch Creation**: `git checkout -b feat/test-coverage-80`
 3. **Plan Activation**: Move to pending/
@@ -639,7 +692,7 @@ jobs:
 ### What Worked Well
 - [To be filled during execution]
 
-### What Could Be Improved  
+### What Could Be Improved
 - [To be filled during execution]
 
 ### New Patterns Discovered

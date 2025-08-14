@@ -31,3 +31,4 @@ The system provides detailed status reporting:
 - Graceful handling of missing or corrupted artifacts
 - Detailed performance metrics and optimization tips
 - Automatic retry logic for transient failures
+- Cross-workflow artifact access using GitHub CLI

@@ -2,18 +2,10 @@
 Simple tests for knowledge_graph to ensure basic functionality.
 """
 
-import importlib.machinery
-import sys
-from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-
-# Mock dependencies with proper __spec__ for Python 3.13
-nx_mock = MagicMock()
-nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
-sys.modules["networkx"] = nx_mock
 
 from eol.rag_context.knowledge_graph import (
     Entity,

@@ -2,14 +2,222 @@
 Pytest configuration and fixtures for unit tests.
 """
 
+import importlib.machinery
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Generator
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import numpy as np
 import pytest
+
+
+class MockMultiDiGraph:
+    """Mock implementation of NetworkX MultiDiGraph for testing."""
+
+    def __init__(self):
+        self._nodes = {}
+        self._edges = []
+        self.nodes = self._nodes
+
+    def __len__(self):
+        """Return the number of nodes (NetworkX convention)."""
+        return len(self._nodes)
+
+    def __contains__(self, node_id):
+        """Check if node exists in graph."""
+        return node_id in self._nodes
+
+    def __iter__(self):
+        """Iterate over nodes."""
+        return iter(self._nodes)
+
+    def add_node(self, node_id, **attrs):
+        self._nodes[node_id] = attrs
+
+    def add_edge(self, source, target, **attrs):
+        self._edges.append((source, target, attrs))
+        # Ensure both nodes exist
+        if source not in self._nodes:
+            self._nodes[source] = {}
+        if target not in self._nodes:
+            self._nodes[target] = {}
+
+    def has_node(self, node_id):
+        return node_id in self._nodes
+
+    def has_edge(self, source, target):
+        return any(e[0] == source and e[1] == target for e in self._edges)
+
+    def remove_node(self, node_id):
+        if node_id in self._nodes:
+            del self._nodes[node_id]
+            self._edges = [
+                (s, t, a) for s, t, a in self._edges if s != node_id and t != node_id
+            ]
+
+    def number_of_nodes(self):
+        return len(self._nodes)
+
+    def number_of_edges(self):
+        return len(self._edges)
+
+    def neighbors(self, node_id):
+        return [e[1] for e in self._edges if e[0] == node_id]
+
+    def degree(self, node_id=None):
+        if node_id is None:
+            # Return iterator of (node, degree) pairs for all nodes
+            degrees = []
+            for n in self._nodes:
+                d = sum(1 for e in self._edges if e[0] == n or e[1] == n)
+                degrees.append((n, d))
+            return iter(degrees)
+        else:
+            # Return degree for specific node
+            return sum(1 for e in self._edges if e[0] == node_id or e[1] == node_id)
+
+    def edges(self, data=False):
+        """Return edges, optionally with data."""
+        if data:
+            return [(e[0], e[1], e[2]) for e in self._edges]
+        else:
+            return [(e[0], e[1]) for e in self._edges]
+
+    def in_degree(self, node_id=None):
+        """Return in-degree of node(s)."""
+        if node_id is None:
+            degrees = []
+            for n in self._nodes:
+                d = sum(1 for e in self._edges if e[1] == n)
+                degrees.append((n, d))
+            return iter(degrees)
+        else:
+            return sum(1 for e in self._edges if e[1] == node_id)
+
+    def out_degree(self, node_id=None):
+        """Return out-degree of node(s)."""
+        if node_id is None:
+            degrees = []
+            for n in self._nodes:
+                d = sum(1 for e in self._edges if e[0] == n)
+                degrees.append((n, d))
+            return iter(degrees)
+        else:
+            return sum(1 for e in self._edges if e[0] == node_id)
+
+
+@pytest.fixture(autouse=True)
+def mock_external_dependencies():
+    """
+    Automatically mock external dependencies for all unit tests.
+    This fixture runs for every test with proper setup/teardown.
+    """
+    # Save original modules
+    original_modules = {}
+    modules_to_mock = [
+        "networkx",
+        "redis",
+        "redis.asyncio",
+        "redis.commands",
+        "redis.commands.search",
+        "redis.commands.search.field",
+        "redis.commands.search.indexDefinition",
+        "redis.commands.search.query",
+        "redis.exceptions",
+        "watchdog",
+        "watchdog.observers",
+        "watchdog.events",
+        "fastmcp",
+    ]
+
+    for module_name in modules_to_mock:
+        if module_name in sys.modules:
+            original_modules[module_name] = sys.modules[module_name]
+
+    # Create NetworkX mock
+    nx_mock = MagicMock()
+    nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
+    nx_mock.MultiDiGraph = MockMultiDiGraph
+    nx_mock.shortest_path = MagicMock(return_value=["node1", "node2", "node3"])
+    sys.modules["networkx"] = nx_mock
+
+    # Create Redis mocks
+    mock_redis = MagicMock()
+    mock_redis.__spec__ = importlib.machinery.ModuleSpec("redis", None)
+    mock_redis.asyncio = MagicMock()
+    mock_redis.asyncio.__spec__ = importlib.machinery.ModuleSpec("redis.asyncio", None)
+    mock_redis.commands = MagicMock()
+    mock_redis.commands.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.commands", None
+    )
+    mock_redis.commands.search = MagicMock()
+    mock_redis.commands.search.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.commands.search", None
+    )
+    mock_redis.commands.search.field = MagicMock()
+    mock_redis.commands.search.field.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.commands.search.field", None
+    )
+    mock_redis.commands.search.indexDefinition = MagicMock()
+    mock_redis.commands.search.indexDefinition.__spec__ = (
+        importlib.machinery.ModuleSpec("redis.commands.search.indexDefinition", None)
+    )
+    mock_redis.commands.search.query = MagicMock()
+    mock_redis.commands.search.query.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.commands.search.query", None
+    )
+    mock_redis.exceptions = MagicMock()
+    mock_redis.exceptions.__spec__ = importlib.machinery.ModuleSpec(
+        "redis.exceptions", None
+    )
+
+    sys.modules["redis"] = mock_redis
+    sys.modules["redis.asyncio"] = mock_redis.asyncio
+    sys.modules["redis.commands"] = mock_redis.commands
+    sys.modules["redis.commands.search"] = mock_redis.commands.search
+    sys.modules["redis.commands.search.field"] = mock_redis.commands.search.field
+    sys.modules["redis.commands.search.indexDefinition"] = (
+        mock_redis.commands.search.indexDefinition
+    )
+    sys.modules["redis.commands.search.query"] = mock_redis.commands.search.query
+    sys.modules["redis.exceptions"] = mock_redis.exceptions
+
+    # Create watchdog mocks
+    watchdog_mock = MagicMock()
+    watchdog_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog", None)
+    watchdog_observers_mock = MagicMock()
+    watchdog_observers_mock.__spec__ = importlib.machinery.ModuleSpec(
+        "watchdog.observers", None
+    )
+    watchdog_events_mock = MagicMock()
+    watchdog_events_mock.__spec__ = importlib.machinery.ModuleSpec(
+        "watchdog.events", None
+    )
+
+    sys.modules["watchdog"] = watchdog_mock
+    sys.modules["watchdog.observers"] = watchdog_observers_mock
+    sys.modules["watchdog.events"] = watchdog_events_mock
+
+    # Create fastmcp mock
+    fastmcp_mock = MagicMock()
+    fastmcp_mock.__spec__ = importlib.machinery.ModuleSpec("fastmcp", None)
+    fastmcp_mock.FastMCP = MagicMock()
+    fastmcp_mock.Context = MagicMock()
+    sys.modules["fastmcp"] = fastmcp_mock
+
+    # Yield control to test
+    yield
+
+    # Cleanup: restore original modules
+    for module_name in modules_to_mock:
+        if module_name in original_modules:
+            sys.modules[module_name] = original_modules[module_name]
+        elif module_name in sys.modules:
+            del sys.modules[module_name]
+
 
 from eol.rag_context.config import RAGConfig, RedisConfig
 from eol.rag_context.document_processor import DocumentProcessor
@@ -96,7 +304,9 @@ def redis_store() -> Mock:
         """Mock scan to return matching keys."""
         if match:
             prefix = match.replace("*", "")
-            matching_keys = [k for k in state.stored_data.keys() if k.startswith(prefix)]
+            matching_keys = [
+                k for k in state.stored_data.keys() if k.startswith(prefix)
+            ]
         else:
             matching_keys = list(state.stored_data.keys())
         # Always return byte-encoded keys in scan results
@@ -152,8 +362,12 @@ def redis_store() -> Mock:
 def mock_embedding_manager(test_config: RAGConfig) -> Mock:
     """Create mock embedding manager."""
     manager = Mock()
-    manager.get_embedding = AsyncMock(return_value=np.random.randn(384).astype(np.float32))
-    manager.get_embeddings = AsyncMock(return_value=np.random.randn(10, 384).astype(np.float32))
+    manager.get_embedding = AsyncMock(
+        return_value=np.random.randn(384).astype(np.float32)
+    )
+    manager.get_embeddings = AsyncMock(
+        return_value=np.random.randn(10, 384).astype(np.float32)
+    )
     manager.clear_cache = Mock()
     manager.get_cache_stats = Mock(return_value={"hits": 0, "misses": 0})
     return manager
@@ -251,7 +465,9 @@ async def indexed_documents(
     from eol.rag_context.indexer import DocumentIndexer
 
     processor = DocumentProcessor(test_config.document, test_config.chunking)
-    indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
+    indexer = DocumentIndexer(
+        test_config, processor, mock_embedding_manager, redis_store
+    )
 
     # Mock some indexed documents
     indexer.stats = {
@@ -323,7 +539,9 @@ async def server(test_config):
 
     server.knowledge_graph.build_from_documents = AsyncMock()
     server.knowledge_graph.query_subgraph = AsyncMock(
-        return_value=Mock(entities=[], relationships=[], central_entities=[], metadata={})
+        return_value=Mock(
+            entities=[], relationships=[], central_entities=[], metadata={}
+        )
     )
     server.knowledge_graph.get_graph_stats = Mock(return_value={"entity_count": 0})
 

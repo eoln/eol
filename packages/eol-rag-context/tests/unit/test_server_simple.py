@@ -3,49 +3,10 @@ Working server tests for achieving coverage on server.py module.
 """
 
 import asyncio
-import importlib.machinery
-import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Mock external dependencies thoroughly with proper __spec__ for Python 3.13
-mock_fastmcp_instance = MagicMock()
-mock_fastmcp_instance.run = AsyncMock()
-mock_fastmcp_class = MagicMock(return_value=mock_fastmcp_instance)
-
-fastmcp_mock = MagicMock()
-fastmcp_mock.__spec__ = importlib.machinery.ModuleSpec("fastmcp", None)
-fastmcp_mock.FastMCP = mock_fastmcp_class
-fastmcp_mock.Context = MagicMock()
-sys.modules["fastmcp"] = fastmcp_mock
-
-redis_mock = MagicMock()
-redis_mock.__spec__ = importlib.machinery.ModuleSpec("redis", None)
-sys.modules["redis"] = redis_mock
-
-redis_asyncio_mock = MagicMock()
-redis_asyncio_mock.__spec__ = importlib.machinery.ModuleSpec("redis.asyncio", None)
-sys.modules["redis.asyncio"] = redis_asyncio_mock
-
-watchdog_mock = MagicMock()
-watchdog_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog", None)
-sys.modules["watchdog"] = watchdog_mock
-
-watchdog_observers_mock = MagicMock()
-watchdog_observers_mock.__spec__ = importlib.machinery.ModuleSpec(
-    "watchdog.observers", None
-)
-sys.modules["watchdog.observers"] = watchdog_observers_mock
-
-watchdog_events_mock = MagicMock()
-watchdog_events_mock.__spec__ = importlib.machinery.ModuleSpec("watchdog.events", None)
-sys.modules["watchdog.events"] = watchdog_events_mock
-
-nx_mock = MagicMock()
-nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
-sys.modules["networkx"] = nx_mock
 
 from eol.rag_context import config, server
 

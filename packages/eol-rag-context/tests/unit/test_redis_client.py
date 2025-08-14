@@ -3,57 +3,11 @@ Improved tests for redis_client to boost coverage from 26% to 60%.
 """
 
 import asyncio
-import importlib.machinery
 import json
-import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import numpy as np
-
-# Mock all Redis dependencies with proper __spec__ for Python 3.13
-mock_redis = MagicMock()
-mock_redis.__spec__ = importlib.machinery.ModuleSpec("redis", None)
-mock_redis.asyncio = MagicMock()
-mock_redis.asyncio.__spec__ = importlib.machinery.ModuleSpec("redis.asyncio", None)
-mock_redis.commands = MagicMock()
-mock_redis.commands.__spec__ = importlib.machinery.ModuleSpec("redis.commands", None)
-mock_redis.commands.search = MagicMock()
-mock_redis.commands.search.__spec__ = importlib.machinery.ModuleSpec(
-    "redis.commands.search", None
-)
-mock_redis.commands.search.field = MagicMock()
-mock_redis.commands.search.field.__spec__ = importlib.machinery.ModuleSpec(
-    "redis.commands.search.field", None
-)
-mock_redis.commands.search.indexDefinition = MagicMock()
-mock_redis.commands.search.indexDefinition.__spec__ = importlib.machinery.ModuleSpec(
-    "redis.commands.search.indexDefinition", None
-)
-mock_redis.commands.search.query = MagicMock()
-mock_redis.commands.search.query.__spec__ = importlib.machinery.ModuleSpec(
-    "redis.commands.search.query", None
-)
-mock_redis.exceptions = MagicMock()
-mock_redis.exceptions.__spec__ = importlib.machinery.ModuleSpec(
-    "redis.exceptions", None
-)
-
-sys.modules["redis"] = mock_redis
-sys.modules["redis.asyncio"] = mock_redis.asyncio
-sys.modules["redis.commands"] = mock_redis.commands
-sys.modules["redis.commands.search"] = mock_redis.commands.search
-sys.modules["redis.commands.search.field"] = mock_redis.commands.search.field
-sys.modules["redis.commands.search.indexDefinition"] = (
-    mock_redis.commands.search.indexDefinition
-)
-sys.modules["redis.commands.search.query"] = mock_redis.commands.search.query
-sys.modules["redis.exceptions"] = mock_redis.exceptions
-
-# Mock knowledge_graph with proper __spec__ for Python 3.13
-nx_mock = MagicMock()
-nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
-sys.modules["networkx"] = nx_mock
 
 from eol.rag_context import config, knowledge_graph, redis_client
 

@@ -2,62 +2,10 @@
 Extra tests for knowledge_graph to achieve 80% coverage.
 """
 
-import importlib.machinery
-import sys
-
-# Mock dependencies with proper __spec__ for Python 3.13
-from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pytest
-
-nx_mock = MagicMock()
-nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
-
-
-# Create a more complete mock for MultiDiGraph
-class MockMultiDiGraph:
-    def __init__(self):
-        self._nodes = {}
-        self._edges = []
-        self.nodes = self._nodes
-
-    def add_node(self, node_id, **attrs):
-        self._nodes[node_id] = attrs
-
-    def add_edge(self, source, target, **attrs):
-        self._edges.append((source, target, attrs))
-
-    def has_node(self, node_id):
-        return node_id in self._nodes
-
-    def has_edge(self, source, target):
-        return any(e[0] == source and e[1] == target for e in self._edges)
-
-    def remove_node(self, node_id):
-        if node_id in self._nodes:
-            del self._nodes[node_id]
-            self._edges = [
-                (s, t, a) for s, t, a in self._edges if s != node_id and t != node_id
-            ]
-
-    def number_of_nodes(self):
-        return len(self._nodes)
-
-    def number_of_edges(self):
-        return len(self._edges)
-
-    def neighbors(self, node_id):
-        return [e[1] for e in self._edges if e[0] == node_id]
-
-    def degree(self, node_id):
-        return sum(1 for e in self._edges if e[0] == node_id or e[1] == node_id)
-
-
-nx_mock.MultiDiGraph = MockMultiDiGraph
-nx_mock.shortest_path = MagicMock(return_value=["node1", "node2", "node3"])
-sys.modules["networkx"] = nx_mock
 
 from eol.rag_context.knowledge_graph import (
     Entity,

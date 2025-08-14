@@ -3,16 +3,9 @@ Tests for MCP server functionality.
 """
 
 import asyncio
-import importlib.machinery
 import json
-import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
-
-# Mock networkx with proper __spec__ for Python 3.13 (needed by server module)
-nx_mock = MagicMock()
-nx_mock.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
-sys.modules["networkx"] = nx_mock
 
 import pytest
 from fastmcp import FastMCP

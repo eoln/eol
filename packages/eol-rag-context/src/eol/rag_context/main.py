@@ -28,9 +28,7 @@ def main():
         print("\nEnvironment variables:")
         print("  REDIS_HOST     Redis host (default: localhost)")
         print("  REDIS_PORT     Redis port (default: 6379)")
-        print(
-            "  EMBEDDING_PROVIDER  Embedding provider (default: sentence-transformers)"
-        )
+        print("  EMBEDDING_PROVIDER  Embedding provider (default: sentence-transformers)")
         sys.exit(0)
 
     # Load configuration

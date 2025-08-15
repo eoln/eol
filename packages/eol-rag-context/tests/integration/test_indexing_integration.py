@@ -93,9 +93,7 @@ class TestIndexingIntegration:
         source_id = "test_source_mgmt"
 
         # Index files
-        result = await indexer_instance.index_folder(
-            temp_test_directory, source_id=source_id
-        )
+        result = await indexer_instance.index_folder(temp_test_directory, source_id=source_id)
 
         assert result.source_id == source_id
 
@@ -199,10 +197,7 @@ class TestIndexingIntegration:
         files = list(temp_test_directory.glob("*.py"))[:3]
 
         # Index files concurrently
-        tasks = [
-            indexer_instance.index_file(f, f"concurrent_{i}")
-            for i, f in enumerate(files)
-        ]
+        tasks = [indexer_instance.index_file(f, f"concurrent_{i}") for i, f in enumerate(files)]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 

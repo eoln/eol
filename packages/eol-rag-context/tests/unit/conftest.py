@@ -6,8 +6,8 @@ import importlib.machinery
 import shutil
 import sys
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import numpy as np
@@ -364,7 +364,7 @@ def mock_embedding_manager(test_config: RAGConfig) -> Mock:
 
 
 @pytest.fixture
-def sample_documents(temp_dir: Path) -> Dict[str, Path]:
+def sample_documents(temp_dir: Path) -> dict[str, Path]:
     """Create sample documents for testing."""
     docs = {}
 

@@ -25,7 +25,6 @@ Example:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from pydantic import ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -67,11 +66,11 @@ class RedisConfig(BaseSettings):
     host: str = Field(default="localhost")
     port: int = Field(default=6379)
     db: int = Field(default=0)
-    password: Optional[str] = Field(default=None)
+    password: str | None = Field(default=None)
     decode_responses: bool = False  # Keep False for binary vector data
     max_connections: int = Field(default=50)
     socket_keepalive: bool = True
-    socket_keepalive_options: Dict[int, int] = Field(
+    socket_keepalive_options: dict[int, int] = Field(
         default_factory=lambda: {}  # Empty dict - will be set platform-specifically if needed
     )
 
@@ -142,7 +141,7 @@ class EmbeddingConfig(BaseSettings):
     normalize: bool = Field(default=True)
 
     # Provider-specific configs
-    openai_api_key: Optional[str] = Field(default=None)
+    openai_api_key: str | None = Field(default=None)
     openai_model: str = Field(default="text-embedding-3-small")
 
     @field_validator("dimension")
@@ -447,7 +446,7 @@ class DocumentConfig(BaseSettings):
     model_config = ConfigDict(env_prefix="DOC_")
 
     # Supported file patterns
-    file_patterns: List[str] = Field(
+    file_patterns: list[str] = Field(
         default_factory=lambda: [
             "*.md",
             "*.txt",
@@ -523,9 +522,7 @@ class RAGConfig(BaseSettings):
 
     """
 
-    model_config = ConfigDict(
-        env_prefix="RAG_", env_file=".env", env_file_encoding="utf-8"
-    )
+    model_config = ConfigDict(env_prefix="RAG_", env_file=".env", env_file_encoding="utf-8")
 
     # Sub-configurations
     redis: RedisConfig = Field(default_factory=RedisConfig)

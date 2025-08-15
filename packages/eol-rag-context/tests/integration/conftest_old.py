@@ -111,9 +111,7 @@ async def embedding_manager():
 @pytest.fixture
 async def document_processor_instance():
     """Create a document processor for testing."""
-    return document_processor.DocumentProcessor(
-        config.DocumentConfig(), config.ChunkingConfig()
-    )
+    return document_processor.DocumentProcessor(config.DocumentConfig(), config.ChunkingConfig())
 
 
 @pytest.fixture
@@ -140,18 +138,14 @@ async def semantic_cache_instance(redis_store, embedding_manager):
 @pytest.fixture
 async def knowledge_graph_instance(redis_store):
     """Create a knowledge graph builder for testing."""
-    kg_config = config.KnowledgeGraphConfig(
-        enabled=True, max_depth=3, similarity_threshold=0.8
-    )
+    kg_config = config.KnowledgeGraphConfig(enabled=True, max_depth=3, similarity_threshold=0.8)
     return knowledge_graph.KnowledgeGraphBuilder(kg_config, redis_store)
 
 
 @pytest.fixture
 async def file_watcher_instance(indexer_instance):
     """Create a file watcher for testing."""
-    watcher_config = config.FileWatcherConfig(
-        enabled=True, watch_interval=1, debounce_seconds=0.5
-    )
+    watcher_config = config.FileWatcherConfig(enabled=True, watch_interval=1, debounce_seconds=0.5)
     return file_watcher.FileWatcher(watcher_config, indexer_instance)
 
 

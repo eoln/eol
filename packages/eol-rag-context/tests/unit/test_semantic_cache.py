@@ -71,9 +71,7 @@ class TestSemanticCache:
     def mock_embedding_manager(self):
         """Create a mock embedding manager."""
         mock = MagicMock()
-        mock.get_embedding = AsyncMock(
-            return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32)
-        )
+        mock.get_embedding = AsyncMock(return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32))
         mock.config = MagicMock()
         mock.config.dimension = 384
         return mock
@@ -101,9 +99,7 @@ class TestSemanticCache:
         assert semantic_cache.similarity_scores == []
 
     @pytest.mark.asyncio
-    async def test_cache_disabled_behavior(
-        self, mock_embedding_manager, mock_redis_store
-    ):
+    async def test_cache_disabled_behavior(self, mock_embedding_manager, mock_redis_store):
         """Test cache behavior when disabled."""
         disabled_config = CacheConfig(enabled=False)
         cache = SemanticCache(disabled_config, mock_embedding_manager, mock_redis_store)
@@ -119,9 +115,7 @@ class TestSemanticCache:
         # No assertion needed - just ensure it doesn't raise an exception
 
     @pytest.mark.asyncio
-    async def test_cache_set_basic(
-        self, semantic_cache, mock_embedding_manager, mock_redis_store
-    ):
+    async def test_cache_set_basic(self, semantic_cache, mock_embedding_manager, mock_redis_store):
         """Test basic cache set operation."""
         mock_redis_store.redis.hset = MagicMock()
         mock_redis_store.redis.expire = MagicMock()
@@ -300,10 +294,7 @@ class TestSemanticCache:
         assert semantic_cache.stats["hits"] == 0
         assert semantic_cache.stats["misses"] == 0
         assert semantic_cache.similarity_scores == []
-        assert (
-            semantic_cache.adaptive_threshold
-            == semantic_cache.config.similarity_threshold
-        )
+        assert semantic_cache.adaptive_threshold == semantic_cache.config.similarity_threshold
 
         # Verify Redis delete was called
         semantic_cache.redis.redis.delete.assert_called_once()
@@ -350,9 +341,7 @@ class TestSemanticCache:
     ):
         """Test that cache eviction is triggered when size limit is reached."""
         # Mock cache size to be at limit
-        semantic_cache._get_cache_size = AsyncMock(
-            return_value=100
-        )  # At max_cache_size
+        semantic_cache._get_cache_size = AsyncMock(return_value=100)  # At max_cache_size
         semantic_cache._evict_oldest = AsyncMock()
 
         mock_redis_store.redis.hset = MagicMock()

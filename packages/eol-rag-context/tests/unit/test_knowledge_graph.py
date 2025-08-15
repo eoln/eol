@@ -131,9 +131,7 @@ class TestKnowledgeSubgraph:
             Entity(id="e2", name="Entity 2", type=EntityType.FUNCTION),
         ]
 
-        relationships = [
-            Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)
-        ]
+        relationships = [Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)]
 
         subgraph = KnowledgeSubgraph(
             entities=entities,
@@ -162,9 +160,7 @@ class TestKnowledgeGraphBuilder:
     def mock_embedding_manager(self):
         """Create mock embedding manager."""
         mock = MagicMock()
-        mock.get_embedding = AsyncMock(
-            return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32)
-        )
+        mock.get_embedding = AsyncMock(return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32))
         return mock
 
     @pytest.fixture
@@ -172,9 +168,7 @@ class TestKnowledgeGraphBuilder:
         """Create KnowledgeGraphBuilder instance."""
         return KnowledgeGraphBuilder(mock_redis_store, mock_embedding_manager)
 
-    def test_builder_initialization(
-        self, kg_builder, mock_redis_store, mock_embedding_manager
-    ):
+    def test_builder_initialization(self, kg_builder, mock_redis_store, mock_embedding_manager):
         """Test KnowledgeGraphBuilder initialization."""
         assert kg_builder.redis == mock_redis_store
         assert kg_builder.embeddings == mock_embedding_manager
@@ -207,12 +201,8 @@ See [documentation](https://example.com/docs) for more details.
         )
 
         # Should extract topics from headers - check in kg_builder.entities
-        topic_entities = [
-            e for e in kg_builder.entities.values() if e.type == EntityType.TOPIC
-        ]
-        assert (
-            len(topic_entities) >= 2
-        )  # Should have "Main Section" and "Authentication Methods"
+        topic_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TOPIC]
+        assert len(topic_entities) >= 2  # Should have "Main Section" and "Authentication Methods"
 
         # Verify specific headers were extracted
         topic_names = [e.name for e in topic_entities]
@@ -220,9 +210,7 @@ See [documentation](https://example.com/docs) for more details.
         assert any("Authentication Methods" in name for name in topic_names)
 
         # Should extract code blocks as API entities
-        api_entities = [
-            e for e in kg_builder.entities.values() if e.type == EntityType.API
-        ]
+        api_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.API]
         assert len(api_entities) >= 1  # Should have the python code block
 
     @pytest.mark.asyncio
@@ -265,9 +253,7 @@ See [documentation](https://example.com/docs) for more details.
         )
 
         # Should extract class entities - check in kg_builder.entities
-        class_entities = [
-            e for e in kg_builder.entities.values() if e.type == EntityType.CLASS
-        ]
+        class_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.CLASS]
         assert len(class_entities) >= 1
         assert any("AuthenticationManager" in e.name for e in class_entities)
 
@@ -288,20 +274,14 @@ See [documentation](https://example.com/docs) for more details.
         """
 
         # Method modifies kg_builder state, doesn't return entities
-        await kg_builder._extract_text_entities(
-            text_content, "doc1", {"source_id": "test_source"}
-        )
+        await kg_builder._extract_text_entities(text_content, "doc1", {"source_id": "test_source"})
 
         # Should extract technology entities - check in kg_builder.entities
-        tech_entities = [
-            e for e in kg_builder.entities.values() if e.type == EntityType.TECHNOLOGY
-        ]
+        tech_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TECHNOLOGY]
         assert len(tech_entities) > 0
 
         # Should extract term entities
-        term_entities = [
-            e for e in kg_builder.entities.values() if e.type == EntityType.TERM
-        ]
+        term_entities = [e for e in kg_builder.entities.values() if e.type == EntityType.TERM]
         assert len(term_entities) > 0
 
     @pytest.mark.asyncio
@@ -309,12 +289,8 @@ See [documentation](https://example.com/docs) for more details.
         """Test semantic relationship building."""
         # Add entities with embeddings
         embedding1 = np.array([0.8, 0.6, 0.1], dtype=np.float32)
-        embedding2 = np.array(
-            [0.9, 0.5, 0.2], dtype=np.float32
-        )  # Similar to embedding1
-        embedding3 = np.array(
-            [0.1, 0.2, 0.9], dtype=np.float32
-        )  # Different from others
+        embedding2 = np.array([0.9, 0.5, 0.2], dtype=np.float32)  # Similar to embedding1
+        embedding3 = np.array([0.1, 0.2, 0.9], dtype=np.float32)  # Different from others
 
         entity1 = Entity(
             id="e1",
@@ -405,9 +381,7 @@ See [documentation](https://example.com/docs) for more details.
         # Mock finding relevant entities
         kg_builder._find_relevant_entities = AsyncMock(return_value=["e1"])
 
-        subgraph = await kg_builder.query_subgraph(
-            "authentication", max_depth=2, max_entities=10
-        )
+        subgraph = await kg_builder.query_subgraph("authentication", max_depth=2, max_entities=10)
 
         assert isinstance(subgraph, KnowledgeSubgraph)
         assert subgraph.central_entities == ["e1"]
@@ -422,9 +396,7 @@ See [documentation](https://example.com/docs) for more details.
 
         kg_builder.entities = {"e1": entity1, "e2": entity2}
 
-        relationship1 = Relationship(
-            source_id="e1", target_id="e2", type=RelationType.CONTAINS
-        )
+        relationship1 = Relationship(source_id="e1", target_id="e2", type=RelationType.CONTAINS)
         kg_builder.relationships = [relationship1]
 
         kg_builder.graph.add_node("e1")
@@ -496,18 +468,12 @@ See [documentation](https://example.com/docs) for more details.
         # Mock entity data with embeddings
         mock_redis_store.redis.hgetall = MagicMock(
             side_effect=[
-                {
-                    b"embedding": np.array(
-                        [0.15, 0.25, 0.35], dtype=np.float32
-                    ).tobytes()
-                },
+                {b"embedding": np.array([0.15, 0.25, 0.35], dtype=np.float32).tobytes()},
                 {b"embedding": np.array([0.8, 0.1, 0.1], dtype=np.float32).tobytes()},
             ]
         )
 
-        relevant_entities = await kg_builder._find_relevant_entities(
-            query_embedding, k=2
-        )
+        relevant_entities = await kg_builder._find_relevant_entities(query_embedding, k=2)
 
         assert isinstance(relevant_entities, list)
         assert len(relevant_entities) <= 2

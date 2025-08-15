@@ -188,9 +188,7 @@ async def embedding_manager():
 @pytest.fixture
 async def document_processor_instance():
     """Create a document processor for testing."""
-    return document_processor.DocumentProcessor(
-        config.DocumentConfig(), config.ChunkingConfig()
-    )
+    return document_processor.DocumentProcessor(config.DocumentConfig(), config.ChunkingConfig())
 
 
 @pytest.fixture

@@ -51,7 +51,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -102,7 +102,7 @@ class CachedQuery:
     embedding: np.ndarray
     timestamp: float = field(default_factory=time.time)
     hit_count: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class SemanticCache:
@@ -202,7 +202,7 @@ class SemanticCache:
         }
 
         # Adaptive threshold optimization
-        self.similarity_scores: List[float] = []
+        self.similarity_scores: list[float] = []
         self.adaptive_threshold = cache_config.similarity_threshold
 
     async def initialize(self) -> None:
@@ -270,7 +270,7 @@ class SemanticCache:
             )
             logger.info("Created cache index")
 
-    async def get(self, query: str) -> Optional[str]:
+    async def get(self, query: str) -> str | None:
         """Retrieve cached response for semantically similar query.
 
         Searches the cache for queries semantically similar to the input query
@@ -351,7 +351,7 @@ class SemanticCache:
         return None
 
     async def set(
-        self, query: str, response: str, metadata: Optional[Dict[str, Any]] = None
+        self, query: str, response: str, metadata: dict[str, Any] | None = None
     ) -> None:
         """Store query-response pair in cache with automatic size management.
 
@@ -423,7 +423,7 @@ class SemanticCache:
 
     async def _search_similar(
         self, query_embedding: np.ndarray, k: int = 5
-    ) -> List[Tuple[str, float, Dict[str, Any]]]:
+    ) -> list[tuple[str, float, dict[str, Any]]]:
         """Search for cached queries similar to the input embedding.
 
         Performs vector similarity search against the cache index to find
@@ -465,17 +465,13 @@ class SemanticCache:
             output = []
             for doc in results.docs:
                 doc_id = doc.id.split(":")[-1]
-                similarity = (
-                    1.0 - float(doc.similarity) if hasattr(doc, "similarity") else 0.0
-                )
+                similarity = 1.0 - float(doc.similarity) if hasattr(doc, "similarity") else 0.0
 
                 data = {
                     "query": doc.query if hasattr(doc, "query") else "",
                     "response": doc.response if hasattr(doc, "response") else "",
                     "hit_count": int(doc.hit_count) if hasattr(doc, "hit_count") else 0,
-                    "timestamp": (
-                        float(doc.timestamp) if hasattr(doc, "timestamp") else 0
-                    ),
+                    "timestamp": (float(doc.timestamp) if hasattr(doc, "timestamp") else 0),
                 }
 
                 output.append((doc_id, similarity, data))
@@ -603,7 +599,7 @@ class SemanticCache:
                     f"(hit rate: {current_hit_rate:.3f})"
                 )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive cache performance statistics.
 
         Returns detailed statistics about cache performance, hit rates,
@@ -692,7 +688,7 @@ class SemanticCache:
 
         logger.info(f"Cleared {deleted} cache entries")
 
-    async def optimize(self) -> Dict[str, Any]:
+    async def optimize(self) -> dict[str, Any]:
         """Analyze cache performance and provide optimization recommendations.
 
         Performs comprehensive analysis of cache performance including similarity
@@ -757,9 +753,7 @@ class SemanticCache:
             else:
                 # General case
                 target_percentile = (1 - self.config.target_hit_rate) * 100
-                recommended_threshold = np.percentile(
-                    self.similarity_scores, target_percentile
-                )
+                recommended_threshold = np.percentile(self.similarity_scores, target_percentile)
 
             report["recommended_threshold"] = float(recommended_threshold)
 

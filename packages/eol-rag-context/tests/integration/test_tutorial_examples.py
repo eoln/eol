@@ -40,9 +40,7 @@ class TestTutorialExamples:
         assert server2.redis is not None
 
     @pytest.mark.asyncio
-    async def test_indexing_single_file(
-        self, redis_store, indexer_instance, temp_test_directory
-    ):
+    async def test_indexing_single_file(self, redis_store, indexer_instance, temp_test_directory):
         """Test: Index a Single File (from Indexing Documents section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store  # Use real Redis
@@ -61,9 +59,7 @@ class TestTutorialExamples:
         print(f"Indexed {result.get('total_chunks', 0)} chunks from {test_file}")
 
     @pytest.mark.asyncio
-    async def test_indexing_directory(
-        self, redis_store, indexer_instance, temp_test_directory
-    ):
+    async def test_indexing_directory(self, redis_store, indexer_instance, temp_test_directory):
         """Test: Index a Directory (from Indexing Documents section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -71,9 +67,7 @@ class TestTutorialExamples:
         server._initialized = True
 
         # Index entire directory using indexer directly
-        result = await indexer_instance.index_folder(
-            str(temp_test_directory), recursive=True
-        )
+        result = await indexer_instance.index_folder(str(temp_test_directory), recursive=True)
 
         # Convert IndexedSource to dict for compatibility with test expectations
         result_dict = {
@@ -93,9 +87,7 @@ class TestTutorialExamples:
         print(f"Source ID: {result_dict['source_id']}")
 
     @pytest.mark.asyncio
-    async def test_watch_for_changes(
-        self, redis_store, file_watcher_instance, temp_test_directory
-    ):
+    async def test_watch_for_changes(self, redis_store, file_watcher_instance, temp_test_directory):
         """Test: Watch for Changes (from Indexing Documents section) with real Redis."""
         if file_watcher_instance is None:
             pytest.skip("File watcher not available for testing")
@@ -224,9 +216,7 @@ class TestTutorialExamples:
 
         # Query the knowledge graph using graph instance
         # Note: KnowledgeGraphBuilder uses query_subgraph, not query_entity
-        graph = await knowledge_graph_instance.query_subgraph(
-            query="TestClass", max_depth=2
-        )
+        graph = await knowledge_graph_instance.query_subgraph(query="TestClass", max_depth=2)
 
         assert hasattr(graph, "entities")
         assert hasattr(graph, "relationships")
@@ -269,9 +259,7 @@ class TestTutorialExamples:
         if cached_response1 is None:
             # Perform vector search
             embedding1 = await embedding_manager.get_embedding(query1)
-            results1 = await redis_store.vector_search(
-                embedding1, hierarchy_level=3, k=5
-            )
+            results1 = await redis_store.vector_search(embedding1, hierarchy_level=3, k=5)
             # Store formatted response in cache
             response1 = f"Found {len(results1)} results for authentication"
             await semantic_cache_instance.set(query1, response1)
@@ -287,9 +275,7 @@ class TestTutorialExamples:
         if cached_response2 is None:
             # Perform vector search
             embedding2 = await embedding_manager.get_embedding(query2)
-            results2 = await redis_store.vector_search(
-                embedding2, hierarchy_level=3, k=5
-            )
+            results2 = await redis_store.vector_search(embedding2, hierarchy_level=3, k=5)
             # Store formatted response in cache
             response2 = f"Found {len(results2)} results for authentication"
             await semantic_cache_instance.set(query2, response2)
@@ -361,8 +347,7 @@ class TestTutorialExamples:
             )
             # Convert tuple results to dict format
             context = [
-                {"id": r[0], "score": r[1], "content": r[2].get("content", "")}
-                for r in results
+                {"id": r[0], "score": r[1], "content": r[2].get("content", "")} for r in results
             ]
 
             # Build prompt for LLM
@@ -437,9 +422,7 @@ class TestTutorialExamples:
         assert isinstance(docs, dict)
 
     @pytest.mark.asyncio
-    async def test_batch_operations(
-        self, redis_store, indexer_instance, temp_test_directory
-    ):
+    async def test_batch_operations(self, redis_store, indexer_instance, temp_test_directory):
         """Test: Batch Operations for Performance (from Best Practices section) with real Redis."""
         server = EOLRAGContextServer()
         server.redis = redis_store
@@ -614,9 +597,7 @@ class TestTutorialExamples:
 
             # 4. Watch for changes (skip if watcher not available)
             if file_watcher_instance is not None:
-                source_id = await file_watcher_instance.watch(
-                    project_path, recursive=True
-                )
+                source_id = await file_watcher_instance.watch(project_path, recursive=True)
 
                 # Clean up watch
                 await file_watcher_instance.unwatch(source_id)

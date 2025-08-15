@@ -4,7 +4,7 @@ import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
@@ -27,9 +27,7 @@ class IndexDirectoryRequest(BaseModel):
 
     path: str = Field(description="Directory path to index")
     recursive: bool = Field(default=True, description="Index subdirectories")
-    file_patterns: Optional[List[str]] = Field(
-        default=None, description="File patterns to index"
-    )
+    file_patterns: list[str] | None = Field(default=None, description="File patterns to index")
     watch: bool = Field(default=False, description="Watch for changes after indexing")
 
 
@@ -39,13 +37,11 @@ class SearchContextRequest(BaseModel):
     query: str = Field(description="Search query")
     max_results: int = Field(default=10, description="Maximum results to return")
     min_relevance: float = Field(default=0.7, description="Minimum relevance score")
-    hierarchy_level: Optional[int] = Field(
+    hierarchy_level: int | None = Field(
         default=None,
         description="Search at specific hierarchy level (1=concept, 2=section, 3=chunk)",
     )
-    source_filter: Optional[str] = Field(
-        default=None, description="Filter by source ID"
-    )
+    source_filter: str | None = Field(default=None, description="Filter by source ID")
 
 
 class QueryKnowledgeGraphRequest(BaseModel):
@@ -60,9 +56,7 @@ class OptimizeContextRequest(BaseModel):
     """Request to optimize context for LLM."""
 
     query: str = Field(description="User query")
-    current_context: Optional[str] = Field(
-        default=None, description="Current context to optimize"
-    )
+    current_context: str | None = Field(default=None, description="Current context to optimize")
     max_tokens: int = Field(default=32000, description="Maximum context tokens")
     strategy: str = Field(
         default="hierarchical",
@@ -75,9 +69,7 @@ class WatchDirectoryRequest(BaseModel):
 
     path: str = Field(description="Directory path to watch")
     recursive: bool = Field(default=True, description="Watch subdirectories")
-    file_patterns: Optional[List[str]] = Field(
-        default=None, description="File patterns to watch"
-    )
+    file_patterns: list[str] | None = Field(default=None, description="File patterns to watch")
 
 
 class EOLRAGContextServer:
@@ -133,20 +125,18 @@ class EOLRAGContextServer:
 
     """
 
-    def __init__(self, config: Optional[RAGConfig] = None):
+    def __init__(self, config: RAGConfig | None = None):
         self.config = config or RAGConfig()
-        self.mcp = FastMCP(
-            name=self.config.server_name, version=self.config.server_version
-        )
+        self.mcp = FastMCP(name=self.config.server_name, version=self.config.server_version)
 
         # Core components
-        self.redis_store: Optional[RedisVectorStore] = None
-        self.embedding_manager: Optional[EmbeddingManager] = None
-        self.document_processor: Optional[DocumentProcessor] = None
-        self.indexer: Optional[DocumentIndexer] = None
-        self.semantic_cache: Optional[SemanticCache] = None
-        self.knowledge_graph: Optional[KnowledgeGraphBuilder] = None
-        self.file_watcher: Optional[FileWatcher] = None
+        self.redis_store: RedisVectorStore | None = None
+        self.embedding_manager: EmbeddingManager | None = None
+        self.document_processor: DocumentProcessor | None = None
+        self.indexer: DocumentIndexer | None = None
+        self.semantic_cache: SemanticCache | None = None
+        self.knowledge_graph: KnowledgeGraphBuilder | None = None
+        self.file_watcher: FileWatcher | None = None
 
         # Setup MCP handlers
         self._setup_resources()
@@ -182,9 +172,7 @@ class EOLRAGContextServer:
             Server ready for indexing and search
 
         """
-        logger.info(
-            f"Initializing {self.config.server_name} v{self.config.server_version}"
-        )
+        logger.info(f"Initializing {self.config.server_name} v{self.config.server_version}")
 
         # Initialize Redis
         self.redis_store = RedisVectorStore(self.config.redis, self.config.index)
@@ -199,9 +187,7 @@ class EOLRAGContextServer:
         self.redis_store.create_hierarchical_indexes(self.config.embedding.dimension)
 
         # Initialize processors
-        self.document_processor = DocumentProcessor(
-            self.config.document, self.config.chunking
-        )
+        self.document_processor = DocumentProcessor(self.config.document, self.config.chunking)
 
         self.indexer = DocumentIndexer(
             self.config,
@@ -217,14 +203,10 @@ class EOLRAGContextServer:
         await self.semantic_cache.initialize()
 
         # Initialize knowledge graph
-        self.knowledge_graph = KnowledgeGraphBuilder(
-            self.redis_store, self.embedding_manager
-        )
+        self.knowledge_graph = KnowledgeGraphBuilder(self.redis_store, self.embedding_manager)
 
         # Initialize file watcher
-        self.file_watcher = FileWatcher(
-            self.indexer, self.knowledge_graph, debounce_seconds=2.0
-        )
+        self.file_watcher = FileWatcher(self.indexer, self.knowledge_graph, debounce_seconds=2.0)
         await self.file_watcher.start()
 
         logger.info("Server initialization complete")
@@ -283,7 +265,7 @@ class EOLRAGContextServer:
         """
 
         @self.mcp.resource("context://query/{query}")
-        async def get_context_for_query(query: str) -> Dict[str, Any]:
+        async def get_context_for_query(query: str) -> dict[str, Any]:
             """Get optimized context for a query using semantic cache and hierarchical
             search.
 
@@ -335,7 +317,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.resource("context://sources")
-        async def list_indexed_sources() -> List[Dict[str, Any]]:
+        async def list_indexed_sources() -> list[dict[str, Any]]:
             """List all indexed sources with their metadata and statistics.
 
             Returns:
@@ -362,7 +344,7 @@ class EOLRAGContextServer:
             ]
 
         @self.mcp.resource("context://stats")
-        async def get_statistics() -> Dict[str, Any]:
+        async def get_statistics() -> dict[str, Any]:
             """Get comprehensive server statistics from all components.
 
             Returns:
@@ -383,7 +365,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.resource("context://knowledge-graph/stats")
-        async def get_knowledge_graph_stats() -> Dict[str, Any]:
+        async def get_knowledge_graph_stats() -> dict[str, Any]:
             """Get detailed knowledge graph statistics and metrics.
 
             Returns:
@@ -422,9 +404,7 @@ class EOLRAGContextServer:
         """
 
         @self.mcp.tool()
-        async def index_directory(
-            request: IndexDirectoryRequest, ctx: Context
-        ) -> Dict[str, Any]:
+        async def index_directory(request: IndexDirectoryRequest, ctx: Context) -> dict[str, Any]:
             """Index all documents in a directory with hierarchical organization.
 
             Processes all supported files in the specified directory, creating embeddings
@@ -479,7 +459,7 @@ class EOLRAGContextServer:
         @self.mcp.tool()
         async def search_context(
             request: SearchContextRequest, ctx: Context
-        ) -> List[Dict[str, Any]]:
+        ) -> list[dict[str, Any]]:
             """Search for relevant context using vector similarity.
 
             Performs vector similarity search against indexed documents, supporting
@@ -513,9 +493,7 @@ class EOLRAGContextServer:
                     hierarchy_level=request.hierarchy_level,
                     k=request.max_results,
                     filters=(
-                        {"source_id": request.source_filter}
-                        if request.source_filter
-                        else None
+                        {"source_id": request.source_filter} if request.source_filter else None
                     ),
                 )
 
@@ -535,16 +513,12 @@ class EOLRAGContextServer:
                     query_embedding, max_chunks=request.max_results
                 )
 
-                return [
-                    result
-                    for result in results
-                    if result["score"] >= request.min_relevance
-                ]
+                return [result for result in results if result["score"] >= request.min_relevance]
 
         @self.mcp.tool()
         async def query_knowledge_graph(
             request: QueryKnowledgeGraphRequest, ctx: Context
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Query the knowledge graph for entity relationships.
 
             Searches the knowledge graph for entities matching the query and returns
@@ -599,9 +573,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def optimize_context(
-            request: OptimizeContextRequest, ctx: Context
-        ) -> Dict[str, Any]:
+        async def optimize_context(request: OptimizeContextRequest, ctx: Context) -> dict[str, Any]:
             """Optimize context for LLM consumption following best practices.
 
             Retrieves relevant context and formats it optimally for LLM processing,
@@ -666,9 +638,7 @@ class EOLRAGContextServer:
             # Simple approximation: ~4 chars per token
             max_chars = request.max_tokens * 4
             if len(optimized_context) > max_chars:
-                optimized_context = (
-                    optimized_context[:max_chars] + "\n\n[Context truncated]"
-                )
+                optimized_context = optimized_context[:max_chars] + "\n\n[Context truncated]"
 
             return {
                 "query": request.query,
@@ -679,9 +649,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def watch_directory(
-            request: WatchDirectoryRequest, ctx: Context
-        ) -> Dict[str, Any]:
+        async def watch_directory(request: WatchDirectoryRequest, ctx: Context) -> dict[str, Any]:
             """Start watching a directory for file changes.
 
             Begins monitoring the specified directory for file changes, automatically
@@ -718,7 +686,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def unwatch_directory(source_id: str, ctx: Context) -> Dict[str, Any]:
+        async def unwatch_directory(source_id: str, ctx: Context) -> dict[str, Any]:
             """Stop watching a directory for changes.
 
             Stops the file watcher for the specified source, preventing further
@@ -744,7 +712,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def clear_cache(ctx: Context) -> Dict[str, Any]:
+        async def clear_cache(ctx: Context) -> dict[str, Any]:
             """Clear all caches to force fresh data retrieval.
 
             Clears both semantic cache and embedding cache, forcing all subsequent
@@ -773,7 +741,7 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def remove_source(source_id: str, ctx: Context) -> Dict[str, Any]:
+        async def remove_source(source_id: str, ctx: Context) -> dict[str, Any]:
             """Remove an indexed source and all its data.
 
             Completely removes all indexed data for the specified source,
@@ -925,7 +893,7 @@ Output Format:
 
         # API compatibility methods for tests and external usage
 
-    async def index_directory(self, path: str, **kwargs) -> Dict[str, Any]:
+    async def index_directory(self, path: str, **kwargs) -> dict[str, Any]:
         """Index all documents in a directory with hierarchical organization.
 
         This method recursively processes all supported files in the specified directory,
@@ -1006,7 +974,7 @@ Output Format:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    async def index_file(self, path: str, **kwargs) -> Dict[str, Any]:
+    async def index_file(self, path: str, **kwargs) -> dict[str, Any]:
         """Index a single file with dict return for API compatibility.
 
         Processes a single file, extracting content, creating chunks, generating
@@ -1046,7 +1014,7 @@ Output Format:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    async def watch_directory(self, path: str, **kwargs) -> Dict[str, Any]:
+    async def watch_directory(self, path: str, **kwargs) -> dict[str, Any]:
         """Watch a directory for changes with dict return for API compatibility.
 
         Starts monitoring the specified directory for file changes, automatically

@@ -6,7 +6,7 @@ import hashlib
 # from sentence_transformers import SentenceTransformer  # Optional dependency
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 class EmbeddingProvider:
     """Base class for embedding providers."""
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: str | list[str]) -> np.ndarray:
         """Generate embeddings for text(s)."""
         raise NotImplementedError
 
-    async def embed_batch(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
+    async def embed_batch(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
         """Generate embeddings in batches."""
         raise NotImplementedError
 
@@ -41,7 +41,7 @@ class SentenceTransformerProvider(EmbeddingProvider):
             self.model = None
         self.executor = ThreadPoolExecutor(max_workers=4)
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: str | list[str]) -> np.ndarray:
         """Generate embeddings using Sentence Transformers."""
         if isinstance(texts, str):
             texts = [texts]
@@ -62,9 +62,7 @@ class SentenceTransformerProvider(EmbeddingProvider):
 
         return embeddings
 
-    async def embed_batch(
-        self, texts: List[str], batch_size: Optional[int] = None
-    ) -> np.ndarray:
+    async def embed_batch(self, texts: list[str], batch_size: int | None = None) -> np.ndarray:
         """Generate embeddings in batches."""
         batch_size = batch_size or self.config.batch_size
 
@@ -90,17 +88,15 @@ class OpenAIProvider(EmbeddingProvider):
             from openai import AsyncOpenAI
 
             self.client = AsyncOpenAI(api_key=config.openai_api_key)
-        except ImportError:
-            raise ImportError("openai package required for OpenAI embeddings")
+        except ImportError as e:
+            raise ImportError("openai package required for OpenAI embeddings") from e
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: str | list[str]) -> np.ndarray:
         """Generate embeddings using OpenAI API."""
         if isinstance(texts, str):
             texts = [texts]
 
-        response = await self.client.embeddings.create(
-            model=self.config.openai_model, input=texts
-        )
+        response = await self.client.embeddings.create(model=self.config.openai_model, input=texts)
 
         embeddings = np.array([e.embedding for e in response.data])
 
@@ -111,9 +107,7 @@ class OpenAIProvider(EmbeddingProvider):
 
         return embeddings
 
-    async def embed_batch(
-        self, texts: List[str], batch_size: Optional[int] = None
-    ) -> np.ndarray:
+    async def embed_batch(self, texts: list[str], batch_size: int | None = None) -> np.ndarray:
         """Generate embeddings in batches."""
         batch_size = batch_size or self.config.batch_size
 
@@ -182,9 +176,7 @@ class EmbeddingManager:
 
         return embedding
 
-    async def get_embeddings(
-        self, texts: List[str], use_cache: bool = True
-    ) -> np.ndarray:
+    async def get_embeddings(self, texts: list[str], use_cache: bool = True) -> np.ndarray:
         """Get embeddings for multiple texts with caching."""
         embeddings = []
         uncached_texts = []
@@ -215,21 +207,19 @@ class EmbeddingManager:
 
             # Cache the new embeddings
             if use_cache and self.redis:
-                for text, embedding in zip(uncached_texts, new_embeddings):
+                for text, embedding in zip(uncached_texts, new_embeddings, strict=False):
                     cache_key = self._cache_key(text)
-                    await self.redis.setex(
-                        cache_key, 3600, embedding.astype(np.float32).tobytes()
-                    )
+                    await self.redis.setex(cache_key, 3600, embedding.astype(np.float32).tobytes())
 
             # Add to results
-            for idx, embedding in zip(uncached_indices, new_embeddings):
+            for idx, embedding in zip(uncached_indices, new_embeddings, strict=False):
                 embeddings.append((idx, embedding))
 
         # Sort by original index and extract embeddings
         embeddings.sort(key=lambda x: x[0])
         return np.vstack([e[1] for e in embeddings])
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         stats = self.cache_stats.copy()
         if stats["total"] > 0:

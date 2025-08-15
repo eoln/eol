@@ -280,14 +280,10 @@ export { Calculator, processData, CONFIG };
 
         for ext, expected_lang in test_cases:
             lang = document_processor_instance._detect_language(ext)
-            assert (
-                lang == expected_lang
-            ), f"Failed for {ext}: expected {expected_lang}, got {lang}"
+            assert lang == expected_lang, f"Failed for {ext}: expected {expected_lang}, got {lang}"
 
     @pytest.mark.asyncio
-    async def test_concurrent_processing(
-        self, document_processor_instance, temp_test_directory
-    ):
+    async def test_concurrent_processing(self, document_processor_instance, temp_test_directory):
         """Test concurrent processing of multiple files."""
         import asyncio
 
@@ -320,9 +316,7 @@ export { Calculator, processData, CONFIG };
     async def test_error_handling(self, document_processor_instance):
         """Test error handling for invalid files."""
         # Test non-existent file
-        result = await document_processor_instance.process_file(
-            Path("/nonexistent/file.txt")
-        )
+        result = await document_processor_instance.process_file(Path("/nonexistent/file.txt"))
         assert result is None
 
         # Test empty file

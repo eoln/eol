@@ -76,7 +76,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiofiles
 import magic
@@ -142,9 +142,9 @@ class ProcessedDocument:
     file_path: Path
     content: str
     doc_type: str  # markdown, code, pdf, docx, text, json
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    chunks: List[Dict[str, Any]] = field(default_factory=list)
-    language: Optional[str] = None  # For code files
+    metadata: dict[str, Any] = field(default_factory=dict)
+    chunks: list[dict[str, Any]] = field(default_factory=list)
+    language: str | None = None  # For code files
 
 
 class DocumentProcessor:
@@ -226,7 +226,7 @@ class DocumentProcessor:
         self.mime = magic.Magic(mime=True)
         self.parsers = self._init_code_parsers()
 
-    def _init_code_parsers(self) -> Dict[str, Parser]:
+    def _init_code_parsers(self) -> dict[str, Parser]:
         """Initialize tree-sitter parsers for code."""
         parsers = {}
 
@@ -272,7 +272,7 @@ class DocumentProcessor:
 
         return parsers
 
-    async def process_file(self, file_path: Path) -> Optional[ProcessedDocument]:
+    async def process_file(self, file_path: Path) -> ProcessedDocument | None:
         """Process a single file using format-specific extraction and chunking
         strategies.
 
@@ -393,7 +393,7 @@ class DocumentProcessor:
             ProcessedDocument with Markdown-specific structure and chunking.
 
         """
-        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
             content = await f.read()
 
         # Parse markdown
@@ -420,7 +420,7 @@ class DocumentProcessor:
 
         return doc
 
-    def _extract_headers(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    def _extract_headers(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
         """Extract header structure from HTML."""
         headers = []
         for h in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
@@ -434,7 +434,7 @@ class DocumentProcessor:
 
     def _chunk_markdown_by_headers(
         self, content: str, source_path: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Chunk markdown by header structure."""
         chunks = []
         lines = content.split("\n")
@@ -514,9 +514,7 @@ class DocumentProcessor:
 
         return doc
 
-    def _chunk_pdf_content(
-        self, pages: List[str], source_path: str = ""
-    ) -> List[Dict[str, Any]]:
+    def _chunk_pdf_content(self, pages: list[str], source_path: str = "") -> list[dict[str, Any]]:
         """Chunk PDF content intelligently."""
         chunks = []
 
@@ -551,9 +549,7 @@ class DocumentProcessor:
                 "title": doc.core_properties.title or "",
                 "author": doc.core_properties.author or "",
                 "created": (
-                    str(doc.core_properties.created)
-                    if doc.core_properties.created
-                    else ""
+                    str(doc.core_properties.created) if doc.core_properties.created else ""
                 ),
             }
 
@@ -605,7 +601,7 @@ class DocumentProcessor:
             Without AST support, falls back to line-based chunking.
 
         """
-        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
             content = await f.read()
 
         suffix = file_path.suffix.lower()
@@ -656,7 +652,7 @@ class DocumentProcessor:
 
     def _chunk_code_by_ast(
         self, content: str, parser: Parser, language: str, source_path: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Chunk code using AST to preserve function/class boundaries."""
         chunks = []
         tree = parser.parse(bytes(content, "utf8"))
@@ -717,7 +713,7 @@ class DocumentProcessor:
 
     def _chunk_code_by_lines(
         self, content: str, language: str, source_path: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Chunk code by lines with overlap."""
         chunks = []
         lines = content.splitlines()
@@ -744,7 +740,7 @@ class DocumentProcessor:
 
     async def _process_structured(self, file_path: Path) -> ProcessedDocument:
         """Process JSON/YAML files."""
-        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
             content = await f.read()
 
         suffix = file_path.suffix.lower()
@@ -779,16 +775,14 @@ class DocumentProcessor:
 
     def _chunk_structured_data(
         self, data: Any, format: str, source_path: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Chunk structured data intelligently."""
         chunks = []
 
         if isinstance(data, dict):
             for key, value in data.items():
                 chunk_content = (
-                    json.dumps({key: value}, indent=2)
-                    if format == "json"
-                    else str({key: value})
+                    json.dumps({key: value}, indent=2) if format == "json" else str({key: value})
                 )
                 chunks.append(
                     self._create_chunk(
@@ -802,9 +796,7 @@ class DocumentProcessor:
                 )
         elif isinstance(data, list):
             for i, item in enumerate(data):
-                chunk_content = (
-                    json.dumps(item, indent=2) if format == "json" else str(item)
-                )
+                chunk_content = json.dumps(item, indent=2) if format == "json" else str(item)
                 chunks.append(
                     self._create_chunk(
                         content=chunk_content,
@@ -831,7 +823,7 @@ class DocumentProcessor:
 
     async def _process_text(self, file_path: Path) -> ProcessedDocument:
         """Process plain text files."""
-        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
             content = await f.read()
 
         doc = ProcessedDocument(
@@ -851,7 +843,7 @@ class DocumentProcessor:
 
     def _create_chunk(
         self, content: str, chunk_type: str = "text", chunk_index: int = 0, **metadata
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a chunk with consistent metadata structure."""
         return {
             "content": content,
@@ -865,7 +857,7 @@ class DocumentProcessor:
             },
         }
 
-    def _chunk_text(self, content: str, source_path: str = "") -> List[Dict[str, Any]]:
+    def _chunk_text(self, content: str, source_path: str = "") -> list[dict[str, Any]]:
         """Chunk plain text using semantic boundaries and intelligent splitting.
 
         Implements sophisticated text chunking that respects paragraph boundaries,
@@ -933,8 +925,7 @@ class DocumentProcessor:
                             last_space = chunk_content.rfind(" ")
                             if (
                                 last_space > 0
-                                and last_space
-                                > start + self.chunk_config.max_chunk_size // 2
+                                and last_space > start + self.chunk_config.max_chunk_size // 2
                             ):
                                 chunk_content = para_text[start : start + last_space]
                                 end = start + last_space
@@ -953,9 +944,7 @@ class DocumentProcessor:
 
                         # Always advance start to avoid infinite loop
                         start = (
-                            end - self.chunk_config.chunk_overlap
-                            if end < len(para_text)
-                            else end
+                            end - self.chunk_config.chunk_overlap if end < len(para_text) else end
                         )
 
                         # Ensure we make progress even if overlap is large
@@ -992,9 +981,7 @@ class DocumentProcessor:
                             chunk_content = final_content[start:end]
                             last_space = chunk_content.rfind(" ")
                             if last_space > 0:
-                                chunk_content = final_content[
-                                    start : start + last_space
-                                ]
+                                chunk_content = final_content[start : start + last_space]
                                 end = start + last_space
 
                         if chunk_content.strip():
@@ -1045,7 +1032,7 @@ class DocumentProcessor:
 
         return chunks
 
-    async def process_directory(self, directory: Path) -> List[ProcessedDocument]:
+    async def process_directory(self, directory: Path) -> list[ProcessedDocument]:
         """Process all matching files in a directory tree with parallel processing.
 
         Recursively processes all files in the directory that match configured

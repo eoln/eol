@@ -53,9 +53,7 @@ class TestFolderScanner:
         folder = sample_documents["markdown"].parent
 
         # Only Python files
-        files = await scanner.scan_folder(
-            folder, recursive=False, file_patterns=["*.py"]
-        )
+        files = await scanner.scan_folder(folder, recursive=False, file_patterns=["*.py"])
 
         assert len(files) == 1
         assert files[0].suffix == ".py"
@@ -93,9 +91,7 @@ class TestDocumentIndexer:
         from eol.rag_context.document_processor import DocumentProcessor
 
         processor = DocumentProcessor(test_config.document, test_config.chunking)
-        indexer = DocumentIndexer(
-            test_config, processor, mock_embedding_manager, redis_store
-        )
+        indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
 
         folder = sample_documents["markdown"].parent
         result = await indexer.index_folder(folder, recursive=False)
@@ -140,9 +136,7 @@ class TestDocumentIndexer:
         from eol.rag_context.document_processor import DocumentProcessor
 
         processor = DocumentProcessor(test_config.document, test_config.chunking)
-        indexer = DocumentIndexer(
-            test_config, processor, mock_embedding_manager, redis_store
-        )
+        indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
 
         # Index a folder (not just a file) to create a source
         folder = sample_documents["python"].parent
@@ -167,9 +161,7 @@ class TestDocumentIndexer:
         from eol.rag_context.document_processor import DocumentProcessor
 
         processor = DocumentProcessor(test_config.document, test_config.chunking)
-        indexer = DocumentIndexer(
-            test_config, processor, mock_embedding_manager, redis_store
-        )
+        indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
 
         # Index folder
         folder = sample_documents["markdown"].parent

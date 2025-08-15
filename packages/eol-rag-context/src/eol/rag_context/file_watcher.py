@@ -63,11 +63,12 @@ import asyncio
 import hashlib
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 try:
     from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -149,8 +150,8 @@ class FileChange:
     path: Path
     change_type: ChangeType
     timestamp: float = field(default_factory=time.time)
-    old_path: Optional[Path] = None  # For moves/renames
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    old_path: Path | None = None  # For moves/renames
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -186,7 +187,7 @@ class WatchedSource:
     path: Path
     source_id: str
     recursive: bool = True
-    file_patterns: List[str] = field(default_factory=list)
+    file_patterns: list[str] = field(default_factory=list)
     last_scan: float = field(default_factory=time.time)
     change_count: int = 0
 
@@ -226,7 +227,7 @@ class FileChangeHandler(FileSystemEventHandler):
         watcher: "FileWatcher",
         source_path: Path,
         source_id: str,
-        file_patterns: List[str],
+        file_patterns: list[str],
     ):
         """Initialize file change handler for a specific watched directory.
 
@@ -406,7 +407,7 @@ class FileWatcher:
     def __init__(
         self,
         indexer: DocumentIndexer,
-        graph_builder: Optional[KnowledgeGraphBuilder] = None,
+        graph_builder: KnowledgeGraphBuilder | None = None,
         debounce_seconds: float = 2.0,
         batch_size: int = 10,
         use_polling: bool = False,
@@ -433,21 +434,21 @@ class FileWatcher:
         self.use_polling = use_polling or not WATCHDOG_AVAILABLE
 
         # Registry of watched source directories
-        self.watched_sources: Dict[str, WatchedSource] = {}
+        self.watched_sources: dict[str, WatchedSource] = {}
 
         # Native file system monitoring (watchdog)
-        self.observer: Optional[Observer] = None
+        self.observer: Observer | None = None
         if WATCHDOG_AVAILABLE and not use_polling:
             self.observer = Observer()
 
         # Change processing pipeline
-        self.pending_changes: Dict[str, FileChange] = {}
-        self.change_history: List[FileChange] = []
+        self.pending_changes: dict[str, FileChange] = {}
+        self.change_history: list[FileChange] = []
         self.max_history = 1000
 
         # Async processing coordination
         self.processing_lock = asyncio.Lock()
-        self.processing_task: Optional[asyncio.Task] = None
+        self.processing_task: asyncio.Task | None = None
         self.is_running = False
 
         # Performance and activity metrics
@@ -460,7 +461,7 @@ class FileWatcher:
         }
 
         # Custom notification callbacks
-        self.change_callbacks: List[Callable[[FileChange], None]] = []
+        self.change_callbacks: list[Callable[[FileChange], None]] = []
 
     async def start(self) -> None:
         """Start the file watching system and begin monitoring for changes.
@@ -562,7 +563,7 @@ class FileWatcher:
         self,
         path: Path,
         recursive: bool = True,
-        file_patterns: Optional[List[str]] = None,
+        file_patterns: list[str] | None = None,
     ) -> str:
         """Add a directory to watch for file changes with automatic indexing.
 
@@ -752,7 +753,7 @@ class FileWatcher:
     async def _polling_loop(self) -> None:
         """Polling loop for systems without inotify."""
         poll_interval = max(5.0, self.debounce_seconds * 2)
-        file_states: Dict[str, Dict[str, Any]] = {}
+        file_states: dict[str, dict[str, Any]] = {}
 
         while self.is_running:
             try:
@@ -867,9 +868,7 @@ class FileWatcher:
 
             # Update knowledge graph if needed
             if self.graph_builder and (created or modified):
-                affected_sources = set(
-                    c.metadata.get("source_id") for c in created + modified
-                )
+                affected_sources = set(c.metadata.get("source_id") for c in created + modified)
                 for source_id in affected_sources:
                     if source_id:
                         await self.graph_builder.build_from_documents(source_id)
@@ -904,9 +903,7 @@ class FileWatcher:
             deleted = 0
 
             while True:
-                cursor, keys = await self.indexer.redis.redis.scan(
-                    cursor, match=pattern, count=100
-                )
+                cursor, keys = await self.indexer.redis.redis.scan(cursor, match=pattern, count=100)
 
                 if keys:
                     await self.indexer.redis.redis.delete(*keys)
@@ -1007,7 +1004,7 @@ class FileWatcher:
         if callback in self.change_callbacks:
             self.change_callbacks.remove(callback)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive file watcher performance and activity statistics.
 
         Returns detailed metrics about file watching activity, performance,
@@ -1053,7 +1050,7 @@ class FileWatcher:
         )
         return stats
 
-    def get_change_history(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_change_history(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get chronological history of recent file changes for monitoring and
         debugging.
 
@@ -1109,7 +1106,7 @@ class FileWatcher:
             )
         return history
 
-    async def force_rescan(self, source_id: Optional[str] = None) -> Dict[str, int]:
+    async def force_rescan(self, source_id: str | None = None) -> dict[str, int]:
         """Force complete reindexing of watched sources with fresh content analysis.
 
         Performs comprehensive reindexing of specified sources, bypassing all caches

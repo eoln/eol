@@ -219,7 +219,7 @@ async def test_error_handling():
 
         try:
             store.connect()
-            assert False, "Should have raised exception"
+            raise AssertionError("Should have raised exception")
         except Exception as e:
             assert "Connection failed" in str(e)
 
@@ -231,7 +231,7 @@ async def test_error_handling():
 
         try:
             await store.connect_async()
-            assert False, "Should have raised exception"
+            raise AssertionError("Should have raised exception")
         except Exception as e:
             assert "Async connection failed" in str(e)
 
@@ -763,7 +763,7 @@ async def test_connection_scenarios():
     with patch("eol.rag_context.redis_client.AsyncRedis", return_value=mock_async_redis):
         try:
             await store.connect_async()
-            assert False, "Should have raised connection error"
+            raise AssertionError("Should have raised connection error")
         except ConnectionError:
             pass  # Expected
 

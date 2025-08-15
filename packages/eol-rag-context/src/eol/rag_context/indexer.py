@@ -33,7 +33,7 @@ import logging
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import gitignore_parser
 
@@ -78,7 +78,7 @@ class IndexedSource:
     indexed_at: float
     file_count: int
     total_chunks: int
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     indexed_files: int = 0
 
     def __post_init__(self):
@@ -124,8 +124,8 @@ class IndexResult:
     source_id: str
     chunks: int = 0
     files: int = 0
-    errors: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     # Additional fields for compatibility
     file_count: int = 0
     total_chunks: int = 0
@@ -214,23 +214,23 @@ class DocumentMetadata:
 
     # Hierarchy metadata
     hierarchy_level: int  # 1=concept, 2=section, 3=chunk
-    parent_chunk_id: Optional[str] = None
+    parent_chunk_id: str | None = None
 
     # Content metadata
-    language: Optional[str] = None  # For code files
-    headers: Optional[List[str]] = None  # For markdown
-    section_title: Optional[str] = None  # Current section
+    language: str | None = None  # For code files
+    headers: list[str] | None = None  # For markdown
+    section_title: str | None = None  # Current section
 
     # Location metadata for precise retrieval
-    line_start: Optional[int] = None  # Start line in source
-    line_end: Optional[int] = None  # End line in source
-    char_start: Optional[int] = None  # Start character position
-    char_end: Optional[int] = None  # End character position
+    line_start: int | None = None  # Start line in source
+    line_end: int | None = None  # End line in source
+    char_start: int | None = None  # Start character position
+    char_end: int | None = None  # End character position
 
     # Git metadata (if in git repo)
-    git_commit: Optional[str] = None
-    git_branch: Optional[str] = None
-    git_remote: Optional[str] = None
+    git_commit: str | None = None
+    git_branch: str | None = None
+    git_remote: str | None = None
 
 
 class FolderScanner:
@@ -269,9 +269,9 @@ class FolderScanner:
         """
         self.config = config
         self.ignore_patterns = self._default_ignore_patterns()
-        self.scanned_sources: Dict[str, IndexedSource] = {}
+        self.scanned_sources: dict[str, IndexedSource] = {}
 
-    def _default_ignore_patterns(self) -> Set[str]:
+    def _default_ignore_patterns(self) -> set[str]:
         """Generate default file and directory patterns to ignore during scanning.
 
         Returns comprehensive ignore patterns for common development artifacts,
@@ -352,7 +352,7 @@ class FolderScanner:
 
         return False
 
-    def _get_git_metadata(self, path: Path) -> Dict[str, Any]:
+    def _get_git_metadata(self, path: Path) -> dict[str, Any]:
         """Extract Git repository metadata for version control tracking.
 
         Attempts to extract Git metadata including repository root, current commit
@@ -437,8 +437,8 @@ class FolderScanner:
         folder_path: Path | str,
         recursive: bool = True,
         respect_gitignore: bool = True,
-        file_patterns: Optional[List[str]] = None,
-    ) -> List[Path]:
+        file_patterns: list[str] | None = None,
+    ) -> list[Path]:
         """Scan folder structure and return list of files suitable for indexing.
 
         Performs comprehensive folder scanning with intelligent filtering based on
@@ -625,10 +625,10 @@ class DocumentIndexer:
     async def index_folder(
         self,
         folder_path: Path | str,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
         recursive: bool = True,
         force_reindex: bool = False,
-        progress_callback: Optional[callable] = None,
+        progress_callback: callable | None = None,
     ) -> IndexedSource:
         """Index all supported documents in a folder with hierarchical organization.
 
@@ -766,17 +766,15 @@ class DocumentIndexer:
         # Update statistics
         self.stats["indexing_time"] += time.time() - start_time
 
-        logger.info(
-            f"Indexed {indexed_files} files, {total_chunks} chunks from {folder_path}"
-        )
+        logger.info(f"Indexed {indexed_files} files, {total_chunks} chunks from {folder_path}")
         return indexed_source
 
     async def index_file(
         self,
         file_path: Path | str,
-        source_id: Optional[str] = None,
-        root_path: Optional[Path] = None,
-        git_metadata: Optional[Dict[str, Any]] = None,
+        source_id: str | None = None,
+        root_path: Path | None = None,
+        git_metadata: dict[str, Any] | None = None,
     ) -> IndexResult:
         """Index a single file with comprehensive hierarchical organization and
         metadata.
@@ -837,9 +835,7 @@ class DocumentIndexer:
             source_id = self.scanner.generate_source_id(file_path.parent)
 
         # Initialize result
-        result = IndexResult(
-            source_id=source_id, files=1, file_count=1, indexed_files=1
-        )
+        result = IndexResult(source_id=source_id, files=1, file_count=1, indexed_files=1)
 
         try:
             # Calculate relative path
@@ -916,7 +912,7 @@ class DocumentIndexer:
 
     async def _extract_concepts(
         self, doc: ProcessedDocument, base_metadata: DocumentMetadata
-    ) -> List[VectorDocument]:
+    ) -> list[VectorDocument]:
         """Extract high-level concepts from document for hierarchy level 1.
 
         Creates concept-level documents that represent the main ideas and themes
@@ -940,9 +936,7 @@ class DocumentIndexer:
         # Create concept document
         concept_id = f"{base_metadata.source_id}_concept_main"
         # Filter out None values for Redis
-        concept_metadata = {
-            k: v for k, v in asdict(base_metadata).items() if v is not None
-        }
+        concept_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
         concept_metadata.update(
             {
                 "hierarchy_level": 1,
@@ -973,8 +967,8 @@ class DocumentIndexer:
         self,
         doc: ProcessedDocument,
         base_metadata: DocumentMetadata,
-        concepts: List[VectorDocument],
-    ) -> List[VectorDocument]:
+        concepts: list[VectorDocument],
+    ) -> list[VectorDocument]:
         """Extract logical sections from document for hierarchy level 2.
 
         Creates section-level documents by grouping related chunks based on
@@ -1067,10 +1061,10 @@ class DocumentIndexer:
 
     async def _create_section(
         self,
-        chunks: List[Dict[str, Any]],
+        chunks: list[dict[str, Any]],
         base_metadata: DocumentMetadata,
-        parent_id: Optional[str],
-        section_title: Optional[str],
+        parent_id: str | None,
+        section_title: str | None,
     ) -> VectorDocument:
         """Create section-level document from grouped chunks.
 
@@ -1095,9 +1089,7 @@ class DocumentIndexer:
         section_id = f"{base_metadata.source_id}_section_{content_hash}"
 
         # Create section metadata - filter out None values for Redis
-        section_metadata = {
-            k: v for k, v in asdict(base_metadata).items() if v is not None
-        }
+        section_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
         section_metadata.update(
             {
                 "hierarchy_level": 2,
@@ -1107,9 +1099,7 @@ class DocumentIndexer:
         )
 
         # Generate embedding
-        embedding = await self.embeddings.get_embedding(
-            content[:1000]
-        )  # Use first 1000 chars
+        embedding = await self.embeddings.get_embedding(content[:1000])  # Use first 1000 chars
 
         section = VectorDocument(
             id=section_id,
@@ -1130,7 +1120,7 @@ class DocumentIndexer:
         self,
         doc: ProcessedDocument,
         base_metadata: DocumentMetadata,
-        sections: List[VectorDocument],
+        sections: list[VectorDocument],
     ) -> int:
         """Index document chunks at hierarchy level 3 with comprehensive metadata.
 
@@ -1160,9 +1150,7 @@ class DocumentIndexer:
                 parent_section = None
 
             # Create chunk metadata - filter out None values for Redis
-            chunk_metadata = {
-                k: v for k, v in asdict(base_metadata).items() if v is not None
-            }
+            chunk_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
             chunk_updates = {
                 "chunk_index": i,
                 "hierarchy_level": 3,
@@ -1173,9 +1161,7 @@ class DocumentIndexer:
                 "char_end": chunk.get("char_end"),
             }
             # Only add non-None values
-            chunk_metadata.update(
-                {k: v for k, v in chunk_updates.items() if v is not None}
-            )
+            chunk_metadata.update({k: v for k, v in chunk_updates.items() if v is not None})
 
             # Add chunk-specific metadata
             if doc.doc_type == "code":
@@ -1276,9 +1262,7 @@ class DocumentIndexer:
             logger.debug(f"Error checking file currency: {e}")
             return False
 
-    async def _store_file_metadata(
-        self, file_path: Path, file_hash: str, mtime: float
-    ) -> None:
+    async def _store_file_metadata(self, file_path: Path, file_hash: str, mtime: float) -> None:
         """Store file metadata in Redis for change detection and incremental indexing.
 
         Persists file metadata including path, content hash, modification time,
@@ -1307,7 +1291,7 @@ class DocumentIndexer:
         # Set TTL to 30 days
         self.redis.redis.expire(file_key, 30 * 24 * 3600)
 
-    async def _get_indexed_source(self, source_id: str) -> Optional[IndexedSource]:
+    async def _get_indexed_source(self, source_id: str) -> IndexedSource | None:
         """Retrieve indexed source metadata from Redis storage.
 
         Fetches complete source metadata including statistics and configuration
@@ -1334,9 +1318,7 @@ class DocumentIndexer:
             file_count=int(data[b"file_count"]),
             total_chunks=int(data[b"total_chunks"]),
             indexed_files=int(data.get(b"indexed_files", data[b"file_count"])),
-            metadata=(
-                json.loads(data[b"metadata"].decode()) if data.get(b"metadata") else {}
-            ),
+            metadata=(json.loads(data[b"metadata"].decode()) if data.get(b"metadata") else {}),
         )
 
     async def _store_indexed_source(self, source: IndexedSource) -> None:
@@ -1363,7 +1345,7 @@ class DocumentIndexer:
             },
         )
 
-    async def list_sources(self) -> List[IndexedSource]:
+    async def list_sources(self) -> list[IndexedSource]:
         """Retrieve list of all indexed sources with their metadata.
 
         Scans Redis for all source metadata and returns complete IndexedSource
@@ -1464,7 +1446,7 @@ class DocumentIndexer:
         logger.info(f"Removed source {source_id}, deleted {deleted} items")
         return deleted > 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive indexing statistics and metrics.
 
         Returns detailed statistics about indexing operations including document
@@ -1502,9 +1484,7 @@ class DocumentIndexer:
             cursor = 0
             source_count = 0
             while True:
-                cursor, keys = self.redis.redis.scan(
-                    cursor, match="source:*", count=100
-                )
+                cursor, keys = self.redis.redis.scan(cursor, match="source:*", count=100)
                 source_count += len(keys)
                 if cursor == 0:
                     break
@@ -1515,8 +1495,8 @@ class DocumentIndexer:
         return stats
 
     async def index_file_dict(
-        self, file_path: Path | str, source_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, file_path: Path | str, source_id: str | None = None
+    ) -> dict[str, Any]:
         """Index a file and return results as dictionary for API compatibility.
 
         Wrapper method that calls index_file() and converts the IndexResult

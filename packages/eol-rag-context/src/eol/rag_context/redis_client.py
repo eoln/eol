@@ -591,7 +591,7 @@ class RedisVectorStore:
                     # For TAG fields, escape special characters properly
                     # Redis TAGs need values wrapped in { } with no escaping inside
                     filter_clauses.append(f"@{field_name}:{{{value}}}")
-                elif isinstance(value, (int, float)):
+                elif isinstance(value, int | float):
                     filter_clauses.append(f"@{field_name}:[{value} {value}]")
 
             if filter_clauses:

@@ -44,7 +44,7 @@ class TestFullWorkflowIntegration:
                 assert len(result) == 3  # (id, score, data)
                 doc_id, score, data = result
                 assert isinstance(doc_id, str)
-                assert isinstance(score, (int, float))
+                assert isinstance(score, int | float)
                 assert isinstance(data, dict)
                 assert "content" in data
 

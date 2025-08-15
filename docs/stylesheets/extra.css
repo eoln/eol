@@ -1,0 +1,70 @@
+/* Extra CSS for documentation */
+
+/* Mermaid diagram styling */
+.mermaid {
+  text-align: center;
+  margin: 2em 0;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure Mermaid diagrams are responsive */
+@media screen and (max-width: 768px) {
+  .mermaid svg {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+/* Better styling for Mermaid in dark mode */
+[data-md-color-scheme="slate"] .mermaid {
+  filter: invert(0.93) hue-rotate(180deg);
+}
+
+[data-md-color-scheme="slate"] .mermaid .nodeLabel,
+[data-md-color-scheme="slate"] .mermaid .edgeLabel {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Grid cards styling for homepage */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.grid.cards > div {
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.grid.cards > div:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Custom admonition for performance metrics */
+.md-typeset .admonition.performance,
+.md-typeset details.performance {
+  border-color: rgb(0, 200, 83);
+}
+
+.md-typeset .performance > .admonition-title,
+.md-typeset .performance > summary {
+  background-color: rgba(0, 200, 83, 0.1);
+  border-color: rgb(0, 200, 83);
+}
+
+.md-typeset .performance > .admonition-title::before,
+.md-typeset .performance > summary::before {
+  background-color: rgb(0, 200, 83);
+  -webkit-mask-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.92 6-4.72 7.28L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95M11 2c-1.95.2-3.8.96-5.32 2.21L7.1 5.63A8.195 8.195 0 0111 4.05V2M4.21 5.68C2.96 7.2 2.2 9.05 2 11h2.05c.19-1.37.75-2.61 1.58-3.58L4.21 5.68M2.05 13c.49 3.95 3.85 7 7.93 7 .58 0 1.15-.07 1.69-.18l-1.51-1.51c-.06 0-.12.01-.18.01-3.19 0-5.8-2.47-6.02-5.57H2.05m9.37 6.81c-1.37-.19-2.61-.75-3.58-1.58l-1.42 1.42c1.27.96 2.79 1.63 4.44 1.85l.56-1.69Z"/></svg>');
+  mask-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.92 6-4.72 7.28L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95M11 2c-1.95.2-3.8.96-5.32 2.21L7.1 5.63A8.195 8.195 0 0111 4.05V2M4.21 5.68C2.96 7.2 2.2 9.05 2 11h2.05c.19-1.37.75-2.61 1.58-3.58L4.21 5.68M2.05 13c.49 3.95 3.85 7 7.93 7 .58 0 1.15-.07 1.69-.18l-1.51-1.51c-.06 0-.12.01-.18.01-3.19 0-5.8-2.47-6.02-5.57H2.05m9.37 6.81c-1.37-.19-2.61-.75-3.58-1.58l-1.42 1.42c1.27.96 2.79 1.63 4.44 1.85l.56-1.69Z"/></svg>');
+}

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Documentation validation script.
 
-This script validates the documentation quality and coverage for the EOL RAG Context
-project. It checks docstring coverage, validates links, and ensures documentation
-standards are met.
+This script validates the documentation quality and coverage for the EOL Framework
+monorepo. It checks docstring coverage, validates links, and ensures documentation
+standards are met across all packages.
 
 """
 
@@ -256,8 +256,8 @@ def main():
         "--path",
         "-p",
         type=Path,
-        default=Path("src/eol/rag_context"),
-        help="Path to analyze (default: src/eol/rag_context)",
+        default=Path("packages/eol-rag-context/src"),
+        help="Path to analyze (default: packages/eol-rag-context/src)",
     )
     parser.add_argument(
         "--min-coverage",
@@ -268,7 +268,7 @@ def main():
     )
     args = parser.parse_args()
 
-    console.print("[bold cyan]🔍 EOL RAG Context Documentation Validator[/bold cyan]\n")
+    console.print("[bold cyan]🔍 EOL Framework Documentation Validator[/bold cyan]\n")
 
     # Validate MkDocs config
     console.print("[blue]Validating MkDocs configuration...[/blue]")

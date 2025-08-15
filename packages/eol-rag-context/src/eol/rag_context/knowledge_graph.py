@@ -942,7 +942,7 @@ class KnowledgeGraphBuilder:
                     # Add relationship
                     edge_data = self.graph.get_edge_data(entity_id, neighbor)
                     if edge_data:
-                        for key, data in edge_data.items():
+                        for _key, data in edge_data.items():
                             rel = Relationship(
                                 source_id=entity_id,
                                 target_id=neighbor,
@@ -960,7 +960,7 @@ class KnowledgeGraphBuilder:
                     # Add relationship
                     edge_data = self.graph.get_edge_data(predecessor, entity_id)
                     if edge_data:
-                        for key, data in edge_data.items():
+                        for _key, data in edge_data.items():
                             rel = Relationship(
                                 source_id=predecessor,
                                 target_id=entity_id,

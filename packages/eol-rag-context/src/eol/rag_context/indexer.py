@@ -31,9 +31,10 @@ import hashlib
 import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 import gitignore_parser
 
@@ -628,7 +629,7 @@ class DocumentIndexer:
         source_id: str | None = None,
         recursive: bool = True,
         force_reindex: bool = False,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> IndexedSource:
         """Index all supported documents in a folder with hierarchical organization.
 
@@ -1025,7 +1026,7 @@ class DocumentIndexer:
 
         elif doc.doc_type == "code":
             # Group by functions/classes for code
-            for i, chunk in enumerate(doc.chunks):
+            for _i, chunk in enumerate(doc.chunks):
                 if chunk.get("type") in [
                     "function_definition",
                     "class_definition",

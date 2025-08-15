@@ -261,7 +261,7 @@ features:
             (".unknown", "text"),
         ]
 
-        for ext, expected in test_cases:
+        for ext, _expected in test_cases:
             result = processor._detect_language(ext)
             # Just check it returns something
             assert result is not None

@@ -691,7 +691,7 @@ class RedisVectorStore:
 
         # Step 2: Find sections within concepts
         sections = []
-        for concept_id, concept_score, concept_data in concepts:
+        for concept_id, concept_score, _concept_data in concepts:
             # For now, search without parent filter and manually filter results
             # TODO: Fix Redis TAG field filtering with KNN queries
             concept_sections = await self.vector_search(

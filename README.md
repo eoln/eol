@@ -58,6 +58,14 @@ This is a monorepo containing multiple packages for building intelligent AI appl
 
 ## Development
 
+## Requirements
+
+- Python 3.13 or higher
+- Redis Stack v8+ (with vector search module) 
+- UV package manager
+
+## Installation
+
 This project uses UV for dependency management and workspace management.
 
 ```bash

@@ -5,7 +5,7 @@ Get up and running with EOL Framework in 5 minutes!
 ## Prerequisites
 
 Before starting, ensure you have:
-- Python 3.11 or higher installed
+- Python 3.13 or higher installed
 - Redis Stack running (see [Installation](installation.md))
 
 ## Step 1: Install EOL

@@ -3,7 +3,7 @@ name = "eol"
 version = "0.1.0"
 description = "EOL AI Framework - Monorepo Root"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { text = "GPL-3.0" }
 authors = [
     { name = "EOLN.EU", email = "dev@eoln.eu" }

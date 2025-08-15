@@ -33,7 +33,7 @@ pip install eol-rag-context
 ### Dependencies
 
 - Redis Stack 8.0+ (with RediSearch module)
-- Python 3.11+
+- Python 3.13+
 
 ## Testing
 

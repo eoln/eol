@@ -6,7 +6,7 @@ This guide covers installing the EOL Framework and its dependencies.
 
 ### System Requirements
 
-- **Python**: 3.11 or higher
+- **Python**: 3.13 or higher
 - **Operating System**: Linux, macOS, or Windows (WSL2 recommended)
 - **Memory**: 4GB RAM minimum, 8GB recommended
 - **Storage**: 1GB free space for dependencies
@@ -242,9 +242,9 @@ redis-stack-server
 # Check Python version
 python --version
 
-# If < 3.11, install newer version
-# macOS: brew install python@3.11
-# Ubuntu: sudo apt install python3.11
+# If < 3.13, install newer version
+# macOS: brew install python@3.13
+# Ubuntu: sudo apt install python3.13
 # Or use pyenv for version management
 ```
 

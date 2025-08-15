@@ -38,7 +38,7 @@ The core RAG service that provides:
 
 ### Core Technologies
 
-- **Language**: Python 3.11+
+- **Language**: Python 3.13+
 - **Vector Database**: Redis v8 with vector search
 - **LLM Integration**: Multi-provider (Anthropic, OpenAI, local)
 - **Package Management**: uv (not pip or poetry)
@@ -295,7 +295,7 @@ async def health_check() -> Dict[str, Any]:
 4. **Track context usage**: Check window status regularly
 5. **Profile performance**: Use `cProfile` for bottlenecks
 6. **Debug test isolation**: Run tests individually vs together to catch contamination
-7. **Python version compatibility**: Test with `python3.11`, `python3.12`, `python3.13` locally
+7. **Python version compatibility**: Test with `python3.13` (minimum required version)
 
 ## Do's and Don'ts
 

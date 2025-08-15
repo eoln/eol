@@ -7,7 +7,7 @@ name = "eol-rag-context"
 version = "0.1.0"
 description = "Intelligent RAG-based context management MCP server for EOL Framework"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { text = "GPL-3.0" }
 authors = [
     { name = "EOLN.EU", email = "dev@eoln.eu" }

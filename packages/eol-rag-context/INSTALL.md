@@ -4,7 +4,7 @@
 
 ### System Requirements
 
-- **Python 3.11+** (required)
+- **Python 3.13+** (required)
 - **Redis Stack Server** (required for vector search)
 - **macOS/Linux** (Windows support via WSL)
 
@@ -13,8 +13,8 @@
 #### macOS (Homebrew)
 
 ```bash
-# Install Python 3.11+
-brew install python@3.11
+# Install Python 3.13+
+brew install python@3.13
 
 # Install Redis Stack (includes RediSearch module)
 brew tap redis-stack/redis-stack
@@ -30,9 +30,9 @@ brew install uv
 #### Linux (Ubuntu/Debian)
 
 ```bash
-# Install Python 3.11+
+# Install Python 3.13+
 sudo apt update
-sudo apt install python3.11 python3.11-venv python3-pip
+sudo apt install python3.13 python3.13-venv python3-pip
 
 # Install Redis Stack via Docker
 docker run -d -p 6379:6379 redis/redis-stack:latest

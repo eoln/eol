@@ -55,10 +55,10 @@ for package in packages/*; do
         package_name=$(basename "$package")
         print_info "Updating $package_name..."
         cd "$package"
-        
+
         # Reinstall in editable mode
         uv pip install -e . --upgrade
-        
+
         cd "$PROJECT_ROOT"
     fi
 done

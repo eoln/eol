@@ -15,6 +15,7 @@ Reviews existing PRPs for accuracy, completeness, and alignment with current cod
 ```
 
 ### Examples
+
 ```bash
 # Review a draft PRP
 /prp:review .claude/plans/draft/prp-semantic-caching.md
@@ -31,18 +32,21 @@ Reviews existing PRPs for accuracy, completeness, and alignment with current cod
 Follows the review methodology from [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
 
 ### 1. Accuracy Verification
+
 - Verify code examples still exist and are current
 - Check if referenced patterns are still best practice
 - Validate that dependencies are up to date
 - Ensure performance targets remain relevant
 
 ### 2. Completeness Check
+
 - All phases properly defined
 - Success metrics clearly stated
 - Risk mitigation strategies present
 - Testing approach comprehensive
 
 ### 3. Pattern Currency
+
 ```python
 # Verify patterns are current
 - Check if async patterns match current codebase
@@ -52,7 +56,9 @@ Follows the review methodology from [`.claude/context/planning-methodology.md`](
 ```
 
 ### 4. Confidence Score Update
+
 Recalculate confidence based on:
+
 - Pattern match with current codebase (40%)
 - Completeness of implementation plan (30%)
 - Clarity of success metrics (20%)
@@ -61,24 +67,28 @@ Recalculate confidence based on:
 ## Review Checklist
 
 ### Architecture Review
+
 - [ ] Component structure aligns with project
 - [ ] Dependencies correctly identified
 - [ ] Integration points well defined
 - [ ] Scalability considerations addressed
 
 ### Implementation Review
+
 - [ ] Task breakdown is logical
 - [ ] Phase ordering makes sense
 - [ ] Time estimates realistic
 - [ ] Prerequisites clearly stated
 
 ### Quality Review
+
 - [ ] Testing strategy comprehensive
 - [ ] Performance targets achievable
 - [ ] Documentation requirements clear
 - [ ] Security considerations included
 
 ### Context Review
+
 - [ ] References to `.claude/context/` accurate
 - [ ] Code examples from actual codebase
 - [ ] Patterns follow established conventions
@@ -87,6 +97,7 @@ Recalculate confidence based on:
 ## Update Actions
 
 ### Pattern Updates
+
 ```markdown
 ## Updated Patterns Found
 
@@ -98,12 +109,14 @@ async def old_pattern():
 ```
 
 ### Current Best Practice
+
 ```python
 # New implementation from current codebase
 async def new_pattern():
     # Better approach found in packages/eol-rag-context/
     pass
 ```
+
 ```
 
 ### Dependency Updates
@@ -159,6 +172,7 @@ Based on current benchmarks:
 5. **Context Changes**: When major patterns change in codebase
 
 ### State Transitions
+
 - **draft → ready**: Requires review pass
 - **ready → pending**: Final review recommended
 - **completed → context**: Extract patterns for reuse
@@ -166,6 +180,7 @@ Based on current benchmarks:
 ## Success Criteria
 
 ### Good PRP Review
+
 - ✅ All patterns verified against current code
 - ✅ Performance targets validated
 - ✅ Dependencies current
@@ -173,6 +188,7 @@ Based on current benchmarks:
 - ✅ Confidence score justified
 
 ### Review Red Flags
+
 - ❌ Code examples don't exist
 - ❌ Patterns contradict current standards
 - ❌ Unrealistic performance targets

@@ -53,16 +53,16 @@ check_mike() {
 deploy_version() {
     local version=$1
     local alias=$2
-    
+
     if [ -z "$version" ]; then
         print_error "Version is required"
         show_usage
         exit 1
     fi
-    
+
     print_info "Building documentation..."
     mkdocs build --clean
-    
+
     if [ -n "$alias" ]; then
         print_info "Deploying version $version with alias $alias..."
         mike deploy --push --update-aliases "$version" "$alias"
@@ -70,7 +70,7 @@ deploy_version() {
         print_info "Deploying version $version..."
         mike deploy --push "$version"
     fi
-    
+
     print_info "Documentation deployed successfully!"
 }
 
@@ -83,13 +83,13 @@ list_versions() {
 # Delete a version
 delete_version() {
     local version=$1
-    
+
     if [ -z "$version" ]; then
         print_error "Version is required"
         show_usage
         exit 1
     fi
-    
+
     print_warning "Deleting version $version..."
     mike delete --push "$version"
     print_info "Version $version deleted"
@@ -98,13 +98,13 @@ delete_version() {
 # Set default version
 set_default() {
     local version=$1
-    
+
     if [ -z "$version" ]; then
         print_error "Version is required"
         show_usage
         exit 1
     fi
-    
+
     print_info "Setting $version as default..."
     mike set-default --push "$version"
     print_info "Default version set to $version"
@@ -114,13 +114,13 @@ set_default() {
 create_alias() {
     local version=$1
     local alias=$2
-    
+
     if [ -z "$version" ] || [ -z "$alias" ]; then
         print_error "Both version and alias are required"
         show_usage
         exit 1
     fi
-    
+
     print_info "Creating alias $alias for version $version..."
     mike alias --push "$version" "$alias"
     print_info "Alias created successfully"

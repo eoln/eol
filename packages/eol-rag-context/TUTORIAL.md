@@ -50,6 +50,7 @@ pip install -e .
 ### Step 2: Start Redis
 
 **Option A: Using Docker (Easiest)**
+
 ```bash
 docker run -d \
   --name redis-rag \
@@ -59,6 +60,7 @@ docker run -d \
 ```
 
 **Option B: Native Installation**
+
 ```bash
 # macOS
 brew install redis-stack
@@ -94,18 +96,18 @@ indexing:
   chunk_size: 1000
   chunk_overlap: 200
   hierarchy_levels: 3
-  
+
 semantic_cache:
   enabled: true
   similarity_threshold: 0.9
   max_cache_size: 1000
   ttl_seconds: 3600
-  
+
 file_watcher:
   enabled: true
   watch_interval: 5
   debounce_seconds: 2
-  
+
 knowledge_graph:
   enabled: true
   max_depth: 3
@@ -165,7 +167,7 @@ from eol.rag_context import EOLRAGContextServer
 server = EOLRAGContextServer()
 await server.initialize()
 
-# Index a single file  
+# Index a single file
 result = await server.index_file("/path/to/file.py")
 print(f"Indexed {result['total_chunks']} chunks, source ID: {result['source_id']}")
 ```
@@ -359,17 +361,17 @@ async def code_assistant():
     # Initialize RAG server
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Index your codebase
     await server.index_directory(
         "/path/to/project",
         recursive=True,
         file_patterns=["*.py", "*.js", "*.md"]
     )
-    
+
     # User query
     query = "How do I add a new API endpoint?"
-    
+
     # Get relevant context using MCP search
     from eol.rag_context.server import SearchContextRequest
     request = SearchContextRequest(
@@ -378,17 +380,17 @@ async def code_assistant():
         hierarchy_level=3
     )
     context = await server.search_context(request, None)
-    
+
     # Build prompt for LLM
     prompt = "Based on the following context, answer the question.\n\n"
     prompt += "Context:\n"
     for ctx in context:
         prompt += f"- {ctx['content'][:500]}...\n"
     prompt += f"\nQuestion: {query}\nAnswer:"
-    
+
     # Send to your LLM (Claude, GPT, etc.)
     # response = await llm.generate(prompt)
-    
+
     return context
 
 # Run the assistant
@@ -401,7 +403,7 @@ asyncio.run(code_assistant())
 async def search_docs(query: str):
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Search documentation files
     from eol.rag_context.server import SearchContextRequest
     request = SearchContextRequest(
@@ -410,13 +412,13 @@ async def search_docs(query: str):
         max_results=10
     )
     results = await server.search_context(request, None)
-    
+
     # Filter for markdown files and group by document
     markdown_results = [
         result for result in results
         if result['metadata'].get('file_type') == 'markdown'
     ]
-    
+
     # Group by document
     docs = {}
     for result in markdown_results:
@@ -424,7 +426,7 @@ async def search_docs(query: str):
         if source not in docs:
             docs[source] = []
         docs[source].append(result)
-    
+
     # Display results
     for doc, sections in docs.items():
         print(f"\n📄 {doc}")
@@ -439,22 +441,22 @@ async def search_docs(query: str):
 async def live_context_system():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Set up file watching
     watch_result = await server.watch_directory(
         "/path/to/active/project",
         recursive=True,
         file_patterns=["*.py", "*.md"]
     )
-    
+
     print(f"Watching for changes... {watch_result['message']}")
-    
+
     # Simulate ongoing work
     while True:
         # Get latest context for current file
         current_file = "/path/to/active/project/main.py"
         query = f"functions in {current_file}"
-        
+
         from eol.rag_context.server import SearchContextRequest
         request = SearchContextRequest(
             query=query,
@@ -462,9 +464,9 @@ async def live_context_system():
             max_results=10
         )
         context = await server.search_context(request, None)
-        
+
         print(f"Found {len(context)} relevant pieces")
-        
+
         # Wait before next check
         await asyncio.sleep(5)
 ```
@@ -493,42 +495,42 @@ def search(
     watch: bool = False
 ):
     """Search for context in your codebase."""
-    
+
     async def run_search():
         from eol.rag_context import EOLRAGContextServer
-        
+
         server = EOLRAGContextServer()
         await server.initialize()
-        
+
         # Index if needed
         console.print(f"[blue]Indexing {path}...[/blue]")
         result = await server.index_directory(str(path))
         console.print(f"[green]Indexed {result['indexed_files']} files[/green]")
-        
+
         # Search
         console.print(f"\n[yellow]Searching for: {query}[/yellow]\n")
         results = await server.search_context(query, limit=limit)
-        
+
         # Display results
         table = Table(title="Search Results")
         table.add_column("Score", style="cyan")
         table.add_column("Source", style="magenta")
         table.add_column("Content", style="white")
-        
+
         for r in results:
             table.add_row(
                 f"{r['score']:.2f}",
                 Path(r['metadata']['source']).name,
                 r['content'][:100] + "..."
             )
-        
+
         console.print(table)
-        
+
         if watch:
             console.print("\n[blue]Watching for changes... Press Ctrl+C to stop[/blue]")
             await server.watch_directory(str(path))
             await asyncio.sleep(float('inf'))
-    
+
     asyncio.run(run_search())
 
 if __name__ == "__main__":
@@ -576,20 +578,20 @@ async def smart_indexing(server, project_path):
         f"{project_path}/docs",
         recursive=True
     )
-    
+
     # 2. Index main source code
     await server.index_directory(
         f"{project_path}/src",
         recursive=True,
         file_patterns=["*.py", "*.js"]
     )
-    
+
     # 3. Index tests and examples
     await server.index_directory(
         f"{project_path}/tests",
         recursive=True
     )
-    
+
     # 4. Watch for changes
     await server.watch_directory(
         project_path,
@@ -604,7 +606,7 @@ async def smart_indexing(server, project_path):
 # Batch operations for better performance
 async def batch_index(server, files):
     batch_size = 10
-    
+
     for i in range(0, len(files), batch_size):
         batch = files[i:i + batch_size]
         tasks = [
@@ -620,18 +622,18 @@ async def batch_index(server, files):
 ```python
 def optimize_context_for_llm(contexts, max_tokens=4000):
     """Optimize context to fit in LLM window."""
-    
+
     # Sort by relevance
     contexts.sort(key=lambda x: x['score'], reverse=True)
-    
+
     # Track token count (rough estimate)
     result = []
     token_count = 0
-    
+
     for ctx in contexts:
         # Estimate tokens (roughly 4 chars = 1 token)
         ctx_tokens = len(ctx['content']) // 4
-        
+
         if token_count + ctx_tokens > max_tokens:
             # Truncate if needed
             remaining = max_tokens - token_count
@@ -640,10 +642,10 @@ def optimize_context_for_llm(contexts, max_tokens=4000):
                 ctx['content'] = truncated
                 result.append(ctx)
             break
-        
+
         result.append(ctx)
         token_count += ctx_tokens
-    
+
     return result
 ```
 
@@ -692,7 +694,7 @@ redis:
 # Reduce embedding dimensions
 embedding:
   model_name: all-MiniLM-L6-v2  # 384 dims vs 768
-  
+
 # Limit cache size
 semantic_cache:
   max_cache_size: 500  # Reduce from 1000
@@ -729,25 +731,25 @@ logging.basicConfig(level=logging.DEBUG)
 ```python
 async def health_check():
     server = EOLRAGContextServer()
-    
+
     try:
         await server.initialize()
-        
+
         # Get stats from individual components
         indexer_stats = server.indexer.get_stats()
         cache_stats = server.cache.get_stats()
         # Note: graph stats may vary by implementation
-        
+
         print("✅ Server Status: Healthy")
         print(f"📊 Documents: {indexer_stats.get('total_documents', 0)}")
         print(f"📦 Chunks: {indexer_stats.get('total_chunks', 0)}")
         print(f"💾 Cache Hit Rate: {cache_stats.get('hit_rate', 0):.1%}")
         print(f"🔗 Graph available: {hasattr(server, 'graph') and server.graph is not None}")
-        
+
     except Exception as e:
         print(f"❌ Health Check Failed: {e}")
         return False
-    
+
     return True
 
 asyncio.run(health_check())
@@ -771,7 +773,7 @@ asyncio.run(health_check())
    - Chat interfaces
 
 4. **Join the Community**
-   - GitHub: https://github.com/eoln/eol
+   - GitHub: <https://github.com/eoln/eol>
    - Issues: Report bugs and request features
    - Discussions: Share use cases and tips
 

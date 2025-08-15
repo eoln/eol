@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Verify that integration tests work with real Redis v8.
+"""Verify that integration tests work with real Redis v8.
+
 This script checks Redis connection and runs tutorial example tests.
+
 """
 
 import asyncio
@@ -61,9 +62,8 @@ async def check_redis_connection():
 async def test_tutorial_example():
     """Test a simple tutorial example with real Redis."""
     from eol.rag_context import EOLRAGContextServer
-    from eol.rag_context.config import RAGConfig, RedisConfig
+    from eol.rag_context.config import IndexConfig, RAGConfig, RedisConfig
     from eol.rag_context.redis_client import RedisVectorStore
-    from eol.rag_context.config import IndexConfig
 
     print("\n📚 Testing tutorial example with real Redis...")
 
@@ -92,7 +92,10 @@ async def test_tutorial_example():
 
         # Store test data
         doc_id = store.store_document(
-            test_data["content"], test_data["embedding"], test_data["metadata"], hierarchy_level=3
+            test_data["content"],
+            test_data["embedding"],
+            test_data["metadata"],
+            hierarchy_level=3,
         )
         print(f"   ✅ Stored document with ID: {doc_id}")
 

@@ -43,6 +43,7 @@ EOL_REDIS_URL="redis://localhost:6379" eol-rag-context serve
 ```
 
 You should see output similar to:
+
 ```
 INFO     Starting EOL RAG Context MCP Server
 INFO     Redis connected: localhost:6379/0
@@ -72,12 +73,12 @@ from typing import List, Dict, Optional
 
 class DataProcessor:
     """A sample data processing class."""
-    
+
     def __init__(self, name: str):
         """Initialize the processor with a name."""
         self.name = name
         self.processed_count = 0
-    
+
     def process_data(self, data: List[str]) -> Dict[str, int]:
         """Process a list of strings and count their lengths."""
         result = {}
@@ -134,12 +135,14 @@ The project follows a simple architecture:
 ## Use Cases
 
 This pattern is useful for:
+
 - Text processing applications
 - Data transformation pipelines
 - Simple ETL operations
 EOF
 
 # Create configuration file
+
 cat > config.json << 'EOF'
 {
   "processor_settings": {
@@ -153,6 +156,7 @@ cat > config.json << 'EOF'
   }
 }
 EOF
+
 ```
 
 ## Step 3: Index Your Documents
@@ -168,7 +172,9 @@ If you have Claude Desktop configured with EOL RAG Context:
 3. Use the indexing tool:
 
 ```
+
 Can you index the sample-project directory for me?
+
 ```
 
 Claude will use the MCP tools to index your documents automatically.
@@ -185,27 +191,27 @@ from eol.rag_context import EOLRAGContextServer
 
 async def index_documents():
     """Index the sample project documents."""
-    
+
     # Initialize the server
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Index the current directory
     project_path = Path(".")
     print(f"Indexing documents in: {project_path.absolute()}")
-    
+
     result = await server.index_directory(
         directory_path=str(project_path),
         recursive=True,
         file_patterns=["*.py", "*.md", "*.json"],
         force_reindex=True
     )
-    
+
     print(f"Indexing Results:")
     print(f"  Indexed files: {result.get('indexed_files', 0)}")
     print(f"  Total chunks: {result.get('total_chunks', 0)}")
     print(f"  Processing time: {result.get('processing_time_seconds', 0):.2f}s")
-    
+
     return result
 
 if __name__ == "__main__":
@@ -213,11 +219,13 @@ if __name__ == "__main__":
 ```
 
 Run the indexing script:
+
 ```bash
 python index_sample.py
 ```
 
 Expected output:
+
 ```
 Indexing documents in: /path/to/sample-project
 Indexing Results:
@@ -258,11 +266,11 @@ from eol.rag_context.server import SearchContextRequest
 
 async def search_documents():
     """Search the indexed documents."""
-    
+
     # Initialize the server
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Define search queries
     queries = [
         "What does the DataProcessor class do?",
@@ -270,21 +278,21 @@ async def search_documents():
         "What configuration options are available?",
         "Show me the main function"
     ]
-    
+
     for query in queries:
         print(f"\n🔍 Query: {query}")
         print("=" * 50)
-        
+
         # Create search request
         request = SearchContextRequest(
             query=query,
             max_results=3,
             similarity_threshold=0.7
         )
-        
+
         # Perform search
         results = await server.search_context(request, None)
-        
+
         if results and results.get('results'):
             for i, result in enumerate(results['results'], 1):
                 print(f"\n📄 Result {i}:")
@@ -299,11 +307,13 @@ if __name__ == "__main__":
 ```
 
 Run the search script:
+
 ```bash
 python search_sample.py
 ```
 
 Expected output:
+
 ```
 🔍 Query: What does the DataProcessor class do?
 ==================================================
@@ -313,7 +323,7 @@ Expected output:
    Relevance: 0.892
    Content: class DataProcessor:
     """A sample data processing class."""
-    
+
     def __init__(self, name: str):
         """Initialize the processor with a name."""
         self.name = name
@@ -338,20 +348,20 @@ Search at different levels of granularity:
 async def hierarchical_search():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Search at concept level (high-level topics)
     concept_results = await server.search_context(SearchContextRequest(
         query="data processing architecture",
         max_results=2,
         search_level="concept"
     ), None)
-    
+
     # Search at section level (specific sections)
     section_results = await server.search_context(SearchContextRequest(
         query="DataProcessor class methods",
         search_level="section"
     ), None)
-    
+
     # Search at chunk level (detailed content)
     chunk_results = await server.search_context(SearchContextRequest(
         query="process_data method implementation",
@@ -369,16 +379,16 @@ from eol.rag_context.server import QueryKnowledgeGraphRequest
 async def explore_knowledge_graph():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Query the knowledge graph
     kg_request = QueryKnowledgeGraphRequest(
         query="DataProcessor relationships",
         max_depth=2,
         include_relationships=True
     )
-    
+
     kg_results = await server.query_knowledge_graph(kg_request, None)
-    
+
     print("Knowledge Graph Results:")
     for entity in kg_results.get('entities', []):
         print(f"  Entity: {entity['name']} ({entity['type']})")
@@ -394,17 +404,17 @@ Set up file watching for automatic reindexing:
 async def setup_file_watching():
     server = EOLRAGContextServer()
     await server.initialize()
-    
+
     # Enable file watching
     watch_result = await server.start_file_watching(
         directory_path=".",
         patterns=["*.py", "*.md"],
         debounce_seconds=2.0
     )
-    
+
     print("File watching enabled. Changes will trigger automatic reindexing.")
     print(f"Watching {len(watch_result.get('watched_paths', []))} paths")
-    
+
     # Keep the server running
     try:
         while True:
@@ -438,6 +448,7 @@ Each search result contains:
 ### Similarity Scores
 
 Understanding relevance scores:
+
 - **0.9-1.0**: Exact or near-exact match
 - **0.8-0.9**: Highly relevant content
 - **0.7-0.8**: Moderately relevant
@@ -447,6 +458,7 @@ Understanding relevance scores:
 ### Content Types
 
 Different types of chunks are indexed:
+
 - **Functions/Methods**: Code functions and class methods
 - **Classes**: Class definitions and docstrings
 - **Sections**: Markdown headers and content blocks
@@ -482,17 +494,20 @@ indexing_config = {
 ### Common Issues
 
 **No search results found:**
+
 - Check if indexing completed successfully
 - Try broader search terms
 - Lower the similarity threshold
 - Verify files were included in indexing patterns
 
 **Slow search performance:**
+
 - Enable semantic caching
 - Increase Redis connection pool size
 - Use more specific queries
 
 **Out of memory during indexing:**
+
 - Reduce batch size in embedding configuration
 - Process files in smaller batches
 - Exclude large binary files
@@ -500,12 +515,14 @@ indexing_config = {
 ### Getting Help
 
 **Check server logs:**
+
 ```bash
 # If running with logging enabled
 tail -f eol-rag-context.log
 ```
 
 **Diagnostic commands:**
+
 ```bash
 # Test configuration
 eol-rag-context diagnose --config config.yaml
@@ -518,6 +535,7 @@ eol-rag-context diagnose --embedding-only
 ```
 
 **Enable debug logging:**
+
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -528,7 +546,7 @@ logging.basicConfig(level=logging.DEBUG)
 Now that you've completed your first indexing and search:
 
 1. **[User Guide](../user-guide/)** - Learn about advanced indexing strategies
-2. **[Configuration](configuration.md)** - Optimize settings for your use case  
+2. **[Configuration](configuration.md)** - Optimize settings for your use case
 3. **[API Reference](../api-reference/)** - Explore the complete API
 4. **[Examples](../examples/)** - See real-world integration patterns
 

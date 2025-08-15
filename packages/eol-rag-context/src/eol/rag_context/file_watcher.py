@@ -56,6 +56,7 @@ Example:
     >>> # Force full rescan when needed
     >>> result = await watcher.force_rescan()
     >>> print(f"Rescanned {result['files_indexed']} files")
+
 """
 
 import asyncio
@@ -104,6 +105,7 @@ class ChangeType(Enum):
         >>> if change_type in [ChangeType.CREATED, ChangeType.MODIFIED]:
         ...     print("File needs reindexing")
         File needs reindexing
+
     """
 
     CREATED = "created"
@@ -141,6 +143,7 @@ class FileChange:
         ... )
         >>> print(f"{change.change_type.value}: {change.path}")
         modified: /project/src/auth.py
+
     """
 
     path: Path
@@ -177,6 +180,7 @@ class WatchedSource:
         ... )
         >>> print(f"Watching: {source.path} (patterns: {source.file_patterns})")
         Watching: /project/docs (patterns: ['*.md', '*.rst', '*.txt'])
+
     """
 
     path: Path
@@ -214,10 +218,15 @@ class FileChangeHandler(FileSystemEventHandler):
         >>> # - on_modified: File content changed
         >>> # - on_deleted: File removed
         >>> # - on_moved: File renamed or moved
+
     """
 
     def __init__(
-        self, watcher: "FileWatcher", source_path: Path, source_id: str, file_patterns: List[str]
+        self,
+        watcher: "FileWatcher",
+        source_path: Path,
+        source_id: str,
+        file_patterns: List[str],
     ):
         """Initialize file change handler for a specific watched directory.
 
@@ -226,6 +235,7 @@ class FileChangeHandler(FileSystemEventHandler):
             source_path: Directory path being monitored by this handler.
             source_id: Unique identifier for the watched source.
             file_patterns: Glob patterns for files that should trigger events.
+
         """
         self.watcher = watcher
         self.source_path = source_path
@@ -390,6 +400,7 @@ class FileWatcher:
         >>>
         >>> # Clean shutdown
         >>> await watcher.stop()
+
     """
 
     def __init__(
@@ -413,6 +424,7 @@ class FileWatcher:
                 Higher values improve throughput but increase memory usage.
             use_polling: Force polling mode instead of native file system events.
                 Useful for network filesystems or systems without inotify support.
+
         """
         self.indexer = indexer
         self.graph_builder = graph_builder
@@ -477,6 +489,7 @@ class FileWatcher:
         Note:
             Must be called before watch() methods. The system runs until stop()
             is called or the process terminates.
+
         """
         if self.is_running:
             logger.warning("File watcher already running")
@@ -523,6 +536,7 @@ class FileWatcher:
             This method is idempotent - calling it multiple times is safe.
             Always call this method before application shutdown to ensure
             proper resource cleanup.
+
         """
         if not self.is_running:
             return
@@ -545,7 +559,10 @@ class FileWatcher:
         logger.info("File watcher stopped")
 
     async def watch(
-        self, path: Path, recursive: bool = True, file_patterns: Optional[List[str]] = None
+        self,
+        path: Path,
+        recursive: bool = True,
+        file_patterns: Optional[List[str]] = None,
     ) -> str:
         """Add a directory to watch for file changes with automatic indexing.
 
@@ -606,6 +623,7 @@ class FileWatcher:
             Initial indexing may take significant time for large directories.
             The method returns after setup is complete, but indexing continues
             in the background. Monitor stats to track indexing progress.
+
         """
         path = path.resolve()
 
@@ -673,6 +691,7 @@ class FileWatcher:
         Note:
             This only stops monitoring; it does not remove indexed content.
             To remove content, use the indexer's remove_source() method.
+
         """
         if source_id not in self.watched_sources:
             return False
@@ -740,7 +759,9 @@ class FileWatcher:
                 for source in self.watched_sources.values():
                     # Scan directory
                     files = await self.indexer.scanner.scan_folder(
-                        source.path, recursive=source.recursive, file_patterns=source.file_patterns
+                        source.path,
+                        recursive=source.recursive,
+                        file_patterns=source.file_patterns,
                     )
 
                     current_files = set(str(f) for f in files)
@@ -846,7 +867,9 @@ class FileWatcher:
 
             # Update knowledge graph if needed
             if self.graph_builder and (created or modified):
-                affected_sources = set(c.metadata.get("source_id") for c in created + modified)
+                affected_sources = set(
+                    c.metadata.get("source_id") for c in created + modified
+                )
                 for source_id in affected_sources:
                     if source_id:
                         await self.graph_builder.build_from_documents(source_id)
@@ -881,7 +904,9 @@ class FileWatcher:
             deleted = 0
 
             while True:
-                cursor, keys = await self.indexer.redis.redis.scan(cursor, match=pattern, count=100)
+                cursor, keys = await self.indexer.redis.redis.scan(
+                    cursor, match=pattern, count=100
+                )
 
                 if keys:
                     await self.indexer.redis.redis.delete(*keys)
@@ -902,7 +927,9 @@ class FileWatcher:
             # Remove old file from index
             if change.old_path:
                 old_change = FileChange(
-                    path=change.old_path, change_type=ChangeType.DELETED, metadata=change.metadata
+                    path=change.old_path,
+                    change_type=ChangeType.DELETED,
+                    metadata=change.metadata,
                 )
                 await self._process_deletion(old_change)
 
@@ -948,6 +975,7 @@ class FileWatcher:
             Callbacks should handle exceptions internally to avoid affecting
             the file monitoring system. Heavy processing should be delegated
             to background tasks.
+
         """
         self.change_callbacks.append(callback)
 
@@ -974,6 +1002,7 @@ class FileWatcher:
         Note:
             If the callback is not currently registered, this method does
             nothing (no error is raised).
+
         """
         if callback in self.change_callbacks:
             self.change_callbacks.remove(callback)
@@ -1011,6 +1040,7 @@ class FileWatcher:
             >>> if stats['changes_detected'] > 0:
             ...     success_rate = stats['changes_processed'] / stats['changes_detected']
             ...     print(f"Success Rate: {success_rate:.1%}")
+
         """
         stats = self.stats.copy()
         stats.update(
@@ -1024,7 +1054,8 @@ class FileWatcher:
         return stats
 
     def get_change_history(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Get chronological history of recent file changes for monitoring and debugging.
+        """Get chronological history of recent file changes for monitoring and
+        debugging.
 
         Returns detailed information about recent file system changes detected
         by the watcher, formatted for easy analysis and debugging. Useful for
@@ -1062,6 +1093,7 @@ class FileWatcher:
 
             >>> py_changes = [c for c in history if c['path'].endswith('.py')]
             >>> print(f"Python file changes: {len(py_changes)}")
+
         """
         history = []
         for change in self.change_history[-limit:]:
@@ -1121,6 +1153,7 @@ class FileWatcher:
             This operation can be time-intensive for large document sets.
             It bypasses all optimizations and processes every file completely.
             Consider running during low-activity periods.
+
         """
         sources_to_scan = []
 

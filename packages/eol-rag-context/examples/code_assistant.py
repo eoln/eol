@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""
-Code Assistant Example
+"""Code Assistant Example.
 
-This example shows how to build an AI code assistant using EOL RAG Context.
-It indexes a codebase and provides intelligent context for code-related queries.
+This example shows how to build an AI code assistant using EOL RAG Context. It indexes a
+codebase and provides intelligent context for code-related queries.
+
 """
 
 import asyncio
-from pathlib import Path
 import sys
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add parent directory to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -26,6 +26,7 @@ class CodeAssistant:
 
         Args:
             project_path: Path to the project to analyze
+
         """
         self.project_path = project_path
         self.server = None
@@ -96,6 +97,7 @@ class CodeAssistant:
 
         Returns:
             An answer based on the codebase context
+
         """
         # Search for relevant context
         contexts = await self.server.search_context(
@@ -125,6 +127,7 @@ class CodeAssistant:
 
         Returns:
             List of implementations found
+
         """
         # Use knowledge graph to find entity relationships
         graph = await self.server.query_knowledge_graph(entity, max_depth=2)
@@ -152,11 +155,14 @@ class CodeAssistant:
 
         Returns:
             List of improvement suggestions
+
         """
         suggestions = []
 
         # Search for similar patterns
-        similar = await self.server.search_context(code, limit=3, filters={"file_type": "code"})
+        similar = await self.server.search_context(
+            code, limit=3, filters={"file_type": "code"}
+        )
 
         for ctx in similar:
             # Look for better implementations

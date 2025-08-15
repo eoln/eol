@@ -1,6 +1,4 @@
-"""
-Improved tests for redis_client to boost coverage from 26% to 60%.
-"""
+"""Improved tests for redis_client to boost coverage from 26% to 60%."""
 
 import asyncio
 import json
@@ -25,7 +23,9 @@ sys.modules["redis.asyncio"] = mock_redis.asyncio
 sys.modules["redis.commands"] = mock_redis.commands
 sys.modules["redis.commands.search"] = mock_redis.commands.search
 sys.modules["redis.commands.search.field"] = mock_redis.commands.search.field
-sys.modules["redis.commands.search.indexDefinition"] = mock_redis.commands.search.indexDefinition
+sys.modules["redis.commands.search.indexDefinition"] = (
+    mock_redis.commands.search.indexDefinition
+)
 sys.modules["redis.commands.search.query"] = mock_redis.commands.search.query
 sys.modules["redis.exceptions"] = mock_redis.exceptions
 

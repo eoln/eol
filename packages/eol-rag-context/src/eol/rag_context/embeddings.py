@@ -1,6 +1,4 @@
-"""
-Embeddings management for EOL RAG Context.
-"""
+"""Embeddings management for EOL RAG Context."""
 
 import asyncio
 import hashlib
@@ -56,13 +54,17 @@ class SentenceTransformerProvider(EmbeddingProvider):
         embeddings = await loop.run_in_executor(
             self.executor,
             lambda: self.model.encode(
-                texts, normalize_embeddings=self.config.normalize, show_progress_bar=False
+                texts,
+                normalize_embeddings=self.config.normalize,
+                show_progress_bar=False,
             ),
         )
 
         return embeddings
 
-    async def embed_batch(self, texts: List[str], batch_size: Optional[int] = None) -> np.ndarray:
+    async def embed_batch(
+        self, texts: List[str], batch_size: Optional[int] = None
+    ) -> np.ndarray:
         """Generate embeddings in batches."""
         batch_size = batch_size or self.config.batch_size
 
@@ -96,7 +98,9 @@ class OpenAIProvider(EmbeddingProvider):
         if isinstance(texts, str):
             texts = [texts]
 
-        response = await self.client.embeddings.create(model=self.config.openai_model, input=texts)
+        response = await self.client.embeddings.create(
+            model=self.config.openai_model, input=texts
+        )
 
         embeddings = np.array([e.embedding for e in response.data])
 
@@ -107,7 +111,9 @@ class OpenAIProvider(EmbeddingProvider):
 
         return embeddings
 
-    async def embed_batch(self, texts: List[str], batch_size: Optional[int] = None) -> np.ndarray:
+    async def embed_batch(
+        self, texts: List[str], batch_size: Optional[int] = None
+    ) -> np.ndarray:
         """Generate embeddings in batches."""
         batch_size = batch_size or self.config.batch_size
 
@@ -176,7 +182,9 @@ class EmbeddingManager:
 
         return embedding
 
-    async def get_embeddings(self, texts: List[str], use_cache: bool = True) -> np.ndarray:
+    async def get_embeddings(
+        self, texts: List[str], use_cache: bool = True
+    ) -> np.ndarray:
         """Get embeddings for multiple texts with caching."""
         embeddings = []
         uncached_texts = []
@@ -209,7 +217,9 @@ class EmbeddingManager:
             if use_cache and self.redis:
                 for text, embedding in zip(uncached_texts, new_embeddings):
                     cache_key = self._cache_key(text)
-                    await self.redis.setex(cache_key, 3600, embedding.astype(np.float32).tobytes())
+                    await self.redis.setex(
+                        cache_key, 3600, embedding.astype(np.float32).tobytes()
+                    )
 
             # Add to results
             for idx, embedding in zip(uncached_indices, new_embeddings):

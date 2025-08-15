@@ -43,6 +43,7 @@ Example:
     >>> # Monitor performance
     >>> stats = cache.get_stats()
     >>> print(f"Hit rate: {stats['hit_rate']:.1%}")
+
 """
 
 import hashlib
@@ -93,6 +94,7 @@ class CachedQuery:
         ... )
         >>> print(f"Query: {cached_entry.query}")
         Query: What is Python?
+
     """
 
     query: str
@@ -167,6 +169,7 @@ class SemanticCache:
         >>> stats = cache.get_stats()
         >>> print(f"Cache hit rate: {stats['hit_rate']:.1%}")
         >>> print(f"Adaptive threshold: {stats['adaptive_threshold']:.3f}")
+
     """
 
     def __init__(
@@ -182,6 +185,7 @@ class SemanticCache:
                 hit rate targets, similarity thresholds, and size limits.
             embedding_manager: Manager for generating and caching query embeddings.
             redis_store: Redis vector store for cache storage and similarity search.
+
         """
         self.config = cache_config
         self.embeddings = embedding_manager
@@ -225,6 +229,7 @@ class SemanticCache:
             >>> await cache.initialize()
             >>> print("Cache index ready for queries")
             Cache index ready for queries
+
         """
         try:
             # Create dedicated cache index
@@ -233,7 +238,10 @@ class SemanticCache:
         except Exception:
             # Create new cache index
             from redis.commands.search.field import NumericField, TextField, VectorField
-            from redis.commands.search.index_definition import IndexDefinition, IndexType
+            from redis.commands.search.index_definition import (
+                IndexDefinition,
+                IndexType,
+            )
 
             schema = [
                 TextField("query"),
@@ -294,6 +302,7 @@ class SemanticCache:
         Note:
             This method automatically updates cache statistics and hit counts
             for retrieved entries to support eviction and optimization algorithms.
+
         """
         self.stats["queries"] += 1
 
@@ -378,6 +387,7 @@ class SemanticCache:
         Note:
             If caching is disabled in configuration, this method returns
             immediately without storing the entry.
+
         """
         if not self.config.enabled:
             return
@@ -431,6 +441,7 @@ class SemanticCache:
         Note:
             This is an internal method used by get() for cache lookups.
             Handles Redis connection errors gracefully by returning empty list.
+
         """
         from redis.commands.search.query import Query
 
@@ -454,13 +465,17 @@ class SemanticCache:
             output = []
             for doc in results.docs:
                 doc_id = doc.id.split(":")[-1]
-                similarity = 1.0 - float(doc.similarity) if hasattr(doc, "similarity") else 0.0
+                similarity = (
+                    1.0 - float(doc.similarity) if hasattr(doc, "similarity") else 0.0
+                )
 
                 data = {
                     "query": doc.query if hasattr(doc, "query") else "",
                     "response": doc.response if hasattr(doc, "response") else "",
                     "hit_count": int(doc.hit_count) if hasattr(doc, "hit_count") else 0,
-                    "timestamp": float(doc.timestamp) if hasattr(doc, "timestamp") else 0,
+                    "timestamp": (
+                        float(doc.timestamp) if hasattr(doc, "timestamp") else 0
+                    ),
                 }
 
                 output.append((doc_id, similarity, data))
@@ -483,6 +498,7 @@ class SemanticCache:
         Note:
             This method scans the entire keyspace with "cache:*" pattern,
             which may be slow for very large caches.
+
         """
         cursor = 0
         count = 0
@@ -512,6 +528,7 @@ class SemanticCache:
         Note:
             This is an internal method called automatically by set()
             when cache size limits are reached.
+
         """
         # Find oldest entries
         cursor = 0
@@ -553,6 +570,7 @@ class SemanticCache:
         Note:
             This is an internal method called automatically by get() and set()
             to maintain real-time performance optimization.
+
         """
         # Update hit rate
         if self.stats["queries"] > 0:
@@ -614,6 +632,7 @@ class SemanticCache:
             ...     print("Hit rate too high, consider raising threshold")
             >>> elif stats['hit_rate'] < 0.25:
             ...     print("Hit rate too low, consider lowering threshold")
+
         """
         stats = self.stats.copy()
         stats["adaptive_threshold"] = self.adaptive_threshold
@@ -644,6 +663,7 @@ class SemanticCache:
         Note:
             This operation cannot be undone. Consider using cache statistics
             to evaluate performance before clearing productive caches.
+
         """
         cursor = 0
         deleted = 0
@@ -710,6 +730,7 @@ class SemanticCache:
         Note:
             Requires at least 100 queries for meaningful statistical analysis.
             Recommendations are based on empirical performance data.
+
         """
         report = {
             "current_hit_rate": self.stats["hit_rate"],
@@ -736,7 +757,9 @@ class SemanticCache:
             else:
                 # General case
                 target_percentile = (1 - self.config.target_hit_rate) * 100
-                recommended_threshold = np.percentile(self.similarity_scores, target_percentile)
+                recommended_threshold = np.percentile(
+                    self.similarity_scores, target_percentile
+                )
 
             report["recommended_threshold"] = float(recommended_threshold)
 

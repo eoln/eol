@@ -5,12 +5,14 @@ This guide covers installing EOL RAG Context in different environments.
 ## Prerequisites
 
 ### System Requirements
+
 - **Python**: 3.11 or higher
 - **Memory**: 4GB+ RAM recommended
 - **Storage**: 500MB+ free space for indexes
 - **Network**: Internet access for embedding models (first run)
 
 ### Redis Stack 8.0+
+
 Redis Stack includes the RediSearch module required for vector operations. Regular Redis will **not** work.
 
 ## Installation Methods
@@ -49,12 +51,14 @@ redis-cli ping
 ### Native Installation
 
 **macOS (Homebrew):**
+
 ```bash
 brew install redis-stack-server
 redis-stack-server --daemonize yes
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
 curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
@@ -87,15 +91,18 @@ print('✅ Installation successful!')
 ### Common Issues
 
 **"Command not found: eol-rag-context"**
+
 - Make sure you're in the correct virtual environment
 - Try `python -m eol.rag_context` instead
 
 **"Cannot connect to Redis"**
+
 - Verify Redis Stack is running: `docker ps | grep redis`
 - Check port 6379 is available: `netstat -an | grep 6379`
 - Ensure you're using Redis Stack, not regular Redis
 
 **"No module named sentence_transformers"**
+
 - This is normal for first run - the embedding model will download automatically
 - Requires internet connection for initial model download
 

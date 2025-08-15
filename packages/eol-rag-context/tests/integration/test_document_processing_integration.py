@@ -1,6 +1,7 @@
-"""
-Integration tests for document processing.
+"""Integration tests for document processing.
+
 Tests real file processing with various formats.
+
 """
 
 import json
@@ -104,15 +105,15 @@ import sys
 
 class MyClass:
     """A sample class."""
-    
+
     def __init__(self, value):
         """Initialize the class."""
         self.value = value
-    
+
     def get_value(self):
         """Get the value."""
         return self.value
-    
+
     @property
     def double_value(self):
         """Return double the value."""
@@ -160,7 +161,11 @@ if __name__ == "__main__":
                 "name": "test-project",
                 "version": "1.0.0",
                 "dependencies": {"package1": "^1.0.0", "package2": "~2.0.0"},
-                "config": {"setting1": True, "setting2": 42, "nested": {"deep": "value"}},
+                "config": {
+                    "setting1": True,
+                    "setting2": 42,
+                    "nested": {"deep": "value"},
+                },
                 "items": ["item1", "item2", "item3"],
             }
             json.dump(data, f, indent=2)
@@ -195,11 +200,11 @@ class Calculator {
     constructor() {
         this.result = 0;
     }
-    
+
     add(a, b) {
         return a + b;
     }
-    
+
     multiply(a, b) {
         return a * b;
     }
@@ -278,10 +283,14 @@ export { Calculator, processData, CONFIG };
 
         for ext, expected_lang in test_cases:
             lang = document_processor_instance._detect_language(ext)
-            assert lang == expected_lang, f"Failed for {ext}: expected {expected_lang}, got {lang}"
+            assert (
+                lang == expected_lang
+            ), f"Failed for {ext}: expected {expected_lang}, got {lang}"
 
     @pytest.mark.asyncio
-    async def test_concurrent_processing(self, document_processor_instance, temp_test_directory):
+    async def test_concurrent_processing(
+        self, document_processor_instance, temp_test_directory
+    ):
         """Test concurrent processing of multiple files."""
         import asyncio
 
@@ -314,7 +323,9 @@ export { Calculator, processData, CONFIG };
     async def test_error_handling(self, document_processor_instance):
         """Test error handling for invalid files."""
         # Test non-existent file
-        result = await document_processor_instance.process_file(Path("/nonexistent/file.txt"))
+        result = await document_processor_instance.process_file(
+            Path("/nonexistent/file.txt")
+        )
         assert result is None
 
         # Test empty file

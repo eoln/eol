@@ -82,16 +82,16 @@ echo "Checking Redis Stack..."
 
 if ! check_redis_stack; then
     echo "Starting Redis Stack Server..."
-    
+
     # Stop any existing Redis
     redis-cli shutdown 2>/dev/null || true
     sleep 2
-    
+
     # Start Redis Stack (has RediSearch module)
     if command_exists redis-stack-server; then
         redis-stack-server --daemonize yes
         sleep 3
-        
+
         if check_redis_stack; then
             echo -e "${GREEN}✓ Redis Stack Server started${NC}"
         else

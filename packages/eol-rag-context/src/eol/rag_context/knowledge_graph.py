@@ -45,6 +45,7 @@ Example:
     >>> patterns = await kg_builder.discover_patterns(min_support=0.1)
     >>> for pattern in patterns[:3]:
     ...     print(f"Pattern: {pattern['pattern']} (support: {pattern['support']:.1%})")
+
 """
 
 import hashlib
@@ -83,6 +84,7 @@ class EntityType(Enum):
         >>> print(entity_type.value)  # "function"
         >>> print(EntityType.CONCEPT in [EntityType.CONCEPT, EntityType.TOPIC])
         True
+
     """
 
     CONCEPT = "concept"
@@ -124,6 +126,7 @@ class RelationType(Enum):
         >>> # Check if relationship is structural
         >>> structural_types = {RelationType.CONTAINS, RelationType.PART_OF}
         >>> is_structural = rel_type in structural_types
+
     """
 
     # Structural relationships
@@ -161,7 +164,8 @@ class RelationType(Enum):
 
 @dataclass
 class Entity:
-    """Knowledge graph entity representing a semantic unit with properties and relationships.
+    """Knowledge graph entity representing a semantic unit with properties and
+    relationships.
 
     Represents a single entity in the knowledge graph, containing all necessary
     information for semantic processing, similarity matching, and relationship
@@ -197,6 +201,7 @@ class Entity:
         ... )
         >>> print(f"{entity.name} ({entity.type.value})")
         validate_token (function)
+
     """
 
     id: str
@@ -240,6 +245,7 @@ class Relationship:
         ... )
         >>> print(f"Relationship: {relationship.type.value} (weight: {relationship.weight})")
         Relationship: similar_to (weight: 0.87)
+
     """
 
     source_id: str
@@ -279,6 +285,7 @@ class KnowledgeSubgraph:
         >>> # Analyze relationship patterns
         >>> rel_types = {r.type.value for r in subgraph.relationships}
         >>> print(f"Relationship types: {rel_types}")
+
     """
 
     entities: List[Entity]
@@ -288,7 +295,8 @@ class KnowledgeSubgraph:
 
 
 class KnowledgeGraphBuilder:
-    """Comprehensive knowledge graph builder and manager for semantic information extraction.
+    """Comprehensive knowledge graph builder and manager for semantic information
+    extraction.
 
     Constructs, maintains, and queries a dynamic knowledge graph from indexed documents,
     extracting entities and relationships to enable advanced semantic search and
@@ -348,18 +356,24 @@ class KnowledgeGraphBuilder:
         >>> for pattern in patterns:
         ...     if pattern['pattern'].startswith('function'):
         ...         print(f"Code pattern: {pattern['pattern']} ({pattern['support']:.1%} support)")
+
     """
 
-    def __init__(self, redis_store: RedisVectorStore, embedding_manager: EmbeddingManager):
+    def __init__(
+        self, redis_store: RedisVectorStore, embedding_manager: EmbeddingManager
+    ):
         """Initialize knowledge graph builder with required dependencies.
 
         Args:
             redis_store: Redis vector store for graph persistence and vector operations.
             embedding_manager: Manager for generating and caching entity embeddings.
+
         """
         self.redis = redis_store
         self.embeddings = embedding_manager
-        self.graph = nx.MultiDiGraph()  # Multi-directed graph for multiple relationship types
+        self.graph = (
+            nx.MultiDiGraph()
+        )  # Multi-directed graph for multiple relationship types
         self.entities: Dict[str, Entity] = {}
         self.relationships: List[Relationship] = []
 
@@ -405,6 +419,7 @@ class KnowledgeGraphBuilder:
         Note:
             This operation can be time-intensive for large document sets.
             Progress is logged at INFO level for monitoring.
+
         """
         logger.info("Building knowledge graph from documents...")
 
@@ -442,6 +457,7 @@ class KnowledgeGraphBuilder:
         Note:
             This is the primary entity extraction method that processes
             chunk-level documents and delegates to content-specific extractors.
+
         """
         # Scan for documents
         pattern = f"chunk:{source_id}*" if source_id else "chunk:*"
@@ -476,7 +492,9 @@ class KnowledgeGraphBuilder:
 
                 # Get embedding if available
                 if b"embedding" in data:
-                    entity.embedding = np.frombuffer(data[b"embedding"], dtype=np.float32)
+                    entity.embedding = np.frombuffer(
+                        data[b"embedding"], dtype=np.float32
+                    )
 
                 self.entities[entity.id] = entity
                 self.graph.add_node(entity.id, **asdict(entity))
@@ -525,6 +543,7 @@ class KnowledgeGraphBuilder:
         Note:
             Uses regex patterns for simplicity. Could be enhanced with
             AST parsing for more accurate code structure analysis.
+
         """
         language = metadata.get("language", "unknown")
 
@@ -537,7 +556,9 @@ class KnowledgeGraphBuilder:
             class_pattern = r"class\s+(\w+)\s*[\(:]"
             # import_pattern = r"(?:from\s+[\w.]+\s+)?import\s+([\w,\s]+)"
         elif language in ["javascript", "typescript"]:
-            func_pattern = r"(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s+)?\(|\()"
+            func_pattern = (
+                r"(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s+)?\(|\()"
+            )
             class_pattern = r"class\s+(\w+)"
             # import_pattern = r'import\s+.*from\s+[\'"](.+)[\'"]'
         else:
@@ -558,9 +579,13 @@ class KnowledgeGraphBuilder:
             self.graph.add_node(entity.id, **asdict(entity))
 
             # Add relationship
-            rel = Relationship(source_id=doc_id, target_id=entity.id, type=RelationType.CONTAINS)
+            rel = Relationship(
+                source_id=doc_id, target_id=entity.id, type=RelationType.CONTAINS
+            )
             self.relationships.append(rel)
-            self.graph.add_edge(doc_id, entity.id, type=rel.type.value, weight=rel.weight)
+            self.graph.add_edge(
+                doc_id, entity.id, type=rel.type.value, weight=rel.weight
+            )
 
         # Extract classes
         for match in re.finditer(class_pattern, content):
@@ -577,9 +602,13 @@ class KnowledgeGraphBuilder:
             self.graph.add_node(entity.id, **asdict(entity))
 
             # Add relationship
-            rel = Relationship(source_id=doc_id, target_id=entity.id, type=RelationType.CONTAINS)
+            rel = Relationship(
+                source_id=doc_id, target_id=entity.id, type=RelationType.CONTAINS
+            )
             self.relationships.append(rel)
-            self.graph.add_edge(doc_id, entity.id, type=rel.type.value, weight=rel.weight)
+            self.graph.add_edge(
+                doc_id, entity.id, type=rel.type.value, weight=rel.weight
+            )
 
     async def _extract_markdown_entities(
         self, content: str, doc_id: str, metadata: Dict[str, Any]
@@ -605,9 +634,13 @@ class KnowledgeGraphBuilder:
                 self.graph.add_node(entity.id, **asdict(entity))
 
             # Add relationship
-            rel = Relationship(source_id=doc_id, target_id=entity.id, type=RelationType.DESCRIBES)
+            rel = Relationship(
+                source_id=doc_id, target_id=entity.id, type=RelationType.DESCRIBES
+            )
             self.relationships.append(rel)
-            self.graph.add_edge(doc_id, entity.id, type=rel.type.value, weight=rel.weight)
+            self.graph.add_edge(
+                doc_id, entity.id, type=rel.type.value, weight=rel.weight
+            )
 
         # Extract code blocks as API references
         code_block_pattern = r"```(\w+)?\n(.*?)```"
@@ -634,7 +667,9 @@ class KnowledgeGraphBuilder:
                     source_id=doc_id, target_id=entity.id, type=RelationType.CONTAINS
                 )
                 self.relationships.append(rel)
-                self.graph.add_edge(doc_id, entity.id, type=rel.type.value, weight=rel.weight)
+                self.graph.add_edge(
+                    doc_id, entity.id, type=rel.type.value, weight=rel.weight
+                )
 
     async def _extract_text_entities(
         self, content: str, doc_id: str, metadata: Dict[str, Any]
@@ -654,9 +689,15 @@ class KnowledgeGraphBuilder:
 
                 # Determine entity type based on context
                 entity_type = EntityType.TERM
-                if any(tech in term.lower() for tech in ["api", "sdk", "framework", "library"]):
+                if any(
+                    tech in term.lower()
+                    for tech in ["api", "sdk", "framework", "library"]
+                ):
                     entity_type = EntityType.TECHNOLOGY
-                elif any(org in term.lower() for org in ["inc", "corp", "company", "foundation"]):
+                elif any(
+                    org in term.lower()
+                    for org in ["inc", "corp", "company", "foundation"]
+                ):
                     entity_type = EntityType.ORGANIZATION
 
                 entity = Entity(
@@ -677,13 +718,17 @@ class KnowledgeGraphBuilder:
                     source_id=doc_id, target_id=entity.id, type=RelationType.REFERENCES
                 )
                 self.relationships.append(rel)
-                self.graph.add_edge(doc_id, entity.id, type=rel.type.value, weight=rel.weight)
+                self.graph.add_edge(
+                    doc_id, entity.id, type=rel.type.value, weight=rel.weight
+                )
 
     async def _extract_code_entities(self, source_id: Optional[str] = None) -> None:
         """Extract code-specific entities from indexed code files."""
         # This is handled in _extract_code_entities_from_content
 
-    async def _extract_conceptual_entities(self, source_id: Optional[str] = None) -> None:
+    async def _extract_conceptual_entities(
+        self, source_id: Optional[str] = None
+    ) -> None:
         """Extract high-level conceptual entities."""
         # Scan for concept-level documents
         pattern = f"concept:{source_id}*" if source_id else "concept:*"
@@ -713,7 +758,9 @@ class KnowledgeGraphBuilder:
 
                 # Get embedding if available
                 if b"embedding" in data:
-                    entity.embedding = np.frombuffer(data[b"embedding"], dtype=np.float32)
+                    entity.embedding = np.frombuffer(
+                        data[b"embedding"], dtype=np.float32
+                    )
 
                 self.entities[entity.id] = entity
                 self.graph.add_node(entity.id, **asdict(entity))
@@ -741,9 +788,12 @@ class KnowledgeGraphBuilder:
         Note:
             Computationally intensive for large entity sets (O(n²)).
             Consider sampling or clustering for very large graphs.
+
         """
         # Get entities with embeddings
-        entities_with_embeddings = [e for e in self.entities.values() if e.embedding is not None]
+        entities_with_embeddings = [
+            e for e in self.entities.values() if e.embedding is not None
+        ]
 
         if len(entities_with_embeddings) < 2:
             return
@@ -754,7 +804,8 @@ class KnowledgeGraphBuilder:
                 if entity1.embedding is not None and entity2.embedding is not None:
                     # Calculate cosine similarity
                     similarity = np.dot(entity1.embedding, entity2.embedding) / (
-                        np.linalg.norm(entity1.embedding) * np.linalg.norm(entity2.embedding)
+                        np.linalg.norm(entity1.embedding)
+                        * np.linalg.norm(entity2.embedding)
                     )
 
                     # Add relationship if similarity is high
@@ -768,7 +819,10 @@ class KnowledgeGraphBuilder:
                         )
                         self.relationships.append(rel)
                         self.graph.add_edge(
-                            entity1.id, entity2.id, type=rel.type.value, weight=rel.weight
+                            entity1.id,
+                            entity2.id,
+                            type=rel.type.value,
+                            weight=rel.weight,
                         )
 
     async def _build_code_relationships(self) -> None:
@@ -784,7 +838,9 @@ class KnowledgeGraphBuilder:
                 for other_cls in classes:
                     if other_cls.id != cls.id and cls.name in other_cls.content:
                         rel = Relationship(
-                            source_id=other_cls.id, target_id=cls.id, type=RelationType.EXTENDS
+                            source_id=other_cls.id,
+                            target_id=cls.id,
+                            type=RelationType.EXTENDS,
                         )
                         self.relationships.append(rel)
                         self.graph.add_edge(
@@ -883,6 +939,7 @@ class KnowledgeGraphBuilder:
             >>> for rel in subgraph.relationships:
             ...     rel_counts[rel.type.value] = rel_counts.get(rel.type.value, 0) + 1
             >>> print(f"Relationship distribution: {rel_counts}")
+
         """
         # Get query embedding
         query_embedding = await self.embeddings.get_embedding(query)
@@ -945,7 +1002,9 @@ class KnowledgeGraphBuilder:
                             subgraph_relationships.append(rel)
 
         # Get entity objects
-        result_entities = [self.entities[eid] for eid in subgraph_entities if eid in self.entities]
+        result_entities = [
+            self.entities[eid] for eid in subgraph_entities if eid in self.entities
+        ]
 
         return KnowledgeSubgraph(
             entities=result_entities[:max_entities],
@@ -959,7 +1018,9 @@ class KnowledgeGraphBuilder:
             },
         )
 
-    async def _find_relevant_entities(self, query_embedding: np.ndarray, k: int = 5) -> List[str]:
+    async def _find_relevant_entities(
+        self, query_embedding: np.ndarray, k: int = 5
+    ) -> List[str]:
         """Find k most relevant entities using vector similarity search.
 
         Searches through all stored entity embeddings to find those most
@@ -976,6 +1037,7 @@ class KnowledgeGraphBuilder:
         Note:
             Scans all entities in Redis, which may be slow for large graphs.
             Could be optimized with dedicated vector search index.
+
         """
 
         # Search in stored entities
@@ -1041,6 +1103,7 @@ class KnowledgeGraphBuilder:
             ...                      key=lambda x: x[1], reverse=True)
             >>> for rel_type, count in sorted_rels[:5]:
             ...     print(f"  {rel_type}: {count}")
+
         """
         return {
             "entity_count": len(self.entities),
@@ -1060,7 +1123,9 @@ class KnowledgeGraphBuilder:
                 defaultdict(
                     int,
                     {
-                        rel.type.value: sum(1 for r in self.relationships if r.type == rel.type)
+                        rel.type.value: sum(
+                            1 for r in self.relationships if r.type == rel.type
+                        )
                         for rel in self.relationships
                     },
                 )
@@ -1122,6 +1187,7 @@ class KnowledgeGraphBuilder:
         Note:
             Community detection requires the 'python-louvain' package.
             If not available, community patterns are skipped silently.
+
         """
         patterns = []
 
@@ -1151,14 +1217,22 @@ class KnowledgeGraphBuilder:
 
         # Find hub entities (highly connected)
         node_degrees = dict(self.graph.degree())
-        hub_threshold = np.percentile(list(node_degrees.values()), 90) if node_degrees else 0
+        hub_threshold = (
+            np.percentile(list(node_degrees.values()), 90) if node_degrees else 0
+        )
 
         hubs = [
             {
                 "entity_id": node,
-                "entity_name": self.entities[node].name if node in self.entities else node,
+                "entity_name": (
+                    self.entities[node].name if node in self.entities else node
+                ),
                 "degree": degree,
-                "type": self.entities[node].type.value if node in self.entities else "unknown",
+                "type": (
+                    self.entities[node].type.value
+                    if node in self.entities
+                    else "unknown"
+                ),
             }
             for node, degree in node_degrees.items()
             if degree >= hub_threshold

@@ -1,6 +1,4 @@
-"""
-Test configuration module.
-"""
+"""Test configuration module."""
 
 from pathlib import Path
 

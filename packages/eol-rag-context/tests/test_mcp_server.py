@@ -1,6 +1,4 @@
-"""
-Tests for MCP server functionality.
-"""
+"""Tests for MCP server functionality."""
 
 import asyncio
 import json
@@ -23,7 +21,9 @@ class TestMCPServer:
         # Create server but prevent auto-registration
         server = object.__new__(EOLRAGContextServer)
         server.config = test_config
-        server.mcp = FastMCP(name=test_config.server_name, version=test_config.server_version)
+        server.mcp = FastMCP(
+            name=test_config.server_name, version=test_config.server_version
+        )
 
         # Mock components to avoid Redis dependency
         server.redis_store = AsyncMock()
@@ -62,7 +62,9 @@ class TestMCPServer:
 
         server.knowledge_graph.build_from_documents = AsyncMock()
         server.knowledge_graph.query_subgraph = AsyncMock(
-            return_value=Mock(entities=[], relationships=[], central_entities=[], metadata={})
+            return_value=Mock(
+                entities=[], relationships=[], central_entities=[], metadata={}
+            )
         )
         server.knowledge_graph.get_graph_stats = Mock(return_value={"entity_count": 0})
 
@@ -103,7 +105,9 @@ class TestMCPServer:
         result = await server.index_directory(request.path, recursive=request.recursive)
 
         assert result["source_id"] == "test_source"
-        assert result["indexed_files"] == 10  # This is what the indexer mock returns as file_count
+        assert (
+            result["indexed_files"] == 10
+        )  # This is what the indexer mock returns as file_count
         assert result["total_chunks"] == 50
         server.indexer.index_folder.assert_called_once()
 

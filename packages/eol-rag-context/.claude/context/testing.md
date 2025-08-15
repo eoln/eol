@@ -54,6 +54,7 @@ pytest tests/integration/  # Integration tests only
 ```
 
 This script automatically:
+
 - Starts Redis (Docker or native)
 - Installs dependencies
 - Runs unit and integration tests
@@ -71,7 +72,9 @@ python run_integration_tests_automated.py
 ## Test Types
 
 ### Unit Tests (43% coverage)
+
 Located in `tests/`:
+
 - `test_config.py` - Configuration tests (96% coverage)
 - `test_embeddings.py` - Embedding provider tests
 - `test_force_coverage.py` - Core functionality tests
@@ -80,7 +83,9 @@ Located in `tests/`:
 - `test_embeddings_improved.py` - Enhanced embedding tests
 
 ### Integration Tests (37% additional coverage)
+
 Located in `tests/integration/`:
+
 - `test_redis_integration.py` - Redis vector operations
 - `test_document_processing_integration.py` - Real file processing
 - `test_indexing_integration.py` - Indexing workflows
@@ -91,6 +96,7 @@ Located in `tests/integration/`:
 ### Manual Prerequisites Setup
 
 1. **Create and Activate Virtual Environment**:
+
 ```bash
 # If .venv doesn't exist
 python3 -m venv .venv
@@ -100,6 +106,7 @@ source .venv/bin/activate
 ```
 
 2. **Install Dependencies (in activated venv)**:
+
 ```bash
 # Ensure venv is activated first!
 pip install pytest pytest-asyncio pytest-cov
@@ -110,17 +117,20 @@ pip install sentence-transformers aiofiles beautifulsoup4
 3. **Start Redis Stack**:
 
 **Option A: Docker Compose (Recommended)**
+
 ```bash
 # Ensure Docker Desktop is running first!
 docker compose -f docker-compose.test.yml up -d redis
 ```
 
 **Option B: Docker Run**
+
 ```bash
 docker run -d --name redis-test -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 ```
 
 **Option C: Native Redis Stack (macOS)**
+
 ```bash
 brew install --cask redis-stack-server
 redis-stack-server --daemonize yes
@@ -131,17 +141,20 @@ redis-stack-server --daemonize yes
 ### Run Tests
 
 **CRITICAL**: Always activate venv first!
+
 ```bash
 source .venv/bin/activate
 ```
 
 1. **Unit Tests Only**:
+
 ```bash
 pytest tests/test_config.py tests/test_embeddings.py tests/test_force_coverage.py \
     --cov=eol.rag_context --cov-report=term
 ```
 
 2. **Integration Tests Only**:
+
 ```bash
 REDIS_HOST=localhost REDIS_PORT=6379 \
 pytest tests/integration/ -m integration \
@@ -149,6 +162,7 @@ pytest tests/integration/ -m integration \
 ```
 
 3. **All Tests with Coverage**:
+
 ```bash
 pytest tests/ --cov=eol.rag_context \
     --cov-report=term --cov-report=html:coverage/html
@@ -194,6 +208,7 @@ pkill redis-server
 ### GitHub Actions
 
 Tests run automatically on:
+
 - Push to `main` or `feat/rag-context`
 - Pull requests to `main`
 
@@ -215,6 +230,7 @@ docker-compose -f docker-compose.test.yml down
 ### Common Issues
 
 1. **"No module named pytest" Error**
+
 ```bash
 # You forgot to activate venv!
 source .venv/bin/activate
@@ -222,6 +238,7 @@ source .venv/bin/activate
 ```
 
 2. **"Cannot connect to Docker daemon" Error**
+
 ```bash
 # Docker Desktop is not running
 open -a Docker  # macOS
@@ -229,6 +246,7 @@ open -a Docker  # macOS
 ```
 
 3. **Redis Connection Failed**
+
 ```bash
 # Check if Redis container is running
 docker ps | grep redis
@@ -239,6 +257,7 @@ redis-cli ping  # Should return: PONG
 ```
 
 4. **Import Errors or Missing Dependencies**
+
 ```bash
 # Always work in venv
 source .venv/bin/activate
@@ -247,6 +266,7 @@ pip install -r requirements-dev.txt
 ```
 
 5. **Coverage Below 80%**
+
 ```bash
 # Ensure Redis is running for integration tests
 docker ps | grep redis
@@ -256,6 +276,7 @@ pytest tests/ --cov=eol.rag_context
 ```
 
 6. **Docker Not Available**
+
 ```bash
 # On macOS, install Docker Desktop:
 brew install --cask docker
@@ -278,6 +299,7 @@ Tests use pytest markers for organization:
 ```
 
 Run specific markers:
+
 ```bash
 pytest -m unit  # Unit tests only
 pytest -m integration  # Integration tests only
@@ -290,32 +312,37 @@ pytest -m "not slow"  # Skip slow tests
 
 **CRITICAL**: Integration tests should NEVER mock the interfaces they are testing. This is a common mistake that defeats the purpose of integration testing.
 
-#### ❌ Wrong Approach:
+#### ❌ Wrong Approach
+
 ```python
 # DON'T DO THIS in integration tests!
 sys.modules['redis'] = MagicMock()  # This breaks integration testing
 ```
 
-#### ✅ Correct Approach:
+#### ✅ Correct Approach
+
 ```python
 # Integration tests use REAL Redis
 from redis import Redis  # Real Redis client
 await store.connect_async()  # Connects to actual Redis instance
 ```
 
-#### Why This Matters:
+#### Why This Matters
+
 1. **Integration tests verify real interactions** between components
 2. **Mocking Redis in integration tests** means you're not testing Redis integration at all
 3. **Only mock external dependencies** that aren't part of the test scope (e.g., external APIs)
 
-#### What to Mock vs What Not to Mock:
+#### What to Mock vs What Not to Mock
 
 **In Unit Tests - Mock Everything External:**
+
 - ✅ Mock Redis, databases, file systems
 - ✅ Mock external APIs and services
 - ✅ Mock dependencies to isolate the unit
 
 **In Integration Tests - Use Real Components:**
+
 - ❌ DON'T mock Redis when testing Redis integration
 - ❌ DON'T mock the database when testing database operations
 - ❌ DON'T mock file systems when testing file operations
@@ -358,7 +385,7 @@ async def test_with_redis(redis_store):
     # redis_store fixture provides connected Redis
     doc = create_test_document()
     await redis_store.store_document(doc)
-    
+
     results = await redis_store.search(query)
     assert len(results) > 0
 ```
@@ -366,11 +393,13 @@ async def test_with_redis(redis_store):
 ## Performance Testing
 
 Run performance benchmarks:
+
 ```bash
 pytest tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics -v
 ```
 
 Expected performance targets:
+
 - Indexing: >10 files/second
 - Vector search: >20 searches/second
 - Cache operations: >50 ops/second
@@ -378,17 +407,20 @@ Expected performance targets:
 ## Coverage Reports
 
 ### Terminal Report
+
 ```bash
 pytest --cov=eol.rag_context --cov-report=term
 ```
 
 ### HTML Report
+
 ```bash
 pytest --cov=eol.rag_context --cov-report=html:coverage/html
 open coverage/html/index.html  # View in browser
 ```
 
 ### XML Report (for CI)
+
 ```bash
 pytest --cov=eol.rag_context --cov-report=xml
 ```
@@ -422,6 +454,7 @@ Based on extensive debugging sessions, here are the recurring patterns that caus
 **❌ CRITICAL MISTAKE**: Redis operations in this codebase are **synchronous**, not async!
 
 **Common Error**:
+
 ```
 TypeError: object tuple can't be used in 'await' expression
 ```
@@ -429,6 +462,7 @@ TypeError: object tuple can't be used in 'await' expression
 **Root Cause**: Trying to `await` synchronous Redis operations.
 
 **❌ Wrong**:
+
 ```python
 await self.redis.redis.scan(cursor, match="cache:*")
 await self.redis.redis.hset(key, mapping=data)
@@ -436,6 +470,7 @@ await self.redis.redis.hgetall(key)
 ```
 
 **✅ Correct**:
+
 ```python
 self.redis.redis.scan(cursor, match="cache:*")
 self.redis.redis.hset(key, mapping=data)
@@ -443,6 +478,7 @@ self.redis.redis.hgetall(key)
 ```
 
 **Files commonly affected**:
+
 - `semantic_cache.py`
 - `knowledge_graph.py`
 - `indexer.py`
@@ -450,6 +486,7 @@ self.redis.redis.hgetall(key)
 ### 2. Vector Search Return Format Mismatch
 
 **Common Error**:
+
 ```
 assert "id" in result  # TypeError: argument of type 'tuple' is not iterable
 ```
@@ -457,12 +494,14 @@ assert "id" in result  # TypeError: argument of type 'tuple' is not iterable
 **Root Cause**: `vector_search` returns tuples `(id, score, data)`, not dictionaries.
 
 **❌ Wrong**:
+
 ```python
 for result in results:
     assert "id" in result  # Expects dict
 ```
 
 **✅ Correct**:
+
 ```python
 for doc_id, score, data in results:
     assert isinstance(doc_id, str)
@@ -473,6 +512,7 @@ for doc_id, score, data in results:
 ### 3. Method Return Type Mismatches
 
 **Common Errors**:
+
 - `'IndexResult' object is not subscriptable`
 - `'dict' object has no attribute 'source_id'`
 - `string indices must be integers, not 'str'`
@@ -489,17 +529,20 @@ for doc_id, score, data in results:
 ### 4. Parameter Name Mismatches
 
 **Common API inconsistencies**:
+
 - `hierarchical_search()` uses `max_chunks`, not `max_results`
 - `FileWatcher.watch()` uses `file_patterns`, not `patterns`
 - Various method signatures differ from test expectations
 
 **❌ Wrong**:
+
 ```python
 await redis_store.hierarchical_search(query_embedding, max_results=10)
 await file_watcher.watch(path, patterns=["*.py"])
 ```
 
 **✅ Correct**:
+
 ```python
 await redis_store.hierarchical_search(query_embedding, max_chunks=10)
 await file_watcher.watch(path, file_patterns=["*.py"])
@@ -508,6 +551,7 @@ await file_watcher.watch(path, file_patterns=["*.py"])
 ### 5. Mock Configuration Issues
 
 **Common Error**:
+
 ```
 TypeError: argument of type 'Mock' is not iterable
 ```
@@ -515,11 +559,13 @@ TypeError: argument of type 'Mock' is not iterable
 **Root Cause**: Essential modules are being mocked when they shouldn't be.
 
 **❌ DO NOT Mock These**:
+
 - `networkx` - Required for KnowledgeGraphBuilder
 - `redis` - Core functionality for integration tests
 - `numpy` - Used throughout for embeddings
 
 **✅ Safe to Mock**:
+
 - `sentence_transformers` - Use MockSentenceTransformer
 - `openai` - Use MockOpenAIEmbeddings
 - `watchdog`, `tree_sitter_*`, `pypdf`, `typer`, `rich`
@@ -527,6 +573,7 @@ TypeError: argument of type 'Mock' is not iterable
 ### 6. None Value Storage in Redis
 
 **Common Error**:
+
 ```
 redis.exceptions.DataError: Invalid input of type: 'NoneType'
 ```
@@ -534,12 +581,14 @@ redis.exceptions.DataError: Invalid input of type: 'NoneType'
 **Root Cause**: Redis cannot store None values.
 
 **❌ Wrong**:
+
 ```python
 metadata = {"key": value, "optional": None}
 redis.hset(key, mapping=metadata)
 ```
 
 **✅ Correct**:
+
 ```python
 metadata = {k: v for k, v in metadata.items() if v is not None}
 redis.hset(key, mapping=metadata)
@@ -548,6 +597,7 @@ redis.hset(key, mapping=metadata)
 ### 7. Missing Metadata in Document Chunks
 
 **Common Error**:
+
 ```
 KeyError: 'metadata'
 ```
@@ -555,6 +605,7 @@ KeyError: 'metadata'
 **Root Cause**: Document processor not adding required metadata to chunks.
 
 **Solution**: Ensure all chunk creation includes metadata:
+
 ```python
 def _create_chunk(self, content: str, chunk_type: str = "text", **metadata):
     return {
@@ -572,6 +623,7 @@ def _create_chunk(self, content: str, chunk_type: str = "text", **metadata):
 ### 8. Path Handling Issues
 
 **Common Error**:
+
 ```
 AttributeError: 'str' object has no attribute 'resolve'
 ```
@@ -579,6 +631,7 @@ AttributeError: 'str' object has no attribute 'resolve'
 **Root Cause**: Methods expect Path objects but receive strings.
 
 **✅ Always handle both**:
+
 ```python
 def process_file(self, file_path: Path | str):
     if isinstance(file_path, str):
@@ -604,6 +657,7 @@ server._initialized = True
 ### 10. Component Stats Format Mismatches
 
 **Common Error**:
+
 ```
 AssertionError: assert 'nodes' in stats
 ```
@@ -611,6 +665,7 @@ AssertionError: assert 'nodes' in stats
 **Root Cause**: Different components return different stat field names.
 
 **Solutions**:
+
 - `indexer.get_stats()` returns `documents_indexed`, but tests expect `total_documents`
 - `knowledge_graph.get_graph_stats()` returns `entity_count`, not `nodes`
 - Always check actual return format before asserting
@@ -620,12 +675,14 @@ AssertionError: assert 'nodes' in stats
 Based on this extensive debugging session that took tests from 29% to 88.5% pass rate:
 
 ### 1. Use Systematic Approach
+
 - Run individual test files first to isolate issues
 - Fix one pattern at a time (e.g., all async/await issues together)
 - Test frequently to ensure no regressions
 - Document each phase of fixes for future reference
 
 ### 2. Use Proper Test Commands for Debugging
+
 ```bash
 # Debug single failing test with full output
 pytest tests/integration/test_file.py::TestClass::test_method -xvs --tb=short --no-header
@@ -638,7 +695,9 @@ pytest tests/integration/test_specific.py -v --tb=no
 ```
 
 ### 3. Create Test Compatibility Layers When Needed
+
 Instead of changing core logic, create wrapper methods for test compatibility:
+
 ```python
 # Add dict wrapper for tests that expect dicts
 async def index_file_dict(self, file_path, source_id=None):
@@ -647,22 +706,27 @@ async def index_file_dict(self, file_path, source_id=None):
 ```
 
 ### 4. Don't Break Working Tests
+
 - Always run the full suite after fixes to check for regressions
 - If a test was passing before, it should still pass after your fixes
 - Test changes incrementally rather than making many changes at once
 
 ### 5. Document Your Fixes
+
 - Track progress systematically (e.g., with TODO.md)
 - Use descriptive commit messages that include test counts
 - Update documentation with new patterns discovered
 
 ### 6. Focus on High-Impact Fixes First
+
 - Fix systematic issues (like async/await) that affect multiple tests
 - Address mock configuration issues that break entire modules
 - Leave edge cases and minor API inconsistencies for later
 
 ### 7. Use TodoWrite Tool for Complex Projects
+
 For large debugging sessions, use structured tracking:
+
 - Break work into phases
 - Track which tests are fixed in each phase
 - Mark completed work to avoid repeating effort
@@ -680,6 +744,7 @@ The test suite requires proper environment setup:
 4. **Use docker-compose.test.yml** for consistent setup
 
 Quick commands for experienced users:
+
 ```bash
 # Complete setup and run
 open -a Docker && sleep 10
@@ -689,6 +754,7 @@ pytest tests/
 ```
 
 For detailed testing during development:
+
 ```bash
 # Run specific test with details
 source .venv/bin/activate

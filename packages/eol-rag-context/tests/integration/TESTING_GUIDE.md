@@ -9,21 +9,24 @@ Integration tests verify that all components of the EOL RAG Context system work 
 ### Required Software
 
 1. **Python 3.11+**
+
    ```bash
    python3 --version  # Should be 3.11 or higher
    ```
 
 2. **Redis Stack Server** (includes RediSearch module)
+
    ```bash
    # Install via Homebrew (macOS)
    brew tap redis-stack/redis-stack
    brew install --cask redis-stack-server
-   
+
    # Or via Docker
    docker run -d -p 6379:6379 redis/redis-stack:latest
    ```
 
 3. **libmagic** (for file type detection)
+
    ```bash
    brew install libmagic
    ```
@@ -43,6 +46,7 @@ Run the setup script to install all dependencies and prepare the test environmen
 ```
 
 This script will:
+
 - Install system dependencies (libmagic, Redis Stack)
 - Create and activate a Python virtual environment
 - Install all Python dependencies
@@ -59,6 +63,7 @@ After setup, run integration tests with:
 ```
 
 This script will:
+
 - Verify Redis Stack is running with RediSearch module
 - Clear Redis data for clean test state
 - Run all integration tests
@@ -78,6 +83,7 @@ This script will:
 ### Test Data
 
 Test data is created in `tests/test_data/` and includes:
+
 - Markdown documents (`.md`)
 - Python source files (`.py`)
 - JSON configuration files (`.json`)
@@ -164,6 +170,7 @@ Detailed logs are saved to `test_results/integration.log` after each run.
 ### 4. Common Issues
 
 #### Redis Stack Not Running
+
 ```bash
 # Stop any existing Redis
 redis-cli shutdown
@@ -173,14 +180,17 @@ redis-stack-server --daemonize yes
 ```
 
 #### RediSearch Module Not Available
+
 - Ensure Redis Stack is installed (not regular Redis)
 - Verify with: `redis-cli MODULE LIST | grep search`
 
 #### File Type Detection Errors
+
 - Install libmagic: `brew install libmagic`
 - Reinstall python-magic: `pip install --force-reinstall python-magic`
 
 #### Import Errors
+
 - Ensure virtual environment is activated
 - Reinstall dependencies: `pip install -e .`
 
@@ -199,23 +209,25 @@ redis-stack-server --daemonize yes
    - Reset any global state
 
 3. **Test Real Workflows**
+
    ```python
    @pytest.mark.asyncio
    async def test_complete_workflow(redis_store, indexer_instance):
        # Index real documents
        result = await indexer_instance.index_folder(Path("test_data"))
        assert result.file_count > 0
-       
+
        # Search with real embeddings
        results = await redis_store.vector_search(query_embedding, k=5)
        assert len(results) > 0
-       
+
        # Verify actual data storage
        stored = await redis_store.async_redis.hgetall("doc:test")
        assert stored is not None
    ```
 
 4. **Handle Missing Dependencies Gracefully**
+
    ```python
    @pytest.fixture
    async def redis_store(redis_config):
@@ -249,17 +261,17 @@ services:
 
 steps:
   - uses: actions/checkout@v3
-  
+
   - name: Set up Python
     uses: actions/setup-python@v4
     with:
       python-version: '3.11'
-  
+
   - name: Install dependencies
     run: |
       pip install -e .
       pip install pytest pytest-asyncio pytest-cov
-  
+
   - name: Run integration tests
     env:
       REDIS_HOST: localhost
@@ -300,5 +312,5 @@ If you encounter issues:
 
 1. Check this guide for troubleshooting steps
 2. Review test logs in `test_results/integration.log`
-3. Check Redis Stack documentation: https://redis.io/docs/stack/
+3. Check Redis Stack documentation: <https://redis.io/docs/stack/>
 4. File an issue with detailed error messages and environment information

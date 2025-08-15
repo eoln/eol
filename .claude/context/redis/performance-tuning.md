@@ -3,6 +3,7 @@
 ## Memory Optimization
 
 ### Key Design Patterns
+
 ```python
 # Good: Hierarchical, predictable
 key = "rag:doc:12345:chunk:1"
@@ -12,6 +13,7 @@ key = "retrieval_augmented_generation_document_12345_chunk_number_1"
 ```
 
 ### Memory Policies
+
 ```redis
 # Set max memory
 CONFIG SET maxmemory 2gb
@@ -23,6 +25,7 @@ CONFIG SET maxmemory-policy allkeys-lru
 ## Query Performance
 
 ### Pipeline Operations
+
 ```python
 async def bulk_get(keys: List[str]) -> List[Any]:
     """Use pipeline for multiple operations"""
@@ -33,6 +36,7 @@ async def bulk_get(keys: List[str]) -> List[Any]:
 ```
 
 ### Connection Pooling
+
 ```python
 # Optimal pool configuration
 pool = ConnectionPool(
@@ -51,6 +55,7 @@ pool = ConnectionPool(
 ## Monitoring Metrics
 
 ### Key Performance Indicators
+
 ```python
 async def get_redis_metrics():
     info = await redis_client.info()
@@ -58,19 +63,21 @@ async def get_redis_metrics():
         "used_memory": info["used_memory_human"],
         "connected_clients": info["connected_clients"],
         "ops_per_sec": info["instantaneous_ops_per_sec"],
-        "hit_rate": info["keyspace_hits"] / 
+        "hit_rate": info["keyspace_hits"] /
                    (info["keyspace_hits"] + info["keyspace_misses"]),
         "evicted_keys": info["evicted_keys"]
     }
 ```
 
 ### Performance Benchmarks
+
 - Vector search: <100ms for 10k documents
 - Bulk writes: >1000 docs/sec
 - Cache lookup: <10ms
 - Connection pool efficiency: >90%
 
 ## Optimization Checklist
+
 - [ ] Use appropriate data structures
 - [ ] Implement connection pooling
 - [ ] Batch operations with pipeline

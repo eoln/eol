@@ -1,7 +1,7 @@
-"""
-Test embeddings module.
+"""Test embeddings module.
 
 Tests cover both sentence-transformers and mock embedding providers.
+
 """
 
 import sys
@@ -71,11 +71,13 @@ class TestEmbeddingManager:
         manager = EmbeddingManager(config, redis_client=None)
         # Mock the provider
         manager.provider = AsyncMock()
-        manager.provider.embed = AsyncMock(return_value=np.random.randn(1, 32).astype(np.float32))
+        manager.provider.embed = AsyncMock(
+            return_value=np.random.randn(1, 32).astype(np.float32)
+        )
         manager.provider.embed_batch = AsyncMock(
-            side_effect=lambda texts, batch_size=None: np.random.randn(len(texts), 32).astype(
-                np.float32
-            )
+            side_effect=lambda texts, batch_size=None: np.random.randn(
+                len(texts), 32
+            ).astype(np.float32)
         )
         return manager
 

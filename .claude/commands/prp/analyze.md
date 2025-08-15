@@ -15,6 +15,7 @@ Analyzes any codebase to extract implementation patterns, architectural decision
 ```
 
 ### Examples
+
 ```bash
 # Analyze any domain patterns
 /prp:analyze "authentication" "jwt-patterns"
@@ -27,6 +28,7 @@ Analyzes any codebase to extract implementation patterns, architectural decision
 ## Analysis Process
 
 ### 1. Pattern Discovery Phase
+
 ```bash
 # Search for domain-specific implementations
 grep -r "class.*[Domain]" --include="*.py" src/
@@ -35,12 +37,14 @@ grep -r "[technology].*[pattern]" --include="*.py" src/
 ```
 
 ### 2. Code Structure Analysis
+
 - **Language Patterns**: Type hints, async/await, design patterns, architectural decisions
 - **Domain Components**: Core business logic, data processors, service layers
 - **Infrastructure Operations**: Database patterns, caching strategies, external integrations
 - **Testing Patterns**: Test frameworks, fixtures, mocks, integration strategies
 
 ### 3. Dependency Mapping
+
 ```bash
 # Analyze package dependencies
 uv tree
@@ -48,6 +52,7 @@ grep -h "^from\|^import" packages/*/src/**/*.py | sort | uniq
 ```
 
 ### 4. Performance Patterns
+
 - Data processing throughput patterns
 - Query optimization techniques
 - Caching strategies and performance metrics
@@ -57,6 +62,7 @@ grep -h "^from\|^import" packages/*/src/**/*.py | sort | uniq
 ## Output Format
 
 ### Generated Pattern Documentation
+
 ```markdown
 # [Domain] Pattern Analysis
 
@@ -77,11 +83,13 @@ async def process_data(content: str, options: ProcessOptions) -> ProcessResult:
 ```
 
 ### Performance Optimizations
+
 - **Batch Processing**: Pipeline patterns for data operations
 - **Async Patterns**: Concurrent processing and I/O management
 - **Connection Management**: Pool configuration, health checks, and resource optimization
 
 ### Testing Patterns
+
 ```python
 # Example from tests/test_processor.py
 @pytest.fixture
@@ -89,6 +97,7 @@ async def service_client():
     """Service fixture pattern for testing"""
     ...
 ```
+
 ```
 
 ## Analysis Targets
@@ -160,6 +169,7 @@ Ensures patterns follow:
 ```
 
 ### Output Options
+
 ```bash
 # Save to specific location
 /prp:analyze "database" "patterns" --output=.claude/context/database/patterns.md
@@ -171,12 +181,14 @@ Ensures patterns follow:
 ## Success Metrics
 
 ### Pattern Coverage
+
 - [ ] All major domain components analyzed
 - [ ] Technology patterns documented
 - [ ] Language best practices captured
 - [ ] Performance optimizations identified
 
 ### Documentation Quality
+
 - [ ] Real code examples included
 - [ ] Performance metrics documented
 - [ ] Integration points mapped
@@ -185,6 +197,7 @@ Ensures patterns follow:
 ## Next Steps
 
 After analysis:
+
 1. Use `/prp:create` to generate implementation plans
 2. Reference patterns in development
 3. Update context files with discoveries

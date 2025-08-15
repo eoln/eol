@@ -5,6 +5,7 @@ This methodology is implemented through the PRP (Product Requirements Prompt) co
 ## Structured Plan Format
 
 ### Plan Header
+
 ```markdown
 # [Plan Title]
 
@@ -19,7 +20,9 @@ Brief description of what the plan accomplishes
 ```
 
 ### Checkbox Format
+
 Use checkboxes for trackable tasks:
+
 - `[ ]` - Not started
 - `[~]` - In progress
 - `[x]` - Completed
@@ -28,6 +31,7 @@ Use checkboxes for trackable tasks:
 ## Phase-Based Development
 
 ### Phase Structure
+
 ```markdown
 ## Phase 1: [Phase Name]
 
@@ -35,12 +39,13 @@ Use checkboxes for trackable tasks:
 - [ ] **Action item**
   - Details
   - Expected outcome
-  
+
 ### 1.2 [Sub-task]
 - [ ] **Action item**
 ```
 
 ### Phase Guidelines
+
 1. Keep phases focused on single objective
 2. Order phases by dependencies
 3. Include validation at phase boundaries
@@ -49,9 +54,10 @@ Use checkboxes for trackable tasks:
 ## Git Branch Strategy
 
 ### Branch Lifecycle
+
 1. **Plan Creation**: Keep in draft/
 2. **Plan Ready**: Validate and move to ready/
-3. **Execution Start**: 
+3. **Execution Start**:
    - Create feature branch: `feat/plan-name`
    - Move plan to pending/
 4. **During Execution**:
@@ -64,6 +70,7 @@ Use checkboxes for trackable tasks:
    - Extract lessons learned
 
 ### Branch Naming
+
 - Feature: `feat/description`
 - Fix: `fix/description`
 - Refactor: `refactor/description`
@@ -72,7 +79,9 @@ Use checkboxes for trackable tasks:
 ## Success Metrics
 
 ### Defining Success
+
 Each plan must include:
+
 ```markdown
 ## Success Metrics
 - [ ] Metric 1: Specific, measurable outcome
@@ -81,6 +90,7 @@ Each plan must include:
 ```
 
 ### Examples
+
 - Coverage increased to >80%
 - Latency reduced to <100ms
 - All tests passing
@@ -89,6 +99,7 @@ Each plan must include:
 ## Risk Mitigation
 
 ### Risk Assessment Template
+
 ```markdown
 ## Risks and Mitigations
 
@@ -99,6 +110,7 @@ Each plan must include:
 ```
 
 ### Common Patterns
+
 1. **Dependency Risk**: Document external dependencies
 2. **Technical Risk**: Prototype uncertain approaches
 3. **Timeline Risk**: Include buffer time
@@ -107,6 +119,7 @@ Each plan must include:
 ## Parallel Execution
 
 ### Task Dependencies
+
 ```markdown
 ## Task Dependencies
 - Task A: No dependencies (can start immediately)
@@ -116,6 +129,7 @@ Each plan must include:
 ```
 
 ### Parallel Work Patterns
+
 1. Identify independent tasks
 2. Mark tasks that can run concurrently
 3. Use separate branches for large parallel work
@@ -124,12 +138,14 @@ Each plan must include:
 ## Progress Tracking
 
 ### Real-Time Updates
+
 - Update checkboxes immediately
 - Never batch status updates
 - Add notes for blocked items
 - Document deviations from plan
 
 ### Status Reporting
+
 ```markdown
 ## Progress Update [Date]
 - Completed: X of Y tasks
@@ -141,6 +157,7 @@ Each plan must include:
 ## Lessons Learned
 
 ### Extraction Template
+
 ```markdown
 ## Lessons Learned
 
@@ -159,6 +176,7 @@ Each plan must include:
 ```
 
 ## Best Practices
+
 1. Keep plans focused and scoped
 2. Update status in real-time
 3. Use descriptive task names

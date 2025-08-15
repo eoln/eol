@@ -36,6 +36,7 @@ Example:
     ...     hierarchy_level=3
     ... )
     >>> await store.store_document(doc)
+
 """
 
 import json
@@ -48,7 +49,12 @@ import numpy as np
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
-    from redis.commands.search.field import NumericField, TagField, TextField, VectorField
+    from redis.commands.search.field import (
+        NumericField,
+        TagField,
+        TextField,
+        VectorField,
+    )
     from redis.commands.search.index_definition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
 except ImportError:
@@ -101,6 +107,7 @@ class VectorDocument:
         ... )
         >>> print(f"Document level: {doc.hierarchy_level}")
         Document level: 3
+
     """
 
     id: str
@@ -161,6 +168,7 @@ class RedisVectorStore:
         >>> store.create_hierarchical_indexes(embedding_dim=384)
         >>> print("Indexes created successfully")
         Indexes created successfully
+
     """
 
     def __init__(self, redis_config: RedisConfig, index_config: IndexConfig):
@@ -171,6 +179,7 @@ class RedisVectorStore:
                 authentication, and connection pooling settings.
             index_config: Vector index configuration including algorithm settings,
                 distance metrics, and hierarchical prefixes.
+
         """
         self.redis_config = redis_config
         self.index_config = index_config
@@ -200,6 +209,7 @@ class RedisVectorStore:
             >>> store.connect()
             >>> print("Connected successfully")
             Connected successfully
+
         """
         # Build connection parameters for sync Redis client
         connection_kwargs = {
@@ -236,7 +246,9 @@ class RedisVectorStore:
         # Validate connection with ping test
         try:
             self.redis.ping()
-            logger.info(f"Connected to Redis at {self.redis_config.host}:{self.redis_config.port}")
+            logger.info(
+                f"Connected to Redis at {self.redis_config.host}:{self.redis_config.port}"
+            )
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
             raise
@@ -264,6 +276,7 @@ class RedisVectorStore:
             >>> await store.connect_async()
             >>> print("Async connection established")
             Async connection established
+
         """
         # Build connection parameters for async Redis client
         async_connection_kwargs = {
@@ -292,7 +305,9 @@ class RedisVectorStore:
                 if hasattr(socket, "TCP_KEEPCNT"):
                     keepalive_options[socket.TCP_KEEPCNT] = 5
                 if keepalive_options:
-                    async_connection_kwargs["socket_keepalive_options"] = keepalive_options
+                    async_connection_kwargs["socket_keepalive_options"] = (
+                        keepalive_options
+                    )
             # Skip socket options on macOS and other platforms to avoid issues
 
         self.async_redis = AsyncRedis(**async_connection_kwargs)
@@ -338,6 +353,7 @@ class RedisVectorStore:
             - Concepts use HNSW with M=16, EF_CONSTRUCTION=200 for precision
             - Sections use HNSW with M=24, EF_CONSTRUCTION=300 for balance
             - Chunks use FLAT algorithm for exact nearest neighbor search
+
         """
 
         # Define schemas for each level
@@ -419,7 +435,9 @@ class RedisVectorStore:
                 logger.info(f"Index {index_name} already exists")
             except Exception:
                 # Create new index
-                definition = IndexDefinition(prefix=[schema["prefix"]], index_type=IndexType.HASH)
+                definition = IndexDefinition(
+                    prefix=[schema["prefix"]], index_type=IndexType.HASH
+                )
 
                 self.redis.ft(index_name).create_index(
                     fields=schema["fields"], definition=definition
@@ -468,6 +486,7 @@ class RedisVectorStore:
             >>> await store.store_document(doc)
             >>> print("Document stored successfully")
             Document stored successfully
+
         """
         if not self.async_redis:
             await self.connect_async()
@@ -555,6 +574,7 @@ class RedisVectorStore:
             ...     k=10,
             ...     filters={"doc_type": "markdown", "language": "en"}
             ... )
+
         """
         if not self.async_redis:
             await self.connect_async()
@@ -604,7 +624,9 @@ class RedisVectorStore:
 
             data = {
                 "content": doc.content if hasattr(doc, "content") else "",
-                "metadata": json.loads(doc.metadata) if hasattr(doc, "metadata") else {},
+                "metadata": (
+                    json.loads(doc.metadata) if hasattr(doc, "metadata") else {}
+                ),
                 "parent": doc.parent if hasattr(doc, "parent") else None,
                 "children": doc.children.split(",") if hasattr(doc, "children") else [],
             }
@@ -614,7 +636,10 @@ class RedisVectorStore:
         return output
 
     async def hierarchical_search(
-        self, query_embedding: np.ndarray, max_chunks: int = 10, strategy: str = "adaptive"
+        self,
+        query_embedding: np.ndarray,
+        max_chunks: int = 10,
+        strategy: str = "adaptive",
     ) -> List[Dict[str, Any]]:
         """Perform hierarchical search starting from concepts down to chunks.
 
@@ -660,6 +685,7 @@ class RedisVectorStore:
         Note:
             This method provides fallback to direct chunk search if no
             concepts are found, ensuring robust retrieval in all scenarios.
+
         """
         results = []
 
@@ -668,7 +694,9 @@ class RedisVectorStore:
 
         if not concepts:
             # Fallback to direct chunk search
-            chunks = await self.vector_search(query_embedding, hierarchy_level=3, k=max_chunks)
+            chunks = await self.vector_search(
+                query_embedding, hierarchy_level=3, k=max_chunks
+            )
             return [{"id": c[0], "score": c[1], **c[2]} for c in chunks]
 
         # Step 2: Find sections within concepts
@@ -677,14 +705,17 @@ class RedisVectorStore:
             # For now, search without parent filter and manually filter results
             # TODO: Fix Redis TAG field filtering with KNN queries
             concept_sections = await self.vector_search(
-                query_embedding, hierarchy_level=2, k=20  # Get more results to filter manually
+                query_embedding,
+                hierarchy_level=2,
+                k=20,  # Get more results to filter manually
             )
 
             for sec_id, sec_score, sec_data in concept_sections:
                 sections.append(
                     {
                         "id": sec_id,
-                        "score": sec_score * 0.8 + concept_score * 0.2,  # Weighted score
+                        "score": sec_score * 0.8
+                        + concept_score * 0.2,  # Weighted score
                         "data": sec_data,
                         "concept_id": concept_id,
                     }
@@ -761,6 +792,7 @@ class RedisVectorStore:
         Note:
             This method searches across all hierarchy levels to locate the
             document, making it flexible but potentially slower for large trees.
+
         """
         if not self.async_redis:
             await self.connect_async()
@@ -815,6 +847,7 @@ class RedisVectorStore:
             >>> await store.close()
             >>> print("Connections closed")
             Connections closed
+
         """
         if self.redis:
             self.redis.close()

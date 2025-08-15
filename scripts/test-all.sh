@@ -43,13 +43,13 @@ for package in packages/*; do
     if [ -f "$package/pyproject.toml" ] && [ -d "$package/tests" ]; then
         package_name=$(basename "$package")
         ((TOTAL_PACKAGES++))
-        
+
         echo ""
         print_info "Testing $package_name..."
         echo "----------------------------------------"
-        
+
         cd "$package"
-        
+
         # Run tests with coverage
         if pytest tests/ \
             --cov=src \
@@ -64,7 +64,7 @@ for package in packages/*; do
             print_error "$package_name tests failed!"
             FAILED_PACKAGES="$FAILED_PACKAGES $package_name"
         fi
-        
+
         cd "$PROJECT_ROOT"
     else
         print_warning "Skipping $(basename "$package") - no tests found"
@@ -76,7 +76,7 @@ if [ -d "tests/integration" ]; then
     echo ""
     print_info "Running integration tests..."
     echo "----------------------------------------"
-    
+
     if pytest tests/integration/ -v --tb=short 2>&1; then
         print_success "Integration tests passed!"
     else

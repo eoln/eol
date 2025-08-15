@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""
-Documentation validation script.
+"""Documentation validation script.
 
-This script validates the documentation quality and coverage for the EOL RAG Context project.
-It checks docstring coverage, validates links, and ensures documentation standards are met.
+This script validates the documentation quality and coverage for the EOL RAG Context
+project. It checks docstring coverage, validates links, and ensures documentation
+standards are met.
+
 """
 
+import argparse
 import ast
+import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
-import importlib.util
-import inspect
-import argparse
-from rich.console import Console
-from rich.table import Table
+
 from rich import print as rprint
+from rich.console import Console
 from rich.progress import track
+from rich.table import Table
 
 console = Console()
 
@@ -109,7 +111,9 @@ def analyze_directory(directory: Path) -> Dict:
     all_missing = []
 
     python_files = list(directory.rglob("*.py"))
-    python_files = [f for f in python_files if not any(part.startswith(".") for part in f.parts)]
+    python_files = [
+        f for f in python_files if not any(part.startswith(".") for part in f.parts)
+    ]
     python_files = [f for f in python_files if "test" not in f.name.lower()]
 
     for file_path in track(python_files, description="Analyzing files..."):
@@ -118,7 +122,9 @@ def analyze_directory(directory: Path) -> Dict:
         # Aggregate stats
         for category in total_stats:
             total_stats[category]["total"] += analyzer.stats[category]["total"]
-            total_stats[category]["documented"] += analyzer.stats[category]["documented"]
+            total_stats[category]["documented"] += analyzer.stats[category][
+                "documented"
+            ]
 
         all_missing.extend(analyzer.missing_docs)
 
@@ -154,7 +160,9 @@ def print_coverage_report(stats: Dict, missing: List[str], verbose: bool = False
         missing_count = total - documented
         coverage = (documented / total * 100) if total > 0 else 100
 
-        coverage_style = "green" if coverage >= 80 else "yellow" if coverage >= 60 else "red"
+        coverage_style = (
+            "green" if coverage >= 80 else "yellow" if coverage >= 60 else "red"
+        )
         table.add_row(
             category.capitalize(),
             str(total),
@@ -220,7 +228,8 @@ def validate_mkdocs_config() -> bool:
         # Check for mkdocstrings plugin
         plugins = config.get("plugins", [])
         has_mkdocstrings = any(
-            p == "mkdocstrings" or (isinstance(p, dict) and "mkdocstrings" in p) for p in plugins
+            p == "mkdocstrings" or (isinstance(p, dict) and "mkdocstrings" in p)
+            for p in plugins
         )
 
         if not has_mkdocstrings:
@@ -237,8 +246,12 @@ def validate_mkdocs_config() -> bool:
 
 def main():
     """Main entry point for documentation validation."""
-    parser = argparse.ArgumentParser(description="Validate documentation coverage and quality")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
+    parser = argparse.ArgumentParser(
+        description="Validate documentation coverage and quality"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed output"
+    )
     parser.add_argument(
         "--path",
         "-p",

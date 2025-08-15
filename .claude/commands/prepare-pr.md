@@ -1,9 +1,11 @@
 # Prepare Pull Request Command
 
 ## Purpose
+
 Create and push a pull request with proper preparation and description.
 
 ## Prerequisites
+
 - All quality checks passed (run check-quality.md first)
 - Working on feature branch (not main)
 - Changes committed locally
@@ -12,6 +14,7 @@ Create and push a pull request with proper preparation and description.
 ## Command Sequence
 
 ### 1. Ensure Branch is Up to Date
+
 ```bash
 # Fetch latest changes
 git fetch origin main
@@ -26,6 +29,7 @@ git rebase origin/main
 ```
 
 ### 2. Run Final Quality Check
+
 ```bash
 # Quick quality validation
 python -m black src/ tests/ --check && \
@@ -33,6 +37,7 @@ python -m pytest tests/ -q
 ```
 
 ### 3. Review Changes
+
 ```bash
 # View all changes
 git diff origin/main...HEAD
@@ -45,6 +50,7 @@ git log --oneline origin/main..HEAD
 ```
 
 ### 4. Push Branch
+
 ```bash
 # Push to remote
 git push -u origin $(git branch --show-current)
@@ -54,6 +60,7 @@ git push -u origin $(git branch --show-current)
 ```
 
 ### 5. Create Pull Request
+
 ```bash
 # Create PR with title and body
 gh pr create \
@@ -90,6 +97,7 @@ EOF
 ```
 
 ### 6. Alternative: Create Draft PR
+
 ```bash
 # Create as draft for work in progress
 gh pr create --draft \
@@ -99,6 +107,7 @@ gh pr create --draft \
 ```
 
 ### 7. View PR Status
+
 ```bash
 # Check PR checks status
 gh pr checks
@@ -108,6 +117,7 @@ gh pr view --web
 ```
 
 ## PR Title Conventions
+
 - `feat:` New feature
 - `fix:` Bug fix
 - `docs:` Documentation only
@@ -117,6 +127,7 @@ gh pr view --web
 - `chore:` Maintenance
 
 ## Success Criteria
+
 - ✅ Branch up to date with main
 - ✅ All tests passing locally
 - ✅ PR created successfully
@@ -126,6 +137,7 @@ gh pr view --web
 ## Troubleshooting
 
 ### Merge Conflicts
+
 ```bash
 # If rebase has conflicts
 git status
@@ -135,12 +147,14 @@ git rebase --continue
 ```
 
 ### Push Rejected
+
 ```bash
 # If push rejected after rebase
 git push --force-with-lease
 ```
 
 ### PR Checks Failing
+
 ```bash
 # View check details
 gh pr checks
@@ -151,6 +165,7 @@ gh run view <run-id>
 ```
 
 ### Update Existing PR
+
 ```bash
 # Add commits and push
 git add .
@@ -162,6 +177,7 @@ gh pr edit --body "Updated description..."
 ```
 
 ## Best Practices
+
 1. Keep PRs small and focused
 2. Write descriptive commit messages
 3. Respond to review feedback promptly

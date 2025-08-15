@@ -15,7 +15,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       redis:
         image: redis/redis-stack:latest
@@ -29,12 +29,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
+
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
@@ -42,7 +42,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('packages/eol-rag-context/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    
+
     - name: Install dependencies
       working-directory: packages/eol-rag-context
       run: |
@@ -53,7 +53,7 @@ jobs:
         uv pip install --system -r requirements.txt
         uv pip install --system sentence-transformers aioredis  # Additional test dependencies
         # Note: unittest.mock is part of Python standard library (no install needed)
-    
+
     - name: Run Unit Tests
       working-directory: packages/eol-rag-context
       env:
@@ -65,7 +65,7 @@ jobs:
           --cov-report=xml \
           --tb=short \
           -v
-    
+
     - name: Run Integration Tests
       working-directory: packages/eol-rag-context
       env:
@@ -81,7 +81,7 @@ jobs:
           --tb=short \
           -v \
           -m integration
-    
+
     - name: Generate Coverage Report
       working-directory: packages/eol-rag-context
       env:
@@ -94,7 +94,7 @@ jobs:
           --cov-report=term \
           --cov-report=html:coverage-report \
           --quiet
-        
+
         # Display coverage summary
         echo "::group::Coverage Summary"
         python -c "
@@ -109,7 +109,7 @@ jobs:
             print(f'⚠️ Coverage ({coverage:.1f}%) is below target (80%)')
         "
         echo "::endgroup::"
-    
+
     - name: Upload Coverage Reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -118,7 +118,7 @@ jobs:
         path: |
           packages/eol-rag-context/coverage.xml
           packages/eol-rag-context/coverage-report/
-    
+
     - name: Comment Coverage on PR
       if: github.event_name == 'pull_request'
       uses: py-cov-action/python-coverage-comment-action@v3
@@ -128,7 +128,7 @@ jobs:
         MINIMUM_ORANGE: 60
         ANNOTATE_MISSING_LINES: true
         ANNOTATION_TYPE: warning
-        
+
     - name: Check Coverage Threshold
       working-directory: packages/eol-rag-context
       run: |

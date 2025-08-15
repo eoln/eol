@@ -13,6 +13,7 @@
 ```
 
 ### Examples
+
 ```bash
 # Full quality check for specific package
 /prp:check-quality eol-rag-context --full
@@ -25,6 +26,7 @@
 ```
 
 ## Prerequisites
+
 - Python virtual environment activated (`source .venv/bin/activate`)
 - Redis running for integration tests
 - All dependencies installed via `uv sync`
@@ -32,6 +34,7 @@
 ## Quality Gate Process
 
 ### 1. Code Formatting
+
 ```bash
 # Check formatting
 python -m black src/ tests/ --check
@@ -41,6 +44,7 @@ python -m black src/ tests/
 ```
 
 ### 2. Import Sorting
+
 ```bash
 # Check import order
 python -m isort src/ tests/ --check-only
@@ -50,6 +54,7 @@ python -m isort src/ tests/
 ```
 
 ### 3. Linting
+
 ```bash
 # Run flake8
 python -m flake8 src/ tests/
@@ -59,6 +64,7 @@ python -m mypy src/
 ```
 
 ### 4. Security Checks
+
 ```bash
 # Check for vulnerabilities
 safety check
@@ -68,6 +74,7 @@ bandit -r src/
 ```
 
 ### 5. Run Tests with Coverage
+
 ```bash
 # Run all tests
 python -m pytest tests/ --cov=eol.rag_context --cov-report=term --cov-report=html
@@ -77,6 +84,7 @@ python -m pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ```
 
 ### 6. Integration Tests
+
 ```bash
 # Start Redis if not running
 redis-cli ping || redis-server --daemonize yes
@@ -86,6 +94,7 @@ python -m pytest tests/integration/ -v
 ```
 
 ## One-Line Quality Check
+
 ```bash
 # Complete quality check
 python -m black src/ tests/ --check && \
@@ -96,6 +105,7 @@ python -m pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ```
 
 ## Success Criteria
+
 - ✅ All formatters pass without changes
 - ✅ No linting errors
 - ✅ No type errors
@@ -106,18 +116,21 @@ python -m pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ## Troubleshooting
 
 ### Black Formatting Issues
+
 ```bash
 # Auto-fix formatting
 python -m black src/ tests/
 ```
 
 ### Import Order Issues
+
 ```bash
 # Auto-fix imports
 python -m isort src/ tests/
 ```
 
 ### Coverage Below Threshold
+
 ```bash
 # View detailed coverage report
 python -m pytest tests/ --cov=eol.rag_context --cov-report=html
@@ -125,12 +138,14 @@ python -m pytest tests/ --cov=eol.rag_context --cov-report=html
 ```
 
 ### Type Checking Errors
+
 ```bash
 # Run mypy with more detail
 python -m mypy src/ --show-error-codes --pretty
 ```
 
 ## Notes
+
 - Run this before every commit
 - Fix issues immediately, don't accumulate technical debt
 - If tests fail, check test output for specific failures

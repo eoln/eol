@@ -3,6 +3,7 @@
 ## Connection Pool Configuration
 
 ### Basic Pool Setup
+
 ```python
 from redis.asyncio import Redis, ConnectionPool
 from redis.retry import Retry
@@ -32,6 +33,7 @@ redis_client = Redis(connection_pool=pool)
 ## Health Checking
 
 ### Connection Health Monitor
+
 ```python
 async def check_redis_health() -> Dict[str, Any]:
     """Monitor Redis connection health"""
@@ -40,14 +42,14 @@ async def check_redis_health() -> Dict[str, Any]:
         start = time.time()
         await redis_client.ping()
         latency = (time.time() - start) * 1000
-        
+
         # Get pool stats
         pool_stats = {
             "created_connections": pool.created_connections,
             "available_connections": len(pool._available_connections),
             "in_use_connections": len(pool._in_use_connections)
         }
-        
+
         return {
             "status": "healthy",
             "latency_ms": latency,
@@ -72,7 +74,7 @@ class RedisCircuitBreaker:
             recovery_timeout=recovery_timeout,
             expected_exception=RedisError
         )
-    
+
     @circuit
     async def execute(self, operation, *args, **kwargs):
         """Execute Redis operation with circuit breaker"""
@@ -82,29 +84,31 @@ class RedisCircuitBreaker:
 ## Connection Lifecycle
 
 ### Graceful Shutdown
+
 ```python
 async def shutdown_redis():
     """Gracefully close Redis connections"""
     try:
         # Flush pending operations
         await redis_client.flushdb()
-        
+
         # Close all connections
         await redis_client.close()
         await pool.disconnect()
-        
+
         logger.info("Redis connections closed successfully")
     except Exception as e:
         logger.error(f"Error during Redis shutdown: {e}")
 ```
 
 ### Connection Recovery
+
 ```python
 async def ensure_connection():
     """Ensure Redis connection is alive"""
     max_retries = 3
     retry_delay = 1
-    
+
     for attempt in range(max_retries):
         try:
             await redis_client.ping()
@@ -117,6 +121,7 @@ async def ensure_connection():
 ```
 
 ## Best Practices
+
 1. Always use connection pooling
 2. Implement health checks
 3. Use circuit breakers for resilience

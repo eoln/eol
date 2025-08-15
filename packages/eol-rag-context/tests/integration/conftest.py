@@ -1,6 +1,7 @@
-"""
-Integration test configuration and fixtures.
+"""Integration test configuration and fixtures.
+
 This version doesn't mock Redis since we need real Redis for integration tests.
+
 """
 
 import asyncio
@@ -138,6 +139,7 @@ async def redis_store(redis_config):
 
     Note: This requires Redis Stack or Redis with RediSearch module loaded.
     Tests will fail if vector search is not available.
+
     """
     # Use default index config
     index_config = config.IndexConfig()
@@ -186,7 +188,9 @@ async def embedding_manager():
 @pytest.fixture
 async def document_processor_instance():
     """Create a document processor for testing."""
-    return document_processor.DocumentProcessor(config.DocumentConfig(), config.ChunkingConfig())
+    return document_processor.DocumentProcessor(
+        config.DocumentConfig(), config.ChunkingConfig()
+    )
 
 
 @pytest.fixture

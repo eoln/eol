@@ -1,6 +1,7 @@
-"""
-Integration tests for full RAG workflow.
+"""Integration tests for full RAG workflow.
+
 Tests complete indexing, searching, and caching workflow.
+
 """
 
 import asyncio
@@ -49,7 +50,9 @@ class TestFullWorkflowIntegration:
                 assert "content" in data
 
     @pytest.mark.asyncio
-    async def test_semantic_cache_workflow(self, semantic_cache_instance, embedding_manager):
+    async def test_semantic_cache_workflow(
+        self, semantic_cache_instance, embedding_manager
+    ):
         """Test semantic caching workflow."""
         # Initialize cache (creates index)
         await semantic_cache_instance.initialize()
@@ -73,7 +76,9 @@ class TestFullWorkflowIntegration:
 
         # Step 4: Store more entries
         for i in range(5):
-            await semantic_cache_instance.set(f"Query {i}", f"Response {i}", {"index": i})
+            await semantic_cache_instance.set(
+                f"Query {i}", f"Response {i}", {"index": i}
+            )
 
         # Step 5: Check cache stats
         stats = semantic_cache_instance.get_stats()
@@ -107,7 +112,9 @@ class TestFullWorkflowIntegration:
         if len(knowledge_graph_instance.entities) > 0:
             # Get the first entity ID to query
             entity_id = list(knowledge_graph_instance.entities.keys())[0]
-            subgraph = await knowledge_graph_instance.query_subgraph(entity_id, max_depth=2)
+            subgraph = await knowledge_graph_instance.query_subgraph(
+                entity_id, max_depth=2
+            )
 
             assert hasattr(subgraph, "entities")
             assert hasattr(subgraph, "relationships")
@@ -207,10 +214,14 @@ class TestFullWorkflowIntegration:
         """Test concurrent operations across components."""
 
         async def index_operation():
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False
+            ) as f:
                 f.write("Concurrent indexing test")
                 f.flush()
-                result = await indexer_instance.index_file(Path(f.name), "concurrent_src")
+                result = await indexer_instance.index_file(
+                    Path(f.name), "concurrent_src"
+                )
                 Path(f.name).unlink()
                 return result
 
@@ -266,13 +277,17 @@ class TestFullWorkflowIntegration:
         index_time = time.time() - start_time
 
         files_per_second = index_result.file_count / index_time if index_time > 0 else 0
-        chunks_per_second = index_result.total_chunks / index_time if index_time > 0 else 0
+        chunks_per_second = (
+            index_result.total_chunks / index_time if index_time > 0 else 0
+        )
 
         print(f"\nIndexing Performance:")
         print(
             f"  Files: {index_result.file_count} in {index_time:.2f}s ({files_per_second:.1f} files/s)"
         )
-        print(f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)")
+        print(
+            f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)"
+        )
 
         # Measure search speed
         query = "performance test query"
@@ -285,7 +300,9 @@ class TestFullWorkflowIntegration:
 
         searches_per_second = 10 / search_time if search_time > 0 else 0
         print(f"\nSearch Performance:")
-        print(f"  10 searches in {search_time:.2f}s ({searches_per_second:.1f} searches/s)")
+        print(
+            f"  10 searches in {search_time:.2f}s ({searches_per_second:.1f} searches/s)"
+        )
 
         # Measure cache performance
         start_time = time.time()
@@ -299,8 +316,12 @@ class TestFullWorkflowIntegration:
         cache_read_time = time.time() - start_time
 
         print(f"\nCache Performance:")
-        print(f"  Writes: 20 in {cache_write_time:.2f}s ({20/cache_write_time:.1f} writes/s)")
-        print(f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)")
+        print(
+            f"  Writes: 20 in {cache_write_time:.2f}s ({20/cache_write_time:.1f} writes/s)"
+        )
+        print(
+            f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)"
+        )
 
         # All operations should complete reasonably fast
         assert index_time < 30  # Indexing should be under 30 seconds

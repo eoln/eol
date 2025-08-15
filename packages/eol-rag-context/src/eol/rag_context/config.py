@@ -1,5 +1,4 @@
-"""
-Configuration classes for EOL RAG Context MCP Server.
+"""Configuration classes for EOL RAG Context MCP Server.
 
 This module provides comprehensive configuration management for all aspects
 of the RAG system including Redis connections, embedding models, vector indexes,
@@ -22,6 +21,7 @@ Example:
     >>> config = RAGConfig.from_file(Path("config.yaml"))
     >>> config.embedding.model_name = "all-mpnet-base-v2"
     >>> config.redis.host = "redis.example.com"
+
 """
 
 from pathlib import Path
@@ -59,6 +59,7 @@ class RedisConfig(BaseSettings):
         ... )
         >>> print(redis_config.url)
         redis://:secret@redis.example.com:6380/0
+
     """
 
     model_config = ConfigDict(env_prefix="REDIS_")
@@ -88,6 +89,7 @@ class RedisConfig(BaseSettings):
             >>> config = RedisConfig(host="localhost", port=6379, password="secret")
             >>> config.url
             'redis://:secret@localhost:6379/0'
+
         """
         auth = f":{self.password}@" if self.password else ""
         return f"redis://{auth}{self.host}:{self.port}/{self.db}"
@@ -128,6 +130,7 @@ class EmbeddingConfig(BaseSettings):
         ...     openai_api_key="sk-...",
         ...     openai_model="text-embedding-3-large"
         ... )
+
     """
 
     model_config = ConfigDict(env_prefix="EMBEDDING_")
@@ -163,6 +166,7 @@ class EmbeddingConfig(BaseSettings):
             - all-mpnet-base-v2: 768
             - text-embedding-3-small: 1536
             - text-embedding-3-large: 3072
+
         """
         # provider = (
         #     info.data.get("provider", "sentence-transformers")
@@ -215,6 +219,7 @@ class IndexConfig(BaseSettings):
         ... )
         >>> print(f"Algorithm: {index_config.algorithm}")
         Algorithm: HNSW
+
     """
 
     model_config = ConfigDict(env_prefix="INDEX_")
@@ -274,6 +279,7 @@ class ChunkingConfig(BaseSettings):
         ...     code_max_lines=50,
         ...     respect_document_structure=True
         ... )
+
     """
 
     model_config = ConfigDict(env_prefix="CHUNK_")
@@ -329,6 +335,7 @@ class CacheConfig(BaseSettings):
         ...     adaptive_threshold=True,  # Auto-optimize
         ...     max_cache_size=2000  # Larger cache
         ... )
+
     """
 
     model_config = ConfigDict(env_prefix="CACHE_")
@@ -378,6 +385,7 @@ class ContextConfig(BaseSettings):
         ...     min_relevance_score=0.6,  # Lower threshold
         ...     progressive_loading=True
         ... )
+
     """
 
     model_config = ConfigDict(env_prefix="CONTEXT_")
@@ -433,6 +441,7 @@ class DocumentConfig(BaseSettings):
         ...     max_file_size_mb=200,
         ...     detect_language=True
         ... )
+
     """
 
     model_config = ConfigDict(env_prefix="DOC_")
@@ -511,9 +520,12 @@ class RAGConfig(BaseSettings):
 
         >>> config = RAGConfig.from_file(Path("production.yaml"))
         >>> await server.initialize(config)
+
     """
 
-    model_config = ConfigDict(env_prefix="RAG_", env_file=".env", env_file_encoding="utf-8")
+    model_config = ConfigDict(
+        env_prefix="RAG_", env_file=".env", env_file_encoding="utf-8"
+    )
 
     # Sub-configurations
     redis: RedisConfig = Field(default_factory=RedisConfig)
@@ -551,6 +563,7 @@ class RAGConfig(BaseSettings):
         Raises:
             PermissionError: If unable to create directory due to permissions.
             OSError: If directory creation fails for other reasons.
+
         """
         v.mkdir(parents=True, exist_ok=True)
         return v
@@ -593,6 +606,7 @@ class RAGConfig(BaseSettings):
             >>> config = RAGConfig.from_file(Path("config.yaml"))
             >>> config.redis.port
             6380
+
         """
         import json
 

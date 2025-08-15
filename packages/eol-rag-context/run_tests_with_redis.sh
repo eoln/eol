@@ -50,14 +50,14 @@ start_redis() {
         echo -e "${GREEN}Redis is already running${NC}"
         return 0
     fi
-    
+
     # Try Docker first
     if command -v docker >/dev/null 2>&1; then
         if docker info >/dev/null 2>&1; then
             echo "Starting Redis with Docker..."
             docker rm -f eol-test-redis 2>/dev/null || true
             docker run -d --name eol-test-redis -p 6379:6379 redis/redis-stack:latest >/dev/null 2>&1
-            
+
             # Wait for Redis to be ready
             for i in {1..30}; do
                 if docker exec eol-test-redis redis-cli ping 2>/dev/null | grep -q PONG; then
@@ -69,12 +69,12 @@ start_redis() {
             done
         fi
     fi
-    
+
     # Try native Redis
     if command -v redis-server >/dev/null 2>&1; then
         echo "Starting Redis natively..."
         redis-server --port 6379 --daemonize yes --save "" --appendonly no >/dev/null 2>&1
-        
+
         # Wait for Redis to be ready
         for i in {1..30}; do
             if check_redis; then
@@ -85,7 +85,7 @@ start_redis() {
             sleep 1
         done
     fi
-    
+
     echo -e "${RED}Failed to start Redis${NC}"
     echo "Please install Redis or Docker"
     exit 1

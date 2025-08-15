@@ -41,14 +41,14 @@ def test_config(temp_dir: Path) -> RAGConfig:
     config.index_dir = temp_dir / "indexes"
     config.data_dir.mkdir(exist_ok=True)
     config.index_dir.mkdir(exist_ok=True)
-    
+
     # Use smaller embedding dimension for tests
     config.embedding.dimension = 128
     config.embedding.model_name = "all-MiniLM-L6-v2"
-    
+
     # Disable cache for tests
     config.cache.enabled = False
-    
+
     return config
 
 
@@ -67,12 +67,12 @@ async def redis_store(redis_config: RedisConfig, test_config: RAGConfig) -> Asyn
     """Create Redis store for tests."""
     store = RedisVectorStore(redis_config, test_config.index)
     await store.connect_async()
-    
+
     # Clean test DB
     await store.async_redis.flushdb()
-    
+
     yield store
-    
+
     # Cleanup
     await store.async_redis.flushdb()
     await store.close()
@@ -87,10 +87,10 @@ def mock_embedding_manager(test_config: RAGConfig) -> EmbeddingManager:
                 texts = [texts]
             # Return random embeddings for testing
             return np.random.randn(len(texts), test_config.embedding.dimension)
-        
+
         async def embed_batch(self, texts, batch_size=32):
             return await self.embed(texts)
-    
+
     manager = EmbeddingManager(test_config.embedding)
     manager.provider = MockEmbeddingProvider()
     return manager
@@ -100,7 +100,7 @@ def mock_embedding_manager(test_config: RAGConfig) -> EmbeddingManager:
 def sample_documents(temp_dir: Path) -> Dict[str, Path]:
     """Create sample documents for testing."""
     docs = {}
-    
+
     # Markdown file
     md_file = temp_dir / "test.md"
     md_file.write_text("""# Test Document
@@ -118,7 +118,7 @@ def hello_world():
 This concludes our test document.
 """)
     docs["markdown"] = md_file
-    
+
     # Python file
     py_file = temp_dir / "test.py"
     py_file.write_text("""
@@ -130,15 +130,15 @@ def factorial(n):
 
 class Calculator:
     \"\"\"Simple calculator class.\"\"\"
-    
+
     def add(self, a, b):
         return a + b
-    
+
     def multiply(self, a, b):
         return a * b
 """)
     docs["python"] = py_file
-    
+
     # JSON file
     json_file = temp_dir / "config.json"
     json_file.write_text("""{
@@ -150,7 +150,7 @@ class Calculator:
     }
 }""")
     docs["json"] = json_file
-    
+
     # Text file
     txt_file = temp_dir / "readme.txt"
     txt_file.write_text("""This is a sample project for testing the RAG system.
@@ -165,7 +165,7 @@ Features:
 - Real-time updates
 """)
     docs["text"] = txt_file
-    
+
     return docs
 
 
@@ -184,11 +184,11 @@ async def indexed_documents(
         mock_embedding_manager,
         redis_store
     )
-    
+
     # Index all sample documents
     for doc_path in sample_documents.values():
         await indexer.index_file(doc_path)
-    
+
     return indexer
 
 

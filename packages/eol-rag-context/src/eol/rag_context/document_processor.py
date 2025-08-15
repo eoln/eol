@@ -1,4 +1,5 @@
-"""Comprehensive document processing system for multi-format content extraction and chunking.
+"""Comprehensive document processing system for multi-format content extraction and
+chunking.
 
 This module provides intelligent document processing capabilities that can handle various
 file formats including code files, documentation, PDFs, Word documents, and structured
@@ -67,6 +68,7 @@ Example:
     ...     if doc.language:
     ...         print(f"  Language: {doc.language}")
     ...     print(f"  Metadata: {list(doc.metadata.keys())}")
+
 """
 
 import json
@@ -101,7 +103,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessedDocument:
-    """Comprehensive document representation with content, metadata, and processing results.
+    """Comprehensive document representation with content, metadata, and processing
+    results.
 
     Represents a fully processed document containing the original content,
     extracted metadata, intelligent chunks, and format-specific information.
@@ -133,6 +136,7 @@ class ProcessedDocument:
         >>> for i, chunk in enumerate(doc.chunks[:3]):
         ...     print(f"Chunk {i}: {chunk['type']} ({chunk['tokens']} tokens)")
         ...     print(f"  Content preview: {chunk['content'][:50]}...")
+
     """
 
     file_path: Path
@@ -144,7 +148,8 @@ class ProcessedDocument:
 
 
 class DocumentProcessor:
-    """Advanced multi-format document processor with intelligent chunking for RAG systems.
+    """Advanced multi-format document processor with intelligent chunking for RAG
+    systems.
 
     Provides comprehensive document processing capabilities that handle various file
     formats and implement sophisticated chunking strategies optimized for retrieval
@@ -203,6 +208,7 @@ class DocumentProcessor:
         ...         print(f"Processed {doc.doc_type}: {len(doc.chunks)} chunks")
         >>>
         >>> print(f"Total: {len(results)} documents processed")
+
     """
 
     def __init__(self, doc_config: DocumentConfig, chunk_config: ChunkingConfig):
@@ -213,6 +219,7 @@ class DocumentProcessor:
                 size limits, and processing options.
             chunk_config: Chunking configuration including size limits, overlap
                 settings, and strategy preferences.
+
         """
         self.doc_config = doc_config
         self.chunk_config = chunk_config
@@ -266,7 +273,8 @@ class DocumentProcessor:
         return parsers
 
     async def process_file(self, file_path: Path) -> Optional[ProcessedDocument]:
-        """Process a single file using format-specific extraction and chunking strategies.
+        """Process a single file using format-specific extraction and chunking
+        strategies.
 
         Automatically detects file type using MIME detection and file extensions,
         then routes to the appropriate format-specific processor. Handles various
@@ -317,6 +325,7 @@ class DocumentProcessor:
         Note:
             Files exceeding max_file_size_mb configuration are automatically
             skipped with a warning log message.
+
         """
         if not file_path.exists():
             logger.error(f"File not found: {file_path}")
@@ -382,6 +391,7 @@ class DocumentProcessor:
 
         Returns:
             ProcessedDocument with Markdown-specific structure and chunking.
+
         """
         async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
             content = await f.read()
@@ -504,7 +514,9 @@ class DocumentProcessor:
 
         return doc
 
-    def _chunk_pdf_content(self, pages: List[str], source_path: str = "") -> List[Dict[str, Any]]:
+    def _chunk_pdf_content(
+        self, pages: List[str], source_path: str = ""
+    ) -> List[Dict[str, Any]]:
         """Chunk PDF content intelligently."""
         chunks = []
 
@@ -538,7 +550,11 @@ class DocumentProcessor:
             metadata["properties"] = {
                 "title": doc.core_properties.title or "",
                 "author": doc.core_properties.author or "",
-                "created": str(doc.core_properties.created) if doc.core_properties.created else "",
+                "created": (
+                    str(doc.core_properties.created)
+                    if doc.core_properties.created
+                    else ""
+                ),
             }
 
         # Extract paragraphs
@@ -565,7 +581,8 @@ class DocumentProcessor:
         return doc_obj
 
     async def _process_code(self, file_path: Path) -> ProcessedDocument:
-        """Process source code files with AST-based parsing and structure-aware chunking.
+        """Process source code files with AST-based parsing and structure-aware
+        chunking.
 
         Processes source code files using Tree-sitter parsers when available for
         structure-aware chunking by functions, classes, and other code constructs.
@@ -586,6 +603,7 @@ class DocumentProcessor:
         Note:
             AST parsing requires Tree-sitter languages to be installed.
             Without AST support, falls back to line-based chunking.
+
         """
         async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
             content = await f.read()
@@ -646,8 +664,16 @@ class DocumentProcessor:
         # Define node types to chunk by
         chunk_node_types = {
             "python": ["function_definition", "class_definition"],
-            "javascript": ["function_declaration", "class_declaration", "arrow_function"],
-            "typescript": ["function_declaration", "class_declaration", "arrow_function"],
+            "javascript": [
+                "function_declaration",
+                "class_declaration",
+                "arrow_function",
+            ],
+            "typescript": [
+                "function_declaration",
+                "class_declaration",
+                "arrow_function",
+            ],
             "rust": ["function_item", "impl_item"],
             "go": ["function_declaration", "method_declaration"],
             "java": ["method_declaration", "class_declaration"],
@@ -760,7 +786,9 @@ class DocumentProcessor:
         if isinstance(data, dict):
             for key, value in data.items():
                 chunk_content = (
-                    json.dumps({key: value}, indent=2) if format == "json" else str({key: value})
+                    json.dumps({key: value}, indent=2)
+                    if format == "json"
+                    else str({key: value})
                 )
                 chunks.append(
                     self._create_chunk(
@@ -774,7 +802,9 @@ class DocumentProcessor:
                 )
         elif isinstance(data, list):
             for i, item in enumerate(data):
-                chunk_content = json.dumps(item, indent=2) if format == "json" else str(item)
+                chunk_content = (
+                    json.dumps(item, indent=2) if format == "json" else str(item)
+                )
                 chunks.append(
                     self._create_chunk(
                         content=chunk_content,
@@ -858,6 +888,7 @@ class DocumentProcessor:
         Note:
             Uses semantic_chunking configuration to choose between
             paragraph-aware and simple token-based chunking.
+
         """
         chunks = []
 
@@ -902,7 +933,8 @@ class DocumentProcessor:
                             last_space = chunk_content.rfind(" ")
                             if (
                                 last_space > 0
-                                and last_space > start + self.chunk_config.max_chunk_size // 2
+                                and last_space
+                                > start + self.chunk_config.max_chunk_size // 2
                             ):
                                 chunk_content = para_text[start : start + last_space]
                                 end = start + last_space
@@ -921,7 +953,9 @@ class DocumentProcessor:
 
                         # Always advance start to avoid infinite loop
                         start = (
-                            end - self.chunk_config.chunk_overlap if end < len(para_text) else end
+                            end - self.chunk_config.chunk_overlap
+                            if end < len(para_text)
+                            else end
                         )
 
                         # Ensure we make progress even if overlap is large
@@ -958,7 +992,9 @@ class DocumentProcessor:
                             chunk_content = final_content[start:end]
                             last_space = chunk_content.rfind(" ")
                             if last_space > 0:
-                                chunk_content = final_content[start : start + last_space]
+                                chunk_content = final_content[
+                                    start : start + last_space
+                                ]
                                 end = start + last_space
 
                         if chunk_content.strip():
@@ -1048,6 +1084,7 @@ class DocumentProcessor:
         Note:
             Processing continues even if individual files fail. Check logs for
             specific file processing errors.
+
         """
         documents = []
 

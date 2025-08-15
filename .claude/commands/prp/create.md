@@ -15,6 +15,7 @@ Creates comprehensive Product Requirements Prompts (PRPs) using context engineer
 ```
 
 ### Examples
+
 ```bash
 # Any software feature development
 /prp:create "user authentication system with JWT tokens"
@@ -27,24 +28,28 @@ Creates comprehensive Product Requirements Prompts (PRPs) using context engineer
 ## PRP Generation Process
 
 ### 1. Codebase Analysis Phase
+
 - **Technology Scanning**: Identify relevant frameworks, libraries, and patterns
 - **Pattern Discovery**: Extract existing code conventions, structures, and best practices
 - **Dependency Mapping**: Analyze package dependencies and integration points
 - **Test Pattern Review**: Understand testing frameworks and validation strategies
 
 ### 2. Context Engineering Phase
+
 - **Domain Knowledge**: Extract domain-specific patterns and conventions
 - **Technical Constraints**: Identify dependencies, performance requirements, and limitations
 - **Integration Context**: Understand system boundaries and external service connections
 - **Quality Standards**: Establish testing, validation, and performance baselines
 
 ### 3. Implementation Blueprint Creation
+
 - **Architecture Design**: Component structure following existing patterns
 - **Implementation Strategy**: Step-by-step development approach with validation gates
 - **Testing Framework**: Comprehensive test coverage using project standards
 - **Quality Assurance**: Performance benchmarks and validation criteria
 
 ### 4. Quality Assurance
+
 - **Pattern Verification**: Alignment with existing codebase conventions
 - **Completeness Check**: All PRP components present and detailed
 - **Technical Compliance**: Following project standards and best practices
@@ -96,6 +101,7 @@ async def process_document(doc: Document) -> ProcessedDocument:
 ## Architecture Overview
 
 ### Python Component Structure
+
 ```
 packages/eol-rag-context/
 ├── src/
@@ -111,6 +117,7 @@ packages/eol-rag-context/
 ```
 
 ### Redis Infrastructure Design
+
 - **Vector Index**: HNSW with cosine similarity
 - **Caching Layer**: Semantic similarity cache
 - **Connection Pool**: 50 max connections
@@ -119,6 +126,7 @@ packages/eol-rag-context/
 ## Implementation Tasks
 
 ### Phase 1: Python Foundation
+
 - [ ] **Define data structures**
   - Create dataclasses with type hints
   - Define protocols for interfaces
@@ -132,35 +140,39 @@ packages/eol-rag-context/
   - Configure black and isort
 
 ### Phase 2: Core Implementation
+
 - [ ] **Document processing pipeline**
+
   ```python
   async def process_document(self, doc: Document) -> None:
       # Chunk content based on type
       chunks = await self.chunk_strategy.chunk(doc)
-      
+
       # Generate embeddings
       embeddings = await self.embedding_provider.embed_batch(chunks)
-      
+
       # Store in Redis
       await self.redis_store.index_chunks(chunks, embeddings)
   ```
 
 - [ ] **Vector search implementation**
+
   ```python
   async def search_similar(self, query: str, k: int = 5) -> List[Document]:
       # Generate query embedding
       query_embedding = await self.embed(query)
-      
+
       # Search Redis vector index
       results = await self.redis_store.vector_search(
           query_embedding, k=k
       )
-      
+
       # Re-rank if needed
       return self.rerank_results(results)
   ```
 
 ### Phase 3: Caching Layer
+
 - [ ] **Semantic cache implementation**
   - Similarity-based cache keys
   - TTL management (5min, 1hr, 24hr tiers)
@@ -168,7 +180,9 @@ packages/eol-rag-context/
   - Cache warming strategies
 
 ### Phase 4: Testing & Validation
+
 - [ ] **Unit tests with pytest**
+
   ```python
   @pytest.mark.asyncio
   async def test_document_processing(redis_store):
@@ -184,6 +198,7 @@ packages/eol-rag-context/
   - Performance benchmarks
 
 ### Phase 5: Performance Optimization
+
 - [ ] **Batch operations**
   - Pipeline Redis commands
   - Concurrent embedding generation
@@ -197,6 +212,7 @@ packages/eol-rag-context/
 ## Quality Gates
 
 ### Code Quality
+
 ```bash
 # Format and lint
 black src/ tests/
@@ -209,6 +225,7 @@ pytest tests/ --cov=eol.rag_context --cov-fail-under=80
 ```
 
 ### Performance Validation
+
 ```python
 # Benchmark tests
 async def test_indexing_performance(benchmark):
@@ -217,6 +234,7 @@ async def test_indexing_performance(benchmark):
 ```
 
 ## Success Metrics
+
 - [ ] All tests passing with >80% coverage
 - [ ] Performance targets met
 - [ ] Type checking passes
@@ -224,16 +242,19 @@ async def test_indexing_performance(benchmark):
 - [ ] Integration tests successful
 
 ## Risk Mitigation
+
 - **Performance Risk**: Start with small batches, optimize incrementally
 - **Redis Memory**: Implement proper TTL and eviction policies
 - **Embedding Costs**: Cache embeddings, batch operations
 - **Type Safety**: Strict mypy configuration from start
 
 ## References
+
 - `.claude/context/[domain]/` - Domain patterns and best practices
 - `.claude/context/redis/` - Redis optimization strategies
 - `.claude/context/python/` - Python async patterns
 - `packages/eol-rag-context/` - Existing implementations
+
 ```
 
 This PRP provides comprehensive context for implementing [feature] with confidence score [8-10]/10.

@@ -1,6 +1,4 @@
-"""
-Unit tests for main CLI module.
-"""
+"""Unit tests for main CLI module."""
 
 import sys
 from pathlib import Path

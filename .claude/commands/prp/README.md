@@ -39,15 +39,18 @@ Product Requirements Prompt (PRP) commands implement a structured context engine
 ## PRP Methodology Focus
 
 ### Planning Philosophy
+
 PRP commands implement the structured planning methodology detailed in [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md).
 
 PRP commands are specifically designed for the **planning and design phase** of development:
+
 - **Not** for executing code quality checks (use `/quality:*` commands)
 - **Not** for PR preparation (use `/project:prepare-pr`)
 - **Not** for documentation updates (use `/project:update-docs`)
 - **Focused** on creating, reviewing, and executing implementation blueprints
 
 ### What PRPs Do
+
 1. **Analyze** existing codebase patterns and technical context
 2. **Create** comprehensive implementation blueprints with curated intelligence
 3. **Execute** plans with systematic validation and self-correction
@@ -55,7 +58,9 @@ PRP commands are specifically designed for the **planning and design phase** of 
 5. **Review** and update plans to maintain accuracy and relevance
 
 ### Context Engineering Layers
+
 Following the five-layer context engineering architecture:
+
 - **System Context**: Global project rules and conventions
 - **Domain Context**: Specific technology patterns (database, caching, authentication, etc.)
 - **Task Context**: Feature-specific requirements and constraints
@@ -63,6 +68,7 @@ Following the five-layer context engineering architecture:
 - **Response Context**: Expected outputs and quality criteria
 
 ### Blueprint Components
+
 PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 
 - **Product Requirements**: Clear feature specifications and business context
@@ -73,6 +79,7 @@ PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 - **Validation Framework**: Self-correcting mechanisms and error handling
 
 ### Planning Integration
+
 - TodoWrite integration for task tracking
 - State-based plan lifecycle (draft → ready → pending → completed)
 - Git branch strategy for plan execution
@@ -81,6 +88,7 @@ PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 ## Integration with EOL Framework
 
 ### Context Engineering Implementation
+
 - **Global Rules**: `.claude/CLAUDE.md` provides system-wide context
 - **Domain Knowledge**: `.claude/context/` contains specialized patterns
 - **Technology Context**: Database, caching, authentication patterns, and best practices
@@ -88,6 +96,7 @@ PRP = PRD + Curated Codebase Intelligence + Agent Runbook
 - **Validation Framework**: Quality gates and testing requirements
 
 ### Supports Development Workflow
+
 - Feature planning with checkbox format
 - Code review and quality assurance
 - Virtual environment management
@@ -106,6 +115,7 @@ Each command includes comprehensive help documentation:
 ## Technology-Specific Adaptations
 
 ### Python Development Context
+
 - Type hints and async patterns
 - Pytest testing frameworks
 - Code formatting with Black/isort
@@ -113,6 +123,7 @@ Each command includes comprehensive help documentation:
 - Dataclasses and protocols for structure
 
 ### Domain-Specific Context (Examples)
+
 - Document processing and chunking strategies
 - Embedding generation and management
 - Vector search optimization with Redis
@@ -120,6 +131,7 @@ Each command includes comprehensive help documentation:
 - Performance benchmarking and validation
 
 ### Context Engineering Principles
+
 - **Codebase Intelligence**: Extract existing patterns and conventions
 - **Technical Constraints**: Include dependencies, performance requirements
 - **Validation Gates**: Define quality checks and testing requirements
@@ -129,17 +141,20 @@ Each command includes comprehensive help documentation:
 ## Benefits
 
 ### Development Efficiency
+
 - **Production-Ready Code**: First-pass implementations with comprehensive context
 - **Reduced Debugging**: Self-correcting mechanisms catch issues early
 - **Faster Delivery**: Systematic approach eliminates trial-and-error development
 - **Consistent Quality**: Leveraging proven patterns ensures maintainability
 
 ### Code Quality
+
 - **Python Best Practices**: Type hints and async patterns
 - **Testing Excellence**: Pytest patterns with high coverage
 - **Redis Integration**: Proven vector database patterns
 
 ### Team Productivity
+
 - **Knowledge Sharing**: PRPs capture and distribute implementation wisdom
 - **Scalable Expertise**: Junior developers can produce senior-level code
 - **Onboarding**: New team members learn from comprehensive examples
@@ -166,7 +181,8 @@ Each command includes comprehensive help documentation:
 ## Success Metrics
 
 ### Implementation Quality
-- **Performance Targets**: 
+
+- **Performance Targets**:
   - Document indexing >10 docs/sec
   - Vector search <100ms latency
   - Cache hit rate >31%
@@ -174,11 +190,13 @@ Each command includes comprehensive help documentation:
 - **Type Safety**: Full mypy compliance
 
 ### Development Efficiency
+
 - **Time to Implementation**: Reduced through established pattern reuse
 - **Pattern Reuse**: Leveraging existing proven implementations
 - **Integration Success**: Seamless MCP server integration
 
 ### Maintainability
+
 - **PRP Currency**: Regular review cycles maintain accuracy
 - **Pattern Evolution**: Commands evolve with software development best practices
 - **Documentation Quality**: Living documentation through examples
@@ -186,6 +204,7 @@ Each command includes comprehensive help documentation:
 ## Implementation Notes
 
 This PRP command system provides a comprehensive context engineering methodology for any software development:
+
 - **Universal Application**: Works for any technology stack or domain
 - **Context Engineering**: Systematic approach to providing AI comprehensive context
 - **Production Focus**: Designed to generate production-ready code on first pass

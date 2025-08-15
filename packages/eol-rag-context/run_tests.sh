@@ -56,7 +56,7 @@ check_redis() {
 start_redis_docker() {
     echo -e "${YELLOW}Starting Redis with Docker...${NC}"
     docker-compose -f docker-compose.test.yml up -d
-    
+
     # Wait for Redis to be ready
     echo "Waiting for Redis to be ready..."
     for i in {1..30}; do
@@ -66,7 +66,7 @@ start_redis_docker() {
         fi
         sleep 1
     done
-    
+
     echo -e "${RED}Redis failed to start${NC}"
     return 1
 }

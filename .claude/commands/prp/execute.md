@@ -15,6 +15,7 @@ Systematically executes PRPs using context engineering methodology with real-tim
 ```
 
 ### Examples
+
 ```bash
 # Execute any ready plan
 /prp:execute .claude/plans/ready/prp-user-authentication.md
@@ -31,6 +32,7 @@ Systematically executes PRPs using context engineering methodology with real-tim
 Follows the structured execution workflow from [`.claude/context/planning-methodology.md`](../../context/planning-methodology.md#git-branch-strategy).
 
 ### 1. Pre-Execution Validation
+
 ```bash
 # Verify plan is in ready state
 ls .claude/plans/ready/prp-*.md
@@ -43,7 +45,9 @@ git stash push -m "Pre-PRP execution stash"
 ```
 
 ### 2. Branch Creation
+
 Following the [Git Branch Strategy](../../context/planning-methodology.md#branch-lifecycle):
+
 ```bash
 # Create dedicated feature branch
 git checkout -b feat/[plan-name]
@@ -55,7 +59,9 @@ mv .claude/plans/ready/prp-[feature].md .claude/plans/pending/
 ### 3. Task Execution Flow
 
 #### Phase-Based Execution
+
 Following the [Phase Structure](../../context/planning-methodology.md#phase-based-development) and [Checkbox Format](../../context/planning-methodology.md#checkbox-format):
+
 ```markdown
 ## Phase 1: Foundation [~]
 - [x] Task 1 completed
@@ -68,6 +74,7 @@ Following the [Phase Structure](../../context/planning-methodology.md#phase-base
 ```
 
 #### Real-Time Tracking
+
 - Update task status immediately upon completion (see [Planning Methodology](../../context/planning-methodology.md))
 - Use TodoWrite for persistent tracking
 - Commit after each phase completion
@@ -75,6 +82,7 @@ Following the [Phase Structure](../../context/planning-methodology.md#phase-base
 ### 4. Quality Gates
 
 #### After Each Phase
+
 ```bash
 # Run quality checks
 python -m black src/ tests/ --check
@@ -84,6 +92,7 @@ python -m pytest tests/ -q
 ```
 
 #### Performance Validation
+
 ```python
 # Verify performance targets
 assert indexing_rate > 10  # docs/sec
@@ -92,6 +101,7 @@ assert cache_hit_rate > 0.31  # 31%
 ```
 
 ### 5. Incremental Commits
+
 ```bash
 # Commit after significant progress
 git add -A
@@ -105,12 +115,14 @@ git commit -m "feat: implement phase 1 - foundation
 ## Execution States
 
 ### Task Status Indicators
+
 - `[ ]` - Not started
 - `[~]` - In progress (only one at a time)
 - `[x]` - Completed
 - `[!]` - Blocked (document reason)
 
 ### Plan State Transitions
+
 1. **draft/** → Initial development
 2. **ready/** → Validated and approved
 3. **pending/** → Currently executing (with git branch)
@@ -119,6 +131,7 @@ git commit -m "feat: implement phase 1 - foundation
 ## Integration with TodoWrite
 
 ### Automatic Task Loading
+
 ```python
 # Load tasks from PRP
 tasks = parse_prp_tasks(".claude/plans/pending/prp-feature.md")
@@ -126,6 +139,7 @@ todo_write(tasks)
 ```
 
 ### Progress Tracking
+
 ```python
 # Update task status
 mark_task_complete(task_id)
@@ -135,6 +149,7 @@ mark_task_in_progress(next_task_id)
 ## Git Integration
 
 ### Branch Management
+
 ```bash
 # Feature branch naming
 feat/[feature-name]  # New features
@@ -147,6 +162,7 @@ git rebase origin main
 ```
 
 ### Commit Message Format
+
 ```
 [type]: [description]
 
@@ -159,6 +175,7 @@ Related: #issue
 ## Error Recovery
 
 ### Rollback Procedures
+
 ```bash
 # Rollback to checkpoint
 git reset --hard [commit-hash]
@@ -172,6 +189,7 @@ git branch -D feat/[feature-name]
 ```
 
 ### Handling Blocked Tasks
+
 ```markdown
 - [!] **Task Name** - Blocked
   - Reason: Missing dependency
@@ -182,6 +200,7 @@ git branch -D feat/[feature-name]
 ## Post-Execution
 
 ### Completion Checklist
+
 - [ ] All tasks marked complete
 - [ ] Tests passing with >80% coverage
 - [ ] Quality gates passed
@@ -189,6 +208,7 @@ git branch -D feat/[feature-name]
 - [ ] Documentation updated
 
 ### PR Creation
+
 ```bash
 # Push branch
 git push -u origin feat/[feature-name]
@@ -198,19 +218,20 @@ gh pr create \
   --title "feat: [feature description]" \
   --body "## Summary
   Implementation of PRP for [feature]
-  
+
   ## Changes
   - [List key changes]
-  
+
   ## Testing
   - Coverage: XX%
   - Performance: Meets targets
-  
+
   ## PRP Reference
   See .claude/plans/completed/prp-[feature].md"
 ```
 
 ### Plan Archival
+
 ```bash
 # Move to completed with date prefix
 mv .claude/plans/pending/prp-[feature].md \
@@ -224,6 +245,7 @@ echo "- [Key learning 1]" >> .claude/plans/completed/$(date +%Y%m%d)_prp-[featur
 ## Command Options
 
 ### Execution Control
+
 ```bash
 # Dry run mode
 /prp:execute plan.md --dry-run
@@ -236,6 +258,7 @@ echo "- [Key learning 1]" >> .claude/plans/completed/$(date +%Y%m%d)_prp-[featur
 ```
 
 ### Validation Options
+
 ```bash
 # Strict mode (fail on any warning)
 /prp:execute plan.md --strict
@@ -250,12 +273,14 @@ echo "- [Key learning 1]" >> .claude/plans/completed/$(date +%Y%m%d)_prp-[featur
 ## Success Metrics
 
 ### Execution Quality
+
 - [ ] All phases completed successfully
 - [ ] No blocked tasks remaining
 - [ ] Quality gates passed at each phase
 - [ ] Performance targets achieved
 
 ### Process Compliance
+
 - [ ] Git branch created and used
 - [ ] Incremental commits made
 - [ ] Task status updated in real-time

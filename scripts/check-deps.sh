@@ -101,7 +101,7 @@ if [ -f "requirements/constraints.txt" ]; then
         if [[ "$line" =~ ^([a-zA-Z0-9_-]+)==(.+)$ ]]; then
             package="${BASH_REMATCH[1]}"
             version="${BASH_REMATCH[2]}"
-            
+
             # Check if installed version matches constraint
             installed_version=$(pip show "$package" 2>/dev/null | grep "^Version:" | cut -d' ' -f2)
             if [ -n "$installed_version" ] && [ "$installed_version" != "$version" ]; then
@@ -110,7 +110,7 @@ if [ -f "requirements/constraints.txt" ]; then
             fi
         fi
     done < "requirements/constraints.txt"
-    
+
     if [ "$constraint_issues" -eq "0" ]; then
         print_success "All version constraints satisfied"
     else
@@ -129,13 +129,13 @@ for package_dir in packages/*; do
     if [ -f "$package_dir/pyproject.toml" ]; then
         package_name=$(basename "$package_dir")
         print_info "  Checking $package_name..."
-        
+
         # Get list of imports from Python files
         if [ -d "$package_dir/src" ]; then
             imports=$(find "$package_dir/src" -name "*.py" -exec grep -h "^import \|^from " {} \; 2>/dev/null | \
                      sed 's/from \([^ ]*\).*/\1/' | sed 's/import \([^ ]*\).*/\1/' | \
                      cut -d'.' -f1 | sort -u)
-            
+
             # This is a basic check - would need more sophisticated analysis for accuracy
             # Just reporting for awareness
         fi

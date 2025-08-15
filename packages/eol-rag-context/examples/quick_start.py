@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""
-Quick Start Example for EOL RAG Context
+"""Quick Start Example for EOL RAG Context.
 
 This example demonstrates basic usage of the EOL RAG Context MCP server.
+
 """
 
 import asyncio
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add parent directory to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -34,7 +34,9 @@ async def main():
         print("   ✅ Server initialized successfully")
     except Exception as e:
         print(f"   ❌ Failed to initialize: {e}")
-        print("   Make sure Redis is running: docker run -d -p 6379:6379 redis/redis-stack:latest")
+        print(
+            "   Make sure Redis is running: docker run -d -p 6379:6379 redis/redis-stack:latest"
+        )
         return
 
     print()
@@ -57,7 +59,12 @@ async def main():
 
     # Step 3: Search for context
     print("3. Searching for context...")
-    queries = ["initialize server", "index documents", "search context", "async function"]
+    queries = [
+        "initialize server",
+        "index documents",
+        "search context",
+        "async function",
+    ]
 
     for query in queries:
         print(f"\n   Query: '{query}'")

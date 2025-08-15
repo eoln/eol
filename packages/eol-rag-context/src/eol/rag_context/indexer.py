@@ -1,5 +1,5 @@
-"""
-Document indexer with hierarchical organization and comprehensive metadata management.
+"""Document indexer with hierarchical organization and comprehensive metadata
+management.
 
 This module provides document indexing capabilities with support for hierarchical
 organization (concepts → sections → chunks), folder scanning, file change detection,
@@ -24,6 +24,7 @@ Example:
     >>> indexer = DocumentIndexer(config, processor, embeddings, redis_store)
     >>> result = await indexer.index_folder("/path/to/docs")
     >>> print(f"Indexed {result.indexed_files} files with {result.total_chunks} chunks")
+
 """
 
 import hashlib
@@ -69,6 +70,7 @@ class IndexedSource:
         ...     total_chunks=1247
         ... )
         >>> print(f"Source {source.source_id} has {source.total_chunks} chunks")
+
     """
 
     source_id: str
@@ -82,8 +84,9 @@ class IndexedSource:
     def __post_init__(self):
         """Ensure data consistency after initialization.
 
-        Sets indexed_files to match file_count if not explicitly provided,
-        maintaining backward compatibility and data consistency.
+        Sets indexed_files to match file_count if not explicitly provided, maintaining
+        backward compatibility and data consistency.
+
         """
         if self.indexed_files == 0 and self.file_count > 0:
             self.indexed_files = self.file_count
@@ -115,6 +118,7 @@ class IndexResult:
         ... )
         >>> if not result.errors:
         ...     print(f"Successfully indexed {result.files} files")
+
     """
 
     source_id: str
@@ -131,8 +135,9 @@ class IndexResult:
         """Ensure consistency between field names for backward compatibility.
 
         Synchronizes duplicate fields (file_count/files, total_chunks/chunks,
-        indexed_files/files) to maintain API compatibility with different
-        naming conventions used across the codebase.
+        indexed_files/files) to maintain API compatibility with different naming
+        conventions used across the codebase.
+
         """
         if self.file_count == 0 and self.files > 0:
             self.file_count = self.files
@@ -188,6 +193,7 @@ class DocumentMetadata:
         ...     total_chunks=5,
         ...     hierarchy_level=3
         ... )
+
     """
 
     # Source identification
@@ -251,6 +257,7 @@ class FolderScanner:
         ...     respect_gitignore=True
         ... )
         >>> print(f"Found {len(files)} files to index")
+
     """
 
     def __init__(self, config: RAGConfig):
@@ -258,6 +265,7 @@ class FolderScanner:
 
         Args:
             config: RAG configuration containing document processing settings.
+
         """
         self.config = config
         self.ignore_patterns = self._default_ignore_patterns()
@@ -276,6 +284,7 @@ class FolderScanner:
             These patterns are applied in addition to .gitignore rules when
             gitignore support is enabled. Patterns use Python's pathlib.Path.match()
             syntax with ** for recursive matching.
+
         """
         return {
             "**/.git/**",
@@ -321,6 +330,7 @@ class FolderScanner:
             >>> should_skip = scanner._should_ignore(Path("node_modules/package.json"))
             >>> print(f"Skip file: {should_skip}")
             Skip file: True
+
         """
         path_str = str(path)
 
@@ -366,6 +376,7 @@ class FolderScanner:
             >>> git_info = scanner._get_git_metadata(Path("/project/src"))
             >>> if git_info:
             ...     print(f"Branch: {git_info['git_branch']}")
+
         """
         try:
             import subprocess
@@ -465,6 +476,7 @@ class FolderScanner:
             ...     recursive=True,
             ...     respect_gitignore=True
             ... )
+
         """
         # Handle both Path and string inputs
         if isinstance(folder_path, str):
@@ -523,13 +535,15 @@ class FolderScanner:
             >>> source_id = scanner.generate_source_id(Path("/project/docs"))
             >>> print(f"Source ID: {source_id}")
             Source ID: a1b2c3d4e5f6g7h8
+
         """
         abs_path = str(path.resolve())
         return hashlib.md5(abs_path.encode()).hexdigest()[:16]
 
 
 class DocumentIndexer:
-    """Comprehensive document indexer with hierarchical organization and metadata tracking.
+    """Comprehensive document indexer with hierarchical organization and metadata
+    tracking.
 
     Provides complete document indexing pipeline including document processing,
     hierarchical organization (concepts → sections → chunks), embedding generation,
@@ -573,6 +587,7 @@ class DocumentIndexer:
         >>> # Get statistics
         >>> stats = indexer.get_stats()
         >>> print(f"Total documents: {stats['total_documents']}")
+
     """
 
     def __init__(
@@ -589,6 +604,7 @@ class DocumentIndexer:
             document_processor: Document processor for content extraction.
             embedding_manager: Embedding manager for vector generation.
             redis_store: Redis vector store for data persistence.
+
         """
         self.config = config
         self.processor = document_processor
@@ -668,6 +684,7 @@ class DocumentIndexer:
             ...     source_id="docs_v2",
             ...     force_reindex=True
             ... )
+
         """
         start_time = time.time()
         # Handle both Path and string inputs
@@ -711,7 +728,10 @@ class DocumentIndexer:
 
                 # Process and index file
                 result = await self.index_file(
-                    file_path, source_id=source_id, root_path=folder_path, git_metadata=git_metadata
+                    file_path,
+                    source_id=source_id,
+                    root_path=folder_path,
+                    git_metadata=git_metadata,
                 )
 
                 total_chunks += result.chunks
@@ -746,7 +766,9 @@ class DocumentIndexer:
         # Update statistics
         self.stats["indexing_time"] += time.time() - start_time
 
-        logger.info(f"Indexed {indexed_files} files, {total_chunks} chunks from {folder_path}")
+        logger.info(
+            f"Indexed {indexed_files} files, {total_chunks} chunks from {folder_path}"
+        )
         return indexed_source
 
     async def index_file(
@@ -756,7 +778,8 @@ class DocumentIndexer:
         root_path: Optional[Path] = None,
         git_metadata: Optional[Dict[str, Any]] = None,
     ) -> IndexResult:
-        """Index a single file with comprehensive hierarchical organization and metadata.
+        """Index a single file with comprehensive hierarchical organization and
+        metadata.
 
         Processes a single file through the complete indexing pipeline including
         document processing, content extraction, hierarchical structuring,
@@ -802,6 +825,7 @@ class DocumentIndexer:
             ...     "/project/src/main.py",
             ...     git_metadata=git_info
             ... )
+
         """
         # Handle both Path and string inputs
         if isinstance(file_path, str):
@@ -813,7 +837,9 @@ class DocumentIndexer:
             source_id = self.scanner.generate_source_id(file_path.parent)
 
         # Initialize result
-        result = IndexResult(source_id=source_id, files=1, file_count=1, indexed_files=1)
+        result = IndexResult(
+            source_id=source_id, files=1, file_count=1, indexed_files=1
+        )
 
         try:
             # Calculate relative path
@@ -904,6 +930,7 @@ class DocumentIndexer:
         Returns:
             List of VectorDocument objects representing document concepts.
             Each concept includes summary content, embeddings, and metadata.
+
         """
         concepts = []
 
@@ -913,7 +940,9 @@ class DocumentIndexer:
         # Create concept document
         concept_id = f"{base_metadata.source_id}_concept_main"
         # Filter out None values for Redis
-        concept_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
+        concept_metadata = {
+            k: v for k, v in asdict(base_metadata).items() if v is not None
+        }
         concept_metadata.update(
             {
                 "hierarchy_level": 1,
@@ -962,6 +991,7 @@ class DocumentIndexer:
         Returns:
             List of VectorDocument objects representing document sections.
             Each section contains grouped content, embeddings, and parent links.
+
         """
         sections = []
 
@@ -1055,17 +1085,18 @@ class DocumentIndexer:
 
         Returns:
             VectorDocument representing the section with combined content.
+
         """
         # Combine chunk content
         content = "\n\n".join([c["content"] for c in chunks])
 
         # Generate section ID
-        section_id = (
-            f"{base_metadata.source_id}_section_{hashlib.md5(content.encode()).hexdigest()[:8]}"
-        )
+        section_id = f"{base_metadata.source_id}_section_{hashlib.md5(content.encode()).hexdigest()[:8]}"
 
         # Create section metadata - filter out None values for Redis
-        section_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
+        section_metadata = {
+            k: v for k, v in asdict(base_metadata).items() if v is not None
+        }
         section_metadata.update(
             {
                 "hierarchy_level": 2,
@@ -1075,7 +1106,9 @@ class DocumentIndexer:
         )
 
         # Generate embedding
-        embedding = await self.embeddings.get_embedding(content[:1000])  # Use first 1000 chars
+        embedding = await self.embeddings.get_embedding(
+            content[:1000]
+        )  # Use first 1000 chars
 
         section = VectorDocument(
             id=section_id,
@@ -1111,6 +1144,7 @@ class DocumentIndexer:
 
         Returns:
             Number of chunks successfully indexed.
+
         """
         chunks_indexed = 0
         section_idx = 0
@@ -1125,7 +1159,9 @@ class DocumentIndexer:
                 parent_section = None
 
             # Create chunk metadata - filter out None values for Redis
-            chunk_metadata = {k: v for k, v in asdict(base_metadata).items() if v is not None}
+            chunk_metadata = {
+                k: v for k, v in asdict(base_metadata).items() if v is not None
+            }
             chunk_updates = {
                 "chunk_index": i,
                 "hierarchy_level": 3,
@@ -1136,7 +1172,9 @@ class DocumentIndexer:
                 "char_end": chunk.get("char_end"),
             }
             # Only add non-None values
-            chunk_metadata.update({k: v for k, v in chunk_updates.items() if v is not None})
+            chunk_metadata.update(
+                {k: v for k, v in chunk_updates.items() if v is not None}
+            )
 
             # Add chunk-specific metadata
             if doc.doc_type == "code":
@@ -1190,6 +1228,7 @@ class DocumentIndexer:
         Returns:
             Summary string of approximately 500 characters containing key
             content from the document, or truncated content if extraction fails.
+
         """
         # Simple extractive summary - take first paragraph and key sentences
         lines = content.split("\n")
@@ -1216,6 +1255,7 @@ class DocumentIndexer:
         Returns:
             True if file is current (not modified since last indexing),
             False if file needs reindexing or has no stored metadata.
+
         """
         try:
             # Get stored metadata
@@ -1234,7 +1274,9 @@ class DocumentIndexer:
             logger.debug(f"Error checking file currency: {e}")
             return False
 
-    async def _store_file_metadata(self, file_path: Path, file_hash: str, mtime: float) -> None:
+    async def _store_file_metadata(
+        self, file_path: Path, file_hash: str, mtime: float
+    ) -> None:
         """Store file metadata in Redis for change detection and incremental indexing.
 
         Persists file metadata including path, content hash, modification time,
@@ -1245,6 +1287,7 @@ class DocumentIndexer:
             file_path: Path to file being tracked.
             file_hash: SHA-256 hash of file content.
             mtime: File modification timestamp.
+
         """
         file_key = f"file_meta:{hashlib.md5(str(file_path).encode()).hexdigest()}"
 
@@ -1273,6 +1316,7 @@ class DocumentIndexer:
 
         Returns:
             IndexedSource object if found, None if source doesn't exist.
+
         """
         source_key = f"source:{source_id}"
         data = self.redis.redis.hgetall(source_key)
@@ -1287,7 +1331,9 @@ class DocumentIndexer:
             file_count=int(data[b"file_count"]),
             total_chunks=int(data[b"total_chunks"]),
             indexed_files=int(data.get(b"indexed_files", data[b"file_count"])),
-            metadata=json.loads(data[b"metadata"].decode()) if data.get(b"metadata") else {},
+            metadata=(
+                json.loads(data[b"metadata"].decode()) if data.get(b"metadata") else {}
+            ),
         )
 
     async def _store_indexed_source(self, source: IndexedSource) -> None:
@@ -1298,6 +1344,7 @@ class DocumentIndexer:
 
         Args:
             source: IndexedSource object containing metadata to persist.
+
         """
         source_key = f"source:{source.source_id}"
 
@@ -1335,6 +1382,7 @@ class DocumentIndexer:
             ...     print(f"{source.source_id}: {source.file_count} files")
             ...     print(f"  Path: {source.path}")
             ...     print(f"  Chunks: {source.total_chunks}")
+
         """
         sources = []
 
@@ -1373,6 +1421,7 @@ class DocumentIndexer:
             ...     print("Source removed successfully")
             ... else:
             ...     print("Source not found")
+
         """
         # Delete all documents from this source
         deleted = 0
@@ -1437,6 +1486,7 @@ class DocumentIndexer:
             >>> print(f"Created {stats['total_chunks']} chunks")
             >>> print(f"Errors: {stats['errors']}")
             >>> print(f"Time: {stats['indexing_time']:.2f}s")
+
         """
         stats = self.stats.copy()
         # Add required fields for compatibility
@@ -1449,7 +1499,9 @@ class DocumentIndexer:
             cursor = 0
             source_count = 0
             while True:
-                cursor, keys = self.redis.redis.scan(cursor, match="source:*", count=100)
+                cursor, keys = self.redis.redis.scan(
+                    cursor, match="source:*", count=100
+                )
                 source_count += len(keys)
                 if cursor == 0:
                     break
@@ -1486,6 +1538,7 @@ class DocumentIndexer:
             >>> result = await indexer.index_file_dict("/project/readme.md")
             >>> print(f"Status: {result['status']}")
             >>> print(f"Chunks: {result['chunks']}")
+
         """
         result = await self.index_file(file_path, source_id)
         return {

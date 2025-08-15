@@ -1,6 +1,7 @@
-"""
-Integration tests for Redis vector store operations.
+"""Integration tests for Redis vector store operations.
+
 Tests real Redis connectivity and vector operations.
+
 """
 
 import json

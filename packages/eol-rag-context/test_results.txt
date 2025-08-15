@@ -1,0 +1,677 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-8.4.1, pluggy-1.6.0 -- /Users/eoln/Devel/eol/packages/eol-rag-context/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/eoln/Devel/eol/packages/eol-rag-context
+configfile: pytest.ini
+plugins: asyncio-1.1.0, timeout-2.4.0, anyio-4.10.0, cov-6.2.1, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collecting ... collected 206 items
+
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_process_text_file PASSED [  0%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_process_markdown_file PASSED [  0%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_process_python_file PASSED [  1%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_process_json_file PASSED [  1%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_process_javascript_file PASSED [  2%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_chunking_strategies PASSED [  2%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_language_detection PASSED [  3%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_concurrent_processing PASSED [  3%]
+tests/integration/test_document_processing_integration.py::TestDocumentProcessingIntegration::test_error_handling PASSED [  4%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_index_and_search_workflow FAILED [  4%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_semantic_cache_workflow FAILED [  5%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_knowledge_graph_workflow PASSED [  5%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_file_watcher_workflow PASSED [  6%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_hierarchical_rag_workflow FAILED [  6%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_concurrent_operations PASSED [  7%]
+tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics FAILED [  7%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_index_single_file PASSED [  8%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_index_folder PASSED [  8%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_hierarchical_indexing PASSED [  9%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_folder_scanner PASSED [  9%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_source_management PASSED [ 10%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_incremental_indexing PASSED [ 10%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_error_recovery PASSED [ 11%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_metadata_extraction PASSED [ 11%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_concurrent_indexing PASSED [ 12%]
+tests/integration/test_indexing_integration.py::TestIndexingIntegration::test_indexing_stats PASSED [ 12%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_connection PASSED [ 13%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_store_and_retrieve_document PASSED [ 13%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_vector_search FAILED [ 14%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_hierarchical_search FAILED [ 14%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_document_tree PASSED [ 15%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_batch_operations PASSED [ 15%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_filtered_search FAILED [ 16%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_index_creation PASSED [ 16%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_concurrent_operations PASSED [ 16%]
+tests/integration/test_redis_integration.py::TestRedisIntegration::test_cleanup PASSED [ 17%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_basic_usage_starting_server PASSED [ 17%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_indexing_single_file PASSED [ 18%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_indexing_directory PASSED [ 18%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_watch_for_changes PASSED [ 19%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_basic_search FAILED [ 19%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_hierarchical_search FAILED [ 20%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_search_with_filters FAILED [ 20%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_knowledge_graph_queries PASSED [ 21%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_semantic_caching FAILED [ 21%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_context_windows_management FAILED [ 22%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_code_assistant_example FAILED [ 22%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_documentation_search_example FAILED [ 23%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_batch_operations PASSED [ 23%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_context_optimization_for_llm PASSED [ 24%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_health_check_example PASSED [ 24%]
+tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_smart_indexing_strategy PASSED [ 25%]
+tests/test_config.py::TestRedisConfig::test_default_config PASSED        [ 25%]
+tests/test_config.py::TestRedisConfig::test_url_generation PASSED        [ 26%]
+tests/test_config.py::TestEmbeddingConfig::test_default_config PASSED    [ 26%]
+tests/test_config.py::TestEmbeddingConfig::test_dimension_validation PASSED [ 27%]
+tests/test_config.py::TestIndexConfig::test_default_config PASSED        [ 27%]
+tests/test_config.py::TestChunkingConfig::test_default_config PASSED     [ 28%]
+tests/test_config.py::TestCacheConfig::test_default_config PASSED        [ 28%]
+tests/test_config.py::TestContextConfig::test_default_config PASSED      [ 29%]
+tests/test_config.py::TestDocumentConfig::test_default_config PASSED     [ 29%]
+tests/test_config.py::TestRAGConfig::test_default_config PASSED          [ 30%]
+tests/test_config.py::TestRAGConfig::test_directory_creation PASSED      [ 30%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_markdown PASSED [ 31%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_python PASSED [ 31%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_json PASSED [ 32%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_text PASSED [ 32%]
+tests/test_document_processor.py::TestDocumentProcessor::test_chunk_by_headers PASSED [ 33%]
+tests/test_document_processor.py::TestDocumentProcessor::test_chunk_text_semantic PASSED [ 33%]
+tests/test_document_processor.py::TestDocumentProcessor::test_chunk_code_by_lines PASSED [ 33%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_nonexistent_file PASSED [ 34%]
+tests/test_document_processor.py::TestDocumentProcessor::test_process_large_file PASSED [ 34%]
+tests/test_embeddings.py::TestSentenceTransformerProvider::test_mock_embeddings PASSED [ 35%]
+tests/test_embeddings.py::TestSentenceTransformerProvider::test_batch_embeddings PASSED [ 35%]
+tests/test_embeddings.py::TestEmbeddingManager::test_get_embedding FAILED [ 36%]
+tests/test_embeddings.py::TestEmbeddingManager::test_get_embeddings_batch PASSED [ 36%]
+tests/test_embeddings.py::TestEmbeddingManager::test_cache_stats PASSED  [ 37%]
+tests/test_embeddings.py::TestEmbeddingManager::test_cache_key_generation PASSED [ 37%]
+tests/test_embeddings.py::TestEmbeddingProviderInterface::test_interface_methods PASSED [ 38%]
+tests/test_file_watcher.py::TestChangeType::test_change_type_values PASSED [ 38%]
+tests/test_file_watcher.py::TestChangeType::test_change_type_membership PASSED [ 39%]
+tests/test_file_watcher.py::TestFileChange::test_file_change_creation PASSED [ 39%]
+tests/test_file_watcher.py::TestFileChange::test_file_change_defaults PASSED [ 40%]
+tests/test_file_watcher.py::TestWatchedSource::test_watched_source_creation PASSED [ 40%]
+tests/test_file_watcher.py::TestWatchedSource::test_watched_source_defaults PASSED [ 41%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_handler_initialization FAILED [ 41%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_valid_file ERROR [ 42%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_directory ERROR [ 42%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_ignored_file ERROR [ 43%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_no_patterns ERROR [ 43%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_created_valid_file ERROR [ 44%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_created_directory ERROR [ 44%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_modified_valid_file ERROR [ 45%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_deleted_any_file ERROR [ 45%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_moved_valid_destination ERROR [ 46%]
+tests/test_file_watcher.py::TestFileChangeHandler::test_on_moved_invalid_destination ERROR [ 46%]
+tests/test_file_watcher.py::TestFileWatcher::test_watcher_initialization PASSED [ 47%]
+tests/test_file_watcher.py::TestFileWatcher::test_start_stop_polling_mode PASSED [ 47%]
+tests/test_file_watcher.py::TestFileWatcher::test_start_already_running PASSED [ 48%]
+tests/test_file_watcher.py::TestFileWatcher::test_stop_not_running PASSED [ 48%]
+tests/test_file_watcher.py::TestFileWatcher::test_watch_directory FAILED [ 49%]
+tests/test_file_watcher.py::TestFileWatcher::test_watch_directory_with_graph_builder PASSED [ 49%]
+tests/test_file_watcher.py::TestFileWatcher::test_watch_nonexistent_directory PASSED [ 50%]
+tests/test_file_watcher.py::TestFileWatcher::test_watch_file_not_directory PASSED [ 50%]
+tests/test_file_watcher.py::TestFileWatcher::test_watch_already_watching PASSED [ 50%]
+tests/test_file_watcher.py::TestFileWatcher::test_unwatch PASSED         [ 51%]
+tests/test_file_watcher.py::TestFileWatcher::test_unwatch_not_watched PASSED [ 51%]
+tests/test_file_watcher.py::TestFileWatcher::test_handle_change_basic PASSED [ 52%]
+tests/test_file_watcher.py::TestFileWatcher::test_process_file_change PASSED [ 52%]
+tests/test_file_watcher.py::TestFileWatcher::test_process_deletion PASSED [ 53%]
+tests/test_file_watcher.py::TestFileWatcher::test_process_move PASSED    [ 53%]
+tests/test_file_watcher.py::TestFileWatcher::test_add_remove_change_callback PASSED [ 54%]
+tests/test_file_watcher.py::TestFileWatcher::test_get_stats PASSED       [ 54%]
+tests/test_file_watcher.py::TestFileWatcher::test_get_change_history PASSED [ 55%]
+tests/test_file_watcher.py::TestFileWatcher::test_force_rescan PASSED    [ 55%]
+tests/test_file_watcher.py::TestFileWatcher::test_force_rescan_specific_source PASSED [ 56%]
+tests/test_file_watcher.py::TestFileWatcher::test_force_rescan_nonexistent_source PASSED [ 56%]
+tests/test_indexer.py::TestFolderScanner::test_default_ignore_patterns PASSED [ 57%]
+tests/test_indexer.py::TestFolderScanner::test_should_ignore PASSED      [ 57%]
+tests/test_indexer.py::TestFolderScanner::test_scan_folder PASSED        [ 58%]
+tests/test_indexer.py::TestFolderScanner::test_scan_with_patterns PASSED [ 58%]
+tests/test_indexer.py::TestFolderScanner::test_generate_source_id PASSED [ 59%]
+tests/test_indexer.py::TestDocumentIndexer::test_index_file PASSED       [ 59%]
+tests/test_indexer.py::TestDocumentIndexer::test_index_folder PASSED     [ 60%]
+tests/test_indexer.py::TestDocumentIndexer::test_extract_concepts PASSED [ 60%]
+tests/test_indexer.py::TestDocumentIndexer::test_extract_sections PASSED [ 61%]
+tests/test_indexer.py::TestDocumentIndexer::test_metadata_tracking PASSED [ 61%]
+tests/test_indexer.py::TestDocumentIndexer::test_remove_source PASSED    [ 62%]
+tests/test_indexer.py::TestDocumentIndexer::test_list_sources PASSED     [ 62%]
+tests/test_knowledge_graph.py::TestEntityType::test_entity_type_values PASSED [ 63%]
+tests/test_knowledge_graph.py::TestEntityType::test_entity_type_membership PASSED [ 63%]
+tests/test_knowledge_graph.py::TestRelationType::test_relationship_type_values PASSED [ 64%]
+tests/test_knowledge_graph.py::TestRelationType::test_relationship_categories PASSED [ 64%]
+tests/test_knowledge_graph.py::TestEntity::test_entity_creation PASSED   [ 65%]
+tests/test_knowledge_graph.py::TestEntity::test_entity_defaults PASSED   [ 65%]
+tests/test_knowledge_graph.py::TestRelationship::test_relationship_creation PASSED [ 66%]
+tests/test_knowledge_graph.py::TestRelationship::test_relationship_defaults PASSED [ 66%]
+tests/test_knowledge_graph.py::TestKnowledgeSubgraph::test_subgraph_creation PASSED [ 66%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_builder_initialization PASSED [ 67%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_extract_markdown_entities PASSED [ 67%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_extract_code_entities_python PASSED [ 68%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_extract_text_entities PASSED [ 68%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_build_semantic_relationships PASSED [ 69%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_build_code_relationships PASSED [ 69%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_query_subgraph_basic FAILED [ 70%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_get_graph_stats PASSED [ 70%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_discover_patterns PASSED [ 71%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_find_relevant_entities PASSED [ 71%]
+tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_store_graph PASSED [ 72%]
+tests/test_main.py::TestMainCLI::test_main_function_no_args PASSED       [ 72%]
+tests/test_main.py::TestMainCLI::test_main_function_with_config PASSED   [ 73%]
+tests/test_main.py::TestMainCLI::test_main_function_config_error PASSED  [ 73%]
+tests/test_main.py::TestMainCLI::test_main_function_server_error PASSED  [ 74%]
+tests/test_main.py::TestMainCLI::test_help_output PASSED                 [ 74%]
+tests/test_main.py::TestMainCLI::test_help_output_short_flag PASSED      [ 75%]
+tests/test_mcp_server.py::TestMCPServer::test_server_initialization FAILED [ 75%]
+tests/test_mcp_server.py::TestMCPServer::test_index_directory_tool FAILED [ 76%]
+tests/test_mcp_server.py::TestMCPServer::test_search_context_functionality FAILED [ 76%]
+tests/test_mcp_server.py::TestMCPServer::test_knowledge_graph_functionality PASSED [ 77%]
+tests/test_mcp_server.py::TestMCPServer::test_watch_directory_functionality PASSED [ 77%]
+tests/test_mcp_server.py::TestMCPServer::test_context_resource_functionality FAILED [ 78%]
+tests/test_mcp_server.py::TestMCPServer::test_list_sources_functionality FAILED [ 78%]
+tests/test_mcp_server.py::TestMCPServer::test_stats_functionality FAILED [ 79%]
+tests/test_mcp_server.py::TestMCPServer::test_prompt_functionality FAILED [ 79%]
+tests/test_mcp_server.py::TestMCPServer::test_component_integration PASSED [ 80%]
+tests/test_mcp_server.py::TestMCPServerIntegration::test_server_lifecycle FAILED [ 80%]
+tests/test_mcp_server.py::TestMCPServerIntegration::test_cache_operations PASSED [ 81%]
+tests/test_mcp_server.py::TestMCPServerIntegration::test_source_management FAILED [ 81%]
+tests/test_redis_client.py::test_vector_document PASSED                  [ 82%]
+tests/test_redis_client.py::test_redis_vector_store_complete PASSED      [ 82%]
+tests/test_redis_client.py::test_edge_cases PASSED                       [ 83%]
+tests/test_redis_client.py::test_sync PASSED                             [ 83%]
+tests/test_semantic_cache.py::TestCachedQuery::test_cached_query_creation PASSED [ 83%]
+tests/test_semantic_cache.py::TestCachedQuery::test_cached_query_defaults PASSED [ 84%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_initialization PASSED [ 84%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_disabled_behavior PASSED [ 85%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_set_basic FAILED [ 85%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_miss FAILED [ 86%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_hit FAILED [ 86%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_below_threshold FAILED [ 87%]
+tests/test_semantic_cache.py::TestSemanticCache::test_get_stats PASSED   [ 87%]
+tests/test_semantic_cache.py::TestSemanticCache::test_update_stats_hit_rate PASSED [ 88%]
+tests/test_semantic_cache.py::TestSemanticCache::test_update_stats_avg_similarity PASSED [ 88%]
+tests/test_semantic_cache.py::TestSemanticCache::test_adaptive_threshold_adjustment_low_hit_rate PASSED [ 89%]
+tests/test_semantic_cache.py::TestSemanticCache::test_adaptive_threshold_adjustment_high_hit_rate PASSED [ 89%]
+tests/test_semantic_cache.py::TestSemanticCache::test_adaptive_threshold_bounds PASSED [ 90%]
+tests/test_semantic_cache.py::TestSemanticCache::test_clear_cache PASSED [ 90%]
+tests/test_semantic_cache.py::TestSemanticCache::test_get_cache_size PASSED [ 91%]
+tests/test_semantic_cache.py::TestSemanticCache::test_evict_oldest PASSED [ 91%]
+tests/test_semantic_cache.py::TestSemanticCache::test_cache_size_eviction_trigger FAILED [ 92%]
+tests/test_semantic_cache.py::TestSemanticCache::test_search_similar_error_handling PASSED [ 92%]
+tests/test_server.py::TestEOLRAGContextServer::test_server_creation PASSED [ 93%]
+tests/test_server.py::TestEOLRAGContextServer::test_initialize PASSED    [ 93%]
+tests/test_server.py::TestEOLRAGContextServer::test_shutdown PASSED      [ 94%]
+tests/test_server.py::TestEOLRAGContextServer::test_index_directory PASSED [ 94%]
+tests/test_server.py::TestEOLRAGContextServer::test_index_file PASSED    [ 95%]
+tests/test_server.py::TestEOLRAGContextServer::test_watch_directory PASSED [ 95%]
+tests/test_server.py::TestEOLRAGContextServer::test_run_method PASSED    [ 96%]
+tests/test_server.py::TestEOLRAGContextServer::test_setup_resources PASSED [ 96%]
+tests/test_server.py::TestEOLRAGContextServer::test_setup_tools PASSED   [ 97%]
+tests/test_server.py::TestEOLRAGContextServer::test_setup_prompts PASSED [ 97%]
+tests/test_server.py::TestServerRequestModels::test_index_directory_request PASSED [ 98%]
+tests/test_server.py::TestServerRequestModels::test_search_context_request PASSED [ 98%]
+tests/test_server.py::TestServerRequestModels::test_query_knowledge_graph_request PASSED [ 99%]
+tests/test_server.py::TestServerRequestModels::test_optimize_context_request PASSED [ 99%]
+tests/test_server.py::TestServerRequestModels::test_watch_directory_request PASSED [100%]
+
+==================================== ERRORS ====================================
+____ ERROR at setup of TestFileChangeHandler.test_should_process_valid_file ____
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+____ ERROR at setup of TestFileChangeHandler.test_should_process_directory _____
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+___ ERROR at setup of TestFileChangeHandler.test_should_process_ignored_file ___
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+___ ERROR at setup of TestFileChangeHandler.test_should_process_no_patterns ____
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+______ ERROR at setup of TestFileChangeHandler.test_on_created_valid_file ______
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+______ ERROR at setup of TestFileChangeHandler.test_on_created_directory _______
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+_____ ERROR at setup of TestFileChangeHandler.test_on_modified_valid_file ______
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+_______ ERROR at setup of TestFileChangeHandler.test_on_deleted_any_file _______
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+___ ERROR at setup of TestFileChangeHandler.test_on_moved_valid_destination ____
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+__ ERROR at setup of TestFileChangeHandler.test_on_moved_invalid_destination ___
+tests/test_file_watcher.py:135: in handler
+    handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1200: in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+E   StopIteration
+=================================== FAILURES ===================================
+__________ TestFullWorkflowIntegration.test_index_and_search_workflow __________
+tests/integration/test_full_workflow_integration.py:35: in test_index_and_search_workflow
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+___________ TestFullWorkflowIntegration.test_semantic_cache_workflow ___________
+src/eol/rag_context/semantic_cache.py:231: in initialize
+    await self.redis.async_redis.ft("cache_index").info()
+E   TypeError: object Mock can't be used in 'await' expression
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_full_workflow_integration.py:55: in test_semantic_cache_workflow
+    await semantic_cache_instance.initialize()
+src/eol/rag_context/semantic_cache.py:260: in initialize
+    await self.redis.async_redis.ft("cache_index").create_index(
+E   TypeError: object Mock can't be used in 'await' expression
+__________ TestFullWorkflowIntegration.test_hierarchical_rag_workflow __________
+tests/integration/test_full_workflow_integration.py:182: in test_hierarchical_rag_workflow
+    concepts = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+_____________ TestFullWorkflowIntegration.test_performance_metrics _____________
+tests/integration/test_full_workflow_integration.py:283: in test_performance_metrics
+    await redis_store.vector_search(query_embedding, k=5)
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+----------------------------- Captured stdout call -----------------------------
+
+Indexing Performance:
+  Files: 5 in 0.07s (71.0 files/s)
+  Chunks: 10 (142.1 chunks/s)
+___________________ TestRedisIntegration.test_vector_search ____________________
+tests/integration/test_redis_integration.py:78: in test_vector_search
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+________________ TestRedisIntegration.test_hierarchical_search _________________
+tests/integration/test_redis_integration.py:116: in test_hierarchical_search
+    results = await redis_store.hierarchical_search(
+src/eol/rag_context/redis_client.py:667: in hierarchical_search
+    concepts = await self.vector_search(query_embedding, hierarchy_level=1, k=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+__________________ TestRedisIntegration.test_filtered_search ___________________
+tests/integration/test_redis_integration.py:216: in test_filtered_search
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+____________________ TestTutorialExamples.test_basic_search ____________________
+tests/integration/test_tutorial_examples.py:132: in test_basic_search
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+________________ TestTutorialExamples.test_hierarchical_search _________________
+tests/integration/test_tutorial_examples.py:164: in test_hierarchical_search
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+________________ TestTutorialExamples.test_search_with_filters _________________
+tests/integration/test_tutorial_examples.py:194: in test_search_with_filters
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+__________________ TestTutorialExamples.test_semantic_caching __________________
+tests/integration/test_tutorial_examples.py:261: in test_semantic_caching
+    results1 = await redis_store.vector_search(embedding1, hierarchy_level=3, k=5)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+------------------------------ Captured log call -------------------------------
+ERROR    eol.rag_context.semantic_cache:semantic_cache.py:470 Error searching cache: 'Mock' object is not iterable
+_____________ TestTutorialExamples.test_context_windows_management _____________
+tests/integration/test_tutorial_examples.py:307: in test_context_windows_management
+    context = await redis_store.hierarchical_search(
+src/eol/rag_context/redis_client.py:667: in hierarchical_search
+    concepts = await self.vector_search(query_embedding, hierarchy_level=1, k=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+_______________ TestTutorialExamples.test_code_assistant_example _______________
+tests/integration/test_tutorial_examples.py:366: in test_code_assistant_example
+    context = await code_assistant()
+              ^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_tutorial_examples.py:344: in code_assistant
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+____________ TestTutorialExamples.test_documentation_search_example ____________
+tests/integration/test_tutorial_examples.py:418: in test_documentation_search_example
+    docs = await search_docs("test")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_tutorial_examples.py:386: in search_docs
+    results = await redis_store.vector_search(
+src/eol/rag_context/redis_client.py:595: in vector_search
+    results = await self.async_redis.ft(index_name).search(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+___________________ TestEmbeddingManager.test_get_embedding ____________________
+tests/test_embeddings.py:87: in test_get_embedding
+    assert embedding.shape == (32,) or embedding.shape == (1, 32)
+E   AssertionError: assert (<Mock name='mock.shape' id='4467829904'> == (32,) or <Mock name='mock.shape' id='4467829904'> == (1, 32))
+E    +  where <Mock name='mock.shape' id='4467829904'> = <Mock id='4421085584'>.shape
+E    +  and   <Mock name='mock.shape' id='4467829904'> = <Mock id='4421085584'>.shape
+______________ TestFileChangeHandler.test_handler_initialization _______________
+tests/test_file_watcher.py:141: in test_handler_initialization
+    assert handler.watcher == mock_watcher
+E   AssertionError: assert <MagicMock na...='4455820576'> == <MagicMock id='4455820336'>
+E     
+E     Full diff:
+E     - <MagicMock id='4455820336'>
+E     + <MagicMock name='mock.FileSystemEventHandler.watcher' id='4455820576'>
+_____________________ TestFileWatcher.test_watch_directory _____________________
+tests/test_file_watcher.py:356: in test_watch_directory
+    assert source_id == "test_source_123"
+E   AssertionError: assert <Mock id='4421085584'> == 'test_source_123'
+------------------------------ Captured log call -------------------------------
+ERROR    eol.rag_context.file_watcher:file_watcher.py:807 Error in polling loop: 'Mock' object is not iterable
+_____________ TestKnowledgeGraphBuilder.test_query_subgraph_basic ______________
+tests/test_knowledge_graph.py:376: in test_query_subgraph_basic
+    subgraph = await kg_builder.query_subgraph("authentication", max_depth=2, max_entities=10)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/knowledge_graph.py:894: in query_subgraph
+    subgraph_entities = set(central_entities)
+                        ^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'Mock' object is not iterable
+___________________ TestMCPServer.test_server_initialization ___________________
+tests/test_mcp_server.py:87: in test_server_initialization
+    assert server.mcp.name == test_config.server_name
+E   AssertionError: assert <Mock name='mock.name' id='4461101856'> == 'eol-rag-context'
+E    +  where <Mock name='mock.name' id='4461101856'> = <Mock id='4421085584'>.name
+E    +    where <Mock id='4421085584'> = <eol.rag_context.server.EOLRAGContextServer object at 0x109e72a50>.mcp
+E    +  and   'eol-rag-context' = RAGConfig(redis=RedisConfig(host='localhost', port=6379, db=0, password=None, decode_responses=False, max_connections=50, socket_keepalive=True, socket_keepalive_options={}), embedding=EmbeddingConfig(provider='sentence-transformers', model_name='all-MiniLM-L6-v2', dimension=384, batch_size=32, normalize=True, openai_api_key=None, openai_model='text-embedding-3-small'), index=IndexConfig(index_name='eol_context', prefix='doc:', algorithm='HNSW', distance_metric='COSINE', initial_cap=10000, m=16, ef_construction=200, ef_runtime=10, hierarchy_levels=3, concept_prefix='concept:', section_prefix='section:', chunk_prefix='chunk:'), chunking=ChunkingConfig(min_chunk_size=100, max_chunk_size=512, chunk_overlap=64, use_semantic_chunking=True, semantic_threshold=0.7, code_chunk_by_function=True, code_max_lines=100, respect_document_structure=True, markdown_split_headers=True), cache=CacheConfig(enabled=False, ttl_seconds=3600, similarity_threshold=0.97, max_cache_size=1000, target_hit_rate=0.31, adaptive_threshold=True), context=ContextConfig(max_context_tokens=32000, reserve_tokens_for_response=4000, default_top_k=10, min_relevance_score=0.7, use_hierarchical_retrieval=True, progressive_loading=True, remove_redundancy=True, redundancy_threshold=0.9), document=DocumentConfig(file_patterns=['*.md', '*.txt', '*.json', '*.yaml', '*.yml', '*.py', '*.js', '*.ts', '*.jsx', '*.tsx', '*.java', '*.go', '*.rs', '*.cpp', '*.c', '*.pdf', '*.docx', '*.doc'], extract_metadata=True, detect_language=True, parse_code_structure=True, max_file_size_mb=100, skip_binary_files=True), server_name='eol-rag-context', server_version='0.1.0', debug=False, data_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmpw36_l2v4/data'), index_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmpw36_l2v4/indexes')).server_name
+___________________ TestMCPServer.test_index_directory_tool ____________________
+tests/test_mcp_server.py:98: in test_index_directory_tool
+    from fastmcp.server.context import Context, _current_context
+E   ModuleNotFoundError: No module named 'fastmcp.server.context'; 'fastmcp.server' is not a package
+_______________ TestMCPServer.test_search_context_functionality ________________
+tests/test_mcp_server.py:121: in test_search_context_functionality
+    assert len(results) > 0
+           ^^^^^^^^^^^^
+E   TypeError: object of type 'Mock' has no len()
+______________ TestMCPServer.test_context_resource_functionality _______________
+tests/test_mcp_server.py:163: in test_context_resource_functionality
+    assert cache_result is None  # Based on our mock setup
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert <Mock id='4421085584'> is None
+________________ TestMCPServer.test_list_sources_functionality _________________
+tests/test_mcp_server.py:170: in test_list_sources_functionality
+    assert isinstance(sources, list)
+E   AssertionError: assert False
+E    +  where False = isinstance(<Mock id='4421085584'>, list)
+____________________ TestMCPServer.test_stats_functionality ____________________
+tests/test_mcp_server.py:178: in test_stats_functionality
+    assert isinstance(indexer_stats, dict)
+E   AssertionError: assert False
+E    +  where False = isinstance(<Mock id='4421085584'>, dict)
+___________________ TestMCPServer.test_prompt_functionality ____________________
+tests/test_mcp_server.py:197: in test_prompt_functionality
+    assert server.mcp.name == server.config.server_name
+E   AssertionError: assert <Mock name='mock.name' id='4461101856'> == 'eol-rag-context'
+E    +  where <Mock name='mock.name' id='4461101856'> = <Mock id='4421085584'>.name
+E    +    where <Mock id='4421085584'> = <eol.rag_context.server.EOLRAGContextServer object at 0x109999460>.mcp
+E    +  and   'eol-rag-context' = RAGConfig(redis=RedisConfig(host='localhost', port=6379, db=0, password=None, decode_responses=False, max_connections=50, socket_keepalive=True, socket_keepalive_options={}), embedding=EmbeddingConfig(provider='sentence-transformers', model_name='all-MiniLM-L6-v2', dimension=384, batch_size=32, normalize=True, openai_api_key=None, openai_model='text-embedding-3-small'), index=IndexConfig(index_name='eol_context', prefix='doc:', algorithm='HNSW', distance_metric='COSINE', initial_cap=10000, m=16, ef_construction=200, ef_runtime=10, hierarchy_levels=3, concept_prefix='concept:', section_prefix='section:', chunk_prefix='chunk:'), chunking=ChunkingConfig(min_chunk_size=100, max_chunk_size=512, chunk_overlap=64, use_semantic_chunking=True, semantic_threshold=0.7, code_chunk_by_function=True, code_max_lines=100, respect_document_structure=True, markdown_split_headers=True), cache=CacheConfig(enabled=False, ttl_seconds=3600, similarity_threshold=0.97, max_cache_size=1000, target_hit_rate=0.31, adaptive_threshold=True), context=ContextConfig(max_context_tokens=32000, reserve_tokens_for_response=4000, default_top_k=10, min_relevance_score=0.7, use_hierarchical_retrieval=True, progressive_loading=True, remove_redundancy=True, redundancy_threshold=0.9), document=DocumentConfig(file_patterns=['*.md', '*.txt', '*.json', '*.yaml', '*.yml', '*.py', '*.js', '*.ts', '*.jsx', '*.tsx', '*.java', '*.go', '*.rs', '*.cpp', '*.c', '*.pdf', '*.docx', '*.doc'], extract_metadata=True, detect_language=True, parse_code_structure=True, max_file_size_mb=100, skip_binary_files=True), server_name='eol-rag-context', server_version='0.1.0', debug=False, data_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmp0lalf5rs/data'), index_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmp0lalf5rs/indexes')).server_name
+E    +    where RAGConfig(redis=RedisConfig(host='localhost', port=6379, db=0, password=None, decode_responses=False, max_connections=50, socket_keepalive=True, socket_keepalive_options={}), embedding=EmbeddingConfig(provider='sentence-transformers', model_name='all-MiniLM-L6-v2', dimension=384, batch_size=32, normalize=True, openai_api_key=None, openai_model='text-embedding-3-small'), index=IndexConfig(index_name='eol_context', prefix='doc:', algorithm='HNSW', distance_metric='COSINE', initial_cap=10000, m=16, ef_construction=200, ef_runtime=10, hierarchy_levels=3, concept_prefix='concept:', section_prefix='section:', chunk_prefix='chunk:'), chunking=ChunkingConfig(min_chunk_size=100, max_chunk_size=512, chunk_overlap=64, use_semantic_chunking=True, semantic_threshold=0.7, code_chunk_by_function=True, code_max_lines=100, respect_document_structure=True, markdown_split_headers=True), cache=CacheConfig(enabled=False, ttl_seconds=3600, similarity_threshold=0.97, max_cache_size=1000, target_hit_rate=0.31, adaptive_threshold=True), context=ContextConfig(max_context_tokens=32000, reserve_tokens_for_response=4000, default_top_k=10, min_relevance_score=0.7, use_hierarchical_retrieval=True, progressive_loading=True, remove_redundancy=True, redundancy_threshold=0.9), document=DocumentConfig(file_patterns=['*.md', '*.txt', '*.json', '*.yaml', '*.yml', '*.py', '*.js', '*.ts', '*.jsx', '*.tsx', '*.java', '*.go', '*.rs', '*.cpp', '*.c', '*.pdf', '*.docx', '*.doc'], extract_metadata=True, detect_language=True, parse_code_structure=True, max_file_size_mb=100, skip_binary_files=True), server_name='eol-rag-context', server_version='0.1.0', debug=False, data_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmp0lalf5rs/data'), index_dir=PosixPath('/var/folders/7s/rtpwblkj7gl9ct0zg8481g_40000gn/T/tmp0lalf5rs/indexes')) = <eol.rag_context.server.EOLRAGContextServer object at 0x109999460>.config
+________________ TestMCPServerIntegration.test_server_lifecycle ________________
+src/eol/rag_context/semantic_cache.py:231: in initialize
+    await self.redis.async_redis.ft("cache_index").info()
+E   TypeError: object Mock can't be used in 'await' expression
+
+During handling of the above exception, another exception occurred:
+tests/test_mcp_server.py:251: in test_server_lifecycle
+    await server.initialize()
+src/eol/rag_context/server.py:199: in initialize
+    await self.semantic_cache.initialize()
+src/eol/rag_context/semantic_cache.py:260: in initialize
+    await self.redis.async_redis.ft("cache_index").create_index(
+E   TypeError: object Mock can't be used in 'await' expression
+------------------------------ Captured log call -------------------------------
+WARNING  eol.rag_context.document_processor:document_processor.py:264 Some tree-sitter languages not available: No module named 'tree_sitter_go'
+_______________ TestMCPServerIntegration.test_source_management ________________
+tests/test_mcp_server.py:282: in test_source_management
+    assert success is True
+E   AssertionError: assert <Mock id='4421085584'> is True
+____________________ TestSemanticCache.test_cache_set_basic ____________________
+tests/test_semantic_cache.py:127: in test_cache_set_basic
+    await semantic_cache.set("test query", "test response", {"key": "value"})
+src/eol/rag_context/semantic_cache.py:387: in set
+    if cache_size >= self.config.max_cache_size:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: '>=' not supported between instances of 'Mock' and 'int'
+____________________ TestSemanticCache.test_cache_get_miss _____________________
+tests/test_semantic_cache.py:141: in test_cache_get_miss
+    result = await semantic_cache.get("test query")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/semantic_cache.py:311: in get
+    best_match = similar[0]
+                 ^^^^^^^^^^
+E   TypeError: 'Mock' object is not subscriptable
+_____________________ TestSemanticCache.test_cache_get_hit _____________________
+tests/test_semantic_cache.py:160: in test_cache_get_hit
+    result = await semantic_cache.get("similar query")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/semantic_cache.py:311: in get
+    best_match = similar[0]
+                 ^^^^^^^^^^
+E   TypeError: 'Mock' object is not subscriptable
+_______________ TestSemanticCache.test_cache_get_below_threshold _______________
+tests/test_semantic_cache.py:181: in test_cache_get_below_threshold
+    result = await semantic_cache.get("dissimilar query")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/eol/rag_context/semantic_cache.py:311: in get
+    best_match = similar[0]
+                 ^^^^^^^^^^
+E   TypeError: 'Mock' object is not subscriptable
+______________ TestSemanticCache.test_cache_size_eviction_trigger ______________
+tests/test_semantic_cache.py:350: in test_cache_size_eviction_trigger
+    await semantic_cache.set("test query", "test response")
+src/eol/rag_context/semantic_cache.py:387: in set
+    if cache_size >= self.config.max_cache_size:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: '>=' not supported between instances of 'Mock' and 'int'
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.11-final-0 _______________
+
+Name                                        Stmts   Miss Branch BrPart   Cover   Missing
+----------------------------------------------------------------------------------------
+src/eol/rag_context/__init__.py                 3      0      0      0 100.00%
+src/eol/rag_context/config.py                 117     10      6      0  88.62%   597-610
+src/eol/rag_context/document_processor.py     305    122    124     15  55.01%   91-94, 227, 244-262, 339, 341, 360, 409, 459->471, 475-505, 509-527, 531-565, 610, 643-690, 704->702, 733-736, 775-790, 880-890, 910->923, 931-942, 952-976, 993-1000, 1052-1065
+src/eol/rag_context/embeddings.py             139     60     50      8  50.26%   82-92, 96-108, 112-125, 141-144, 156-161, 168, 172-173, 187-199, 205->219, 210-212, 226, 233-246
+src/eol/rag_context/file_watcher.py           304    116    100     13  55.69%   76-80, 230-234, 238-252, 256-262, 266-272, 276-283, 287-307, 429, 493-498, 534-535, 538->545, 638-639, 702, 711-712, 718-731, 738->exit, 749-802, 805, 813-854, 868-870, 886->890, 890->883, 895-897, 903->910, 914-916, 978->exit, 1148
+src/eol/rag_context/indexer.py                377     40    124     23  87.03%   89, 138, 140, 142, 329, 337->343, 340-341, 385-422, 471, 474, 477, 484->489, 487, 499->498, 704, 724-727, 828, 977-988, 993->1032, 1010-1016, 1175->1174, 1202, 1233-1235, 1349->1346, 1406-1407, 1457-1458
+src/eol/rag_context/knowledge_graph.py        331     38    118     18  82.63%   456, 461, 478->481, 539-544, 603->608, 628->633, 660, 671->676, 698, 715->718, 749, 754->753, 905, 912-945, 1131->1130, 1143->1141, 1167->1177, 1178-1202
+src/eol/rag_context/main.py                    38      1      4      0  97.62%   55
+src/eol/rag_context/redis_client.py           185     85     78     14  46.39%   54-66, 215->234, 223-231, 240-242, 279->298, 287-295, 306-308, 420-427, 473, 560, 574-584, 600-614, 669-726, 766, 777->769, 786-788, 792-797, 801, 819->821, 821->exit
+src/eol/rag_context/semantic_cache.py         171     40     50      8  71.04%   232, 263, 312-338, 388, 456-468, 525->523, 528->520, 571->exit, 654->658, 658->651, 714-770
+src/eol/rag_context/server.py                 214     83     34      5  54.84%   235->238, 238->241, 277-303, 324-325, 349, 370, 419-435, 471-498, 525-529, 579-621, 651-657, 682-684, 707-712, 737-742, 776, 804, 837, 923, 943-944, 968, 982-983, 1002, 1012-1013, 1058-1071
+----------------------------------------------------------------------------------------
+TOTAL                                        2184    595    688    104  67.24%
+Coverage HTML written to dir coverage/html
+=========================== short test summary info ============================
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_valid_file
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_directory
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_ignored_file
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_should_process_no_patterns
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_created_valid_file
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_created_directory
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_modified_valid_file
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_deleted_any_file
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_moved_valid_destination
+ERROR tests/test_file_watcher.py::TestFileChangeHandler::test_on_moved_invalid_destination
+FAILED tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_index_and_search_workflow
+FAILED tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_semantic_cache_workflow
+FAILED tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_hierarchical_rag_workflow
+FAILED tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics
+FAILED tests/integration/test_redis_integration.py::TestRedisIntegration::test_vector_search
+FAILED tests/integration/test_redis_integration.py::TestRedisIntegration::test_hierarchical_search
+FAILED tests/integration/test_redis_integration.py::TestRedisIntegration::test_filtered_search
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_basic_search
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_hierarchical_search
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_search_with_filters
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_semantic_caching
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_context_windows_management
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_code_assistant_example
+FAILED tests/integration/test_tutorial_examples.py::TestTutorialExamples::test_documentation_search_example
+FAILED tests/test_embeddings.py::TestEmbeddingManager::test_get_embedding - A...
+FAILED tests/test_file_watcher.py::TestFileChangeHandler::test_handler_initialization
+FAILED tests/test_file_watcher.py::TestFileWatcher::test_watch_directory - As...
+FAILED tests/test_knowledge_graph.py::TestKnowledgeGraphBuilder::test_query_subgraph_basic
+FAILED tests/test_mcp_server.py::TestMCPServer::test_server_initialization - ...
+FAILED tests/test_mcp_server.py::TestMCPServer::test_index_directory_tool - M...
+FAILED tests/test_mcp_server.py::TestMCPServer::test_search_context_functionality
+FAILED tests/test_mcp_server.py::TestMCPServer::test_context_resource_functionality
+FAILED tests/test_mcp_server.py::TestMCPServer::test_list_sources_functionality
+FAILED tests/test_mcp_server.py::TestMCPServer::test_stats_functionality - As...
+FAILED tests/test_mcp_server.py::TestMCPServer::test_prompt_functionality - A...
+FAILED tests/test_mcp_server.py::TestMCPServerIntegration::test_server_lifecycle
+FAILED tests/test_mcp_server.py::TestMCPServerIntegration::test_source_management
+FAILED tests/test_semantic_cache.py::TestSemanticCache::test_cache_set_basic
+FAILED tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_miss
+FAILED tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_hit - ...
+FAILED tests/test_semantic_cache.py::TestSemanticCache::test_cache_get_below_threshold
+FAILED tests/test_semantic_cache.py::TestSemanticCache::test_cache_size_eviction_trigger
+=========== 32 failed, 164 passed, 48 warnings, 10 errors in 17.63s ============

@@ -3,6 +3,7 @@
 ## Index Design
 
 ### Creating Vector Index
+
 ```python
 from redis.commands.search.field import VectorField, TextField, TagField
 
@@ -27,6 +28,7 @@ schema = [
 ## Vector Search Patterns
 
 ### Basic Vector Search
+
 ```python
 async def vector_search(query_embedding: List[float], k: int = 5):
     query = (
@@ -35,12 +37,13 @@ async def vector_search(query_embedding: List[float], k: int = 5):
         .return_fields("content", "source", "score")
         .dialect(2)
     )
-    
+
     params = {"vec": np.array(query_embedding).tobytes()}
     return await redis_client.ft().search(query, query_params=params)
 ```
 
 ### Hybrid Search (Vector + Filters)
+
 ```python
 async def hybrid_search(
     query_embedding: List[float],
@@ -49,26 +52,27 @@ async def hybrid_search(
 ):
     # Build filter string
     filter_str = " ".join([
-        f"@{field}:{{{value}}}" 
+        f"@{field}:{{{value}}}"
         for field, value in filters.items()
     ])
-    
+
     query = (
         Query(f"({filter_str})=>[KNN {k} @embedding $vec AS score]")
         .sort_by("score")
         .return_fields("content", "source", "score")
     )
-    
+
     return await redis_client.ft().search(query, query_params=params)
 ```
 
 ## Performance Optimization
 
 ### Batch Operations
+
 ```python
 async def batch_index_vectors(documents: List[Document]):
     pipe = redis_client.pipeline()
-    
+
     for doc in documents:
         key = f"doc:{doc.id}"
         pipe.hset(key, mapping={
@@ -76,11 +80,12 @@ async def batch_index_vectors(documents: List[Document]):
             "embedding": doc.embedding.tobytes(),
             "source": doc.source
         })
-    
+
     await pipe.execute()
 ```
 
 ### Index Configuration Tips
+
 - HNSW: Better for large datasets (>10k vectors)
 - FLAT: Better for small datasets (<10k vectors)
 - Adjust M and EF_CONSTRUCTION for quality/speed tradeoff

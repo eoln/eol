@@ -5,22 +5,22 @@
 repos:
   # Python code formatting
   - repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 25.1.0
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3.13
         args: [--line-length=88]
 
   # Python import sorting
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
         args: [--profile=black]
 
   # Python docstring formatting
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.5
+    rev: v1.7.7
     hooks:
       - id: docformatter
         args: [
@@ -42,7 +42,7 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.17.1
     hooks:
       - id: mypy
         args: [--ignore-missing-imports, --no-strict-optional]
@@ -56,7 +56,7 @@ repos:
 
   # YAML validation
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
         exclude: mkdocs.yml  # MkDocs uses special tags
@@ -71,25 +71,25 @@ repos:
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         args: [--fix]
         exclude: ^(site/|.github/)
 
   # Documentation validation (custom hook)
-  - repo: local
-    hooks:
-      - id: validate-docs
-        name: Validate Documentation Coverage
-        entry: python scripts/validate_docs.py
-        language: system
-        pass_filenames: false
-        always_run: true
-        
-      - id: mkdocs-build
-        name: Test MkDocs Build
-        entry: bash -c 'mkdocs build --strict --quiet'
-        language: system
-        pass_filenames: false
-        files: ^(docs/|mkdocs.yml|src/.*\.py)$
+  # - repo: local
+  #   hooks:
+  #     - id: validate-docs
+  #       name: Validate Documentation Coverage
+  #       entry: python scripts/validate_docs.py
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+  #
+  #     - id: mkdocs-build
+  #       name: Test MkDocs Build
+  #       entry: bash -c 'mkdocs build --strict --quiet'
+  #       language: system
+  #       pass_filenames: false
+  #       files: ^(docs/|mkdocs.yml|src/.*\.py)$

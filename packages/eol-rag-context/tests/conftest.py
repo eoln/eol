@@ -1,6 +1,4 @@
-"""
-Pytest configuration and fixtures for unit tests.
-"""
+"""Pytest configuration and fixtures for unit tests."""
 
 import shutil
 import tempfile
@@ -96,7 +94,9 @@ def redis_store() -> Mock:
         """Mock scan to return matching keys."""
         if match:
             prefix = match.replace("*", "")
-            matching_keys = [k for k in state.stored_data.keys() if k.startswith(prefix)]
+            matching_keys = [
+                k for k in state.stored_data.keys() if k.startswith(prefix)
+            ]
         else:
             matching_keys = list(state.stored_data.keys())
         # Always return byte-encoded keys in scan results
@@ -152,8 +152,12 @@ def redis_store() -> Mock:
 def mock_embedding_manager(test_config: RAGConfig) -> Mock:
     """Create mock embedding manager."""
     manager = Mock()
-    manager.get_embedding = AsyncMock(return_value=np.random.randn(384).astype(np.float32))
-    manager.get_embeddings = AsyncMock(return_value=np.random.randn(10, 384).astype(np.float32))
+    manager.get_embedding = AsyncMock(
+        return_value=np.random.randn(384).astype(np.float32)
+    )
+    manager.get_embeddings = AsyncMock(
+        return_value=np.random.randn(10, 384).astype(np.float32)
+    )
     manager.clear_cache = Mock()
     manager.get_cache_stats = Mock(return_value={"hits": 0, "misses": 0})
     return manager
@@ -251,7 +255,9 @@ async def indexed_documents(
     from eol.rag_context.indexer import DocumentIndexer
 
     processor = DocumentProcessor(test_config.document, test_config.chunking)
-    indexer = DocumentIndexer(test_config, processor, mock_embedding_manager, redis_store)
+    indexer = DocumentIndexer(
+        test_config, processor, mock_embedding_manager, redis_store
+    )
 
     # Mock some indexed documents
     indexer.stats = {
@@ -323,7 +329,9 @@ async def server(test_config):
 
     server.knowledge_graph.build_from_documents = AsyncMock()
     server.knowledge_graph.query_subgraph = AsyncMock(
-        return_value=Mock(entities=[], relationships=[], central_entities=[], metadata={})
+        return_value=Mock(
+            entities=[], relationships=[], central_entities=[], metadata={}
+        )
     )
     server.knowledge_graph.get_graph_stats = Mock(return_value={"entity_count": 0})
 

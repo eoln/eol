@@ -23,11 +23,13 @@ This document defines the documentation standards, tools, and practices for the 
 ### Primary Tools
 
 **MkDocs + mkdocstrings** - Modern documentation generation
+
 - **Why**: Clean, modern sites with excellent Python integration
 - **Features**: Live preview, automatic API docs, Material theme
 - **Used by**: FastAPI, Typer, Pydantic (similar projects)
 
 **Google-style Docstrings** - Standardized documentation format
+
 - **Why**: Readable, concise, excellent tool support
 - **Integration**: Works seamlessly with mkdocstrings and IDEs
 - **Benefits**: Less vertical space than NumPy style
@@ -49,21 +51,21 @@ All docstrings MUST follow Google style format:
 ```python
 def function_name(param1: Type1, param2: Type2 = default) -> ReturnType:
     """Brief description of the function.
-    
+
     Longer description explaining the function's purpose, behavior,
     and any important implementation details.
-    
+
     Args:
         param1: Description of the first parameter.
         param2: Description of the second parameter with default value.
-        
+
     Returns:
         Description of the return value and its structure.
-        
+
     Raises:
         SpecificError: When this specific error occurs.
         AnotherError: When this other error occurs.
-        
+
     Example:
         >>> result = function_name("value", 42)
         >>> print(result.status)
@@ -74,17 +76,20 @@ def function_name(param1: Type1, param2: Type2 = default) -> ReturnType:
 ### Required Elements
 
 **All Public Functions/Methods MUST have:**
+
 - Brief description (one line)
 - Args section (if parameters exist)
 - Returns section (if not None)
 - Raises section (for expected exceptions)
 
 **Classes MUST have:**
+
 - Purpose and responsibility description
 - Attributes section (for public attributes)
 - Example usage
 
 **Modules MUST have:**
+
 - Module purpose and contents overview
 - Key classes/functions summary
 
@@ -99,10 +104,10 @@ from pydantic import BaseModel, Field
 
 class IndexConfig(BaseModel):
     """Configuration for document indexing operations.
-    
+
     This configuration controls how documents are processed,
     chunked, and indexed in the vector database.
-    
+
     Attributes:
         chunk_size: Maximum size of each content chunk.
         chunk_overlap: Characters to overlap between adjacent chunks.
@@ -110,8 +115,8 @@ class IndexConfig(BaseModel):
         exclude_patterns: Glob patterns for files to exclude.
     """
     chunk_size: int = Field(
-        default=1000, 
-        ge=100, 
+        default=1000,
+        ge=100,
         le=10000,
         description="Maximum chunk size in characters"
     )
@@ -135,41 +140,41 @@ async def index_document(
     force_reindex: bool = False
 ) -> IndexResult:
     """Index a document with hierarchical chunking and metadata extraction.
-    
+
     This function processes a document, extracts its content, and creates
     a hierarchical index with concepts, sections, and chunks. The resulting
     index is stored in Redis for vector similarity search.
-    
+
     Args:
         file_path: Path to the document file. Supports various formats
             including Markdown, PDF, DOCX, and source code files.
         config: Optional indexing configuration. Uses defaults if not provided.
         force_reindex: Whether to reindex even if document hasn't changed.
             Useful for testing or when indexing logic has been updated.
-            
+
     Returns:
         IndexResult containing the indexing outcome with statistics:
         - source_id: Unique identifier for the indexed document
         - total_chunks: Number of chunks created
         - hierarchy_levels: Number of hierarchy levels created
         - processing_time: Time taken to complete indexing
-        
+
     Raises:
         FileNotFoundError: If the specified file doesn't exist.
         DocumentProcessingError: If the document format is unsupported
             or the file is corrupted.
         RedisConnectionError: If unable to connect to Redis database.
-        
+
     Example:
         Basic usage with default configuration:
-        
+
         >>> config = IndexConfig(chunk_size=500)
         >>> result = await index_document("docs/tutorial.md", config)
         >>> print(f"Created {result.total_chunks} chunks")
         Created 12 chunks
-        
+
         Force reindexing an existing document:
-        
+
         >>> result = await index_document("api.py", force_reindex=True)
         >>> print(f"Reindexed {result.source_id}")
         Reindexed api_py_20241211_143022
@@ -211,24 +216,28 @@ docs/
 ### Content Guidelines
 
 **Overview Pages (index.md, getting-started/)**
+
 - Problem the project solves
 - Key benefits and features
 - Quick installation and setup
 - Simple "hello world" example
 
 **User Guide**
+
 - Task-oriented documentation
 - Step-by-step procedures
 - Real-world examples
 - Configuration options
 
 **API Reference**
+
 - Auto-generated from docstrings
 - Comprehensive parameter documentation
 - Return type specifications
 - Exception handling
 
 **Development Documentation**
+
 - Architecture decisions and rationale
 - Contributing guidelines
 - Testing standards and procedures
@@ -248,13 +257,13 @@ repos:
     hooks:
       - id: black
         language_version: python3.11
-  
+
   - repo: https://github.com/PyCQA/docformatter
     rev: v1.7.5
     hooks:
       - id: docformatter
         args: [--in-place, --wrap-summaries=79, --wrap-descriptions=79]
-  
+
   - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
     hooks:
@@ -285,17 +294,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install mkdocs mkdocs-material mkdocstrings[python] black
-      
+
       - name: Format code with Black
         run: black --check --diff src/
-      
+
       - name: Build documentation
         run: mkdocs build
-      
+
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
@@ -307,6 +316,7 @@ jobs:
 ### Quality Metrics
 
 Track documentation quality:
+
 - **Coverage**: Percentage of public APIs with docstrings
 - **Completeness**: Required sections (Args, Returns, Raises) present
 - **Examples**: Percentage of functions with usage examples
@@ -316,21 +326,25 @@ Track documentation quality:
 ## Migration Strategy
 
 ### Phase 1: Foundation (Week 1)
+
 - Setup MkDocs configuration
 - Create basic site structure
 - Configure automated deployment
 
 ### Phase 2: Core Documentation (Week 2)
+
 - Document server.py and main entry points
 - Add comprehensive docstrings to public APIs
 - Create basic user guide content
 
 ### Phase 3: Comprehensive Coverage (Week 3-4)
+
 - Document all modules with Google-style docstrings
 - Generate complete API reference
 - Add advanced examples and guides
 
 ### Phase 4: Automation and Polish (Week 4)
+
 - Setup pre-commit hooks
 - Add CI/CD documentation builds
 - Implement quality metrics tracking
@@ -340,16 +354,19 @@ Track documentation quality:
 ### Writing Guidelines
 
 **Clarity Over Brevity**
+
 - Explain the "why" not just the "what"
 - Include context about when to use different options
 - Provide realistic examples, not toy examples
 
 **Code Examples**
+
 - Always include practical, working examples
 - Show both success and error handling cases
 - Use consistent example data across documentation
 
 **Maintenance**
+
 - Keep examples up-to-date with API changes
 - Test code examples in CI/CD
 - Review documentation with each feature addition
@@ -357,10 +374,11 @@ Track documentation quality:
 ### Common Patterns
 
 **Configuration Classes**
+
 ```python
 class ServiceConfig(BaseModel):
     """Configuration for the RAG service.
-    
+
     This class centralizes all configuration options for the service,
     providing validation and documentation for each setting.
     """
@@ -372,13 +390,14 @@ class ServiceConfig(BaseModel):
 ```
 
 **Error Handling**
+
 ```python
 def risky_operation() -> Result:
     """Perform operation that may fail.
-    
+
     Returns:
         Result object with operation outcome.
-        
+
     Raises:
         ValidationError: If input parameters are invalid.
         ConnectionError: If unable to connect to external service.
@@ -387,19 +406,20 @@ def risky_operation() -> Result:
 ```
 
 **Async Functions**
+
 ```python
 async def async_operation(data: InputData) -> OutputData:
     """Process data asynchronously.
-    
+
     This function handles large datasets by processing them in batches
     to avoid memory issues and provide progress feedback.
-    
+
     Args:
         data: Input data to process. Must be validated before calling.
-        
+
     Returns:
         Processed data with additional metadata fields.
-        
+
     Note:
         This function is CPU-intensive and should be called with
         appropriate concurrency limits to avoid overwhelming the system.
@@ -413,6 +433,7 @@ async def async_operation(data: InputData) -> OutputData:
 The project uses **Black** code formatter to ensure consistent code style across all Python files. This is enforced in the GitHub Actions quality gate and should be used during development.
 
 **Key Black Configuration:**
+
 - **Line length**: 88 characters (Black's default)
 - **Target Python version**: 3.11+
 - **Docstring preservation**: Black maintains Google-style docstring formatting
@@ -423,20 +444,21 @@ The project uses **Black** code formatter to ensure consistent code style across
 Black is fully compatible with Google-style docstrings and enhances documentation quality:
 
 **Docstring Formatting:**
+
 ```python
 def example_function(param1: str, param2: int = 42) -> dict:
     """Example function with properly formatted docstring.
-    
+
     Black preserves Google-style docstring structure while ensuring
     consistent indentation and spacing throughout the codebase.
-    
+
     Args:
         param1: Description of the first parameter.
         param2: Description with default value.
-        
+
     Returns:
         Dictionary containing processing results.
-        
+
     Example:
         >>> result = example_function("test", 100)
         >>> print(result["status"])
@@ -448,6 +470,7 @@ def example_function(param1: str, param2: int = 42) -> dict:
 ### Development Workflow with Black
 
 **Local Development:**
+
 ```bash
 # Format all source files
 black src/
@@ -460,6 +483,7 @@ black src/eol/rag_context/document_processor.py
 ```
 
 **IDE Integration:**
+
 - **PyCharm**: Settings → Tools → External Tools → Add Black
 - **VS Code**: Install "Black Formatter" extension
 - **Vim/Neovim**: Use black plugin or ALE integration
@@ -475,6 +499,7 @@ Black formatting is enforced in CI/CD pipeline:
 ```
 
 **Enforcement Rules:**
+
 - All pull requests must pass Black formatting check
 - Code that doesn't conform to Black style will fail CI
 - Developers should run Black locally before pushing
@@ -485,16 +510,19 @@ Black formatting is enforced in CI/CD pipeline:
 Black formatting improves documentation quality by:
 
 **Consistency:**
+
 - Uniform code style in docstring examples
 - Consistent indentation for better readability
 - Standardized spacing and line breaks
 
 **Readability:**
+
 - Code examples in docs are automatically well-formatted
 - Type hints remain readable after formatting
 - Multi-line parameter lists are properly aligned
 
 **Maintenance:**
+
 - Less time spent on style discussions during code review
 - Automated formatting reduces manual formatting errors
 - Consistent style improves AI assistant understanding
@@ -502,6 +530,7 @@ Black formatting improves documentation quality by:
 ## Tools and Resources
 
 ### Development Tools
+
 - **IDE Extensions**: Python docstring generators (PyCharm, VSCode)
 - **Code Formatting**: Black for consistent Python code formatting
 - **Linting**: pydocstyle for docstring validation
@@ -509,6 +538,7 @@ Black formatting improves documentation quality by:
 - **Type Checking**: mypy for type hint validation
 
 ### Reference Materials
+
 - [Google Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 - [PEP 257 - Docstring Conventions](https://peps.python.org/pep-0257/)
 - [mkdocstrings Documentation](https://mkdocstrings.github.io/)
@@ -517,6 +547,7 @@ Black formatting improves documentation quality by:
 ### Quality Checklists
 
 **Before Merging Code:**
+
 - [ ] Code is formatted with Black (88-character line limit)
 - [ ] All public functions have Google-style docstrings
 - [ ] Type hints are comprehensive and accurate
@@ -525,6 +556,7 @@ Black formatting improves documentation quality by:
 - [ ] Links are valid and working
 
 **Before Release:**
+
 - [ ] User guide reflects new features
 - [ ] API reference is complete and accurate
 - [ ] Migration guide updated for breaking changes

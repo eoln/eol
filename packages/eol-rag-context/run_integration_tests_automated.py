@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""
-Automated integration test runner for EOL RAG Context.
+"""Automated integration test runner for EOL RAG Context.
+
 Handles Redis lifecycle and test execution.
+
 """
 
+import atexit
+import os
+import signal
 import subprocess
 import sys
 import time
-import os
-import signal
-import atexit
 from pathlib import Path
 
 
@@ -42,7 +43,9 @@ class IntegrationTestRunner:
     def check_docker(self):
         """Check if Docker is available and running."""
         try:
-            result = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["docker", "info"], capture_output=True, text=True, timeout=5
+            )
             return result.returncode == 0
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
@@ -50,7 +53,9 @@ class IntegrationTestRunner:
     def check_redis_native(self):
         """Check if Redis is installed locally."""
         try:
-            result = subprocess.run(["redis-server", "--version"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["redis-server", "--version"], capture_output=True, text=True
+            )
             return result.returncode == 0
         except FileNotFoundError:
             return False
@@ -61,7 +66,9 @@ class IntegrationTestRunner:
 
         # Stop any existing container
         subprocess.run(
-            ["docker", "rm", "-f", "eol-test-redis"], capture_output=True, stderr=subprocess.DEVNULL
+            ["docker", "rm", "-f", "eol-test-redis"],
+            capture_output=True,
+            stderr=subprocess.DEVNULL,
         )
 
         # Start Redis container

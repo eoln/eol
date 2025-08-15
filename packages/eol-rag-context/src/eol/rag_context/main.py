@@ -1,6 +1,4 @@
-"""
-Main entry point for EOL RAG Context MCP Server.
-"""
+"""Main entry point for EOL RAG Context MCP Server."""
 
 import asyncio
 import logging
@@ -15,7 +13,8 @@ def main():
     """Main CLI entry point."""
     # Setup logging
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Parse arguments
@@ -29,7 +28,9 @@ def main():
         print("\nEnvironment variables:")
         print("  REDIS_HOST     Redis host (default: localhost)")
         print("  REDIS_PORT     Redis port (default: 6379)")
-        print("  EMBEDDING_PROVIDER  Embedding provider (default: sentence-transformers)")
+        print(
+            "  EMBEDDING_PROVIDER  Embedding provider (default: sentence-transformers)"
+        )
         sys.exit(0)
 
     # Load configuration

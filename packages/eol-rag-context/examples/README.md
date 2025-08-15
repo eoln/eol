@@ -7,11 +7,13 @@ This directory contains example scripts demonstrating how to use the EOL RAG Con
 Before running the examples, make sure you have:
 
 1. **Redis Running**:
+
 ```bash
 docker run -d -p 6379:6379 redis/redis-stack:latest
 ```
 
 2. **Dependencies Installed**:
+
 ```bash
 pip install -r ../requirements.txt
 ```
@@ -27,6 +29,7 @@ python quick_start.py
 ```
 
 **Features demonstrated:**
+
 - Server initialization
 - Directory indexing
 - Context search
@@ -45,6 +48,7 @@ python code_assistant.py /path/to/project
 ```
 
 **Features demonstrated:**
+
 - Project indexing with filters
 - Interactive Q&A
 - Code implementation search
@@ -52,6 +56,7 @@ python code_assistant.py /path/to/project
 - Knowledge graph queries
 
 **Commands:**
+
 - `help` - Show available commands
 - `stats` - Display indexing statistics
 - `find <name>` - Find implementations
@@ -67,6 +72,7 @@ python doc_search.py "authentication" /path/to/docs
 ```
 
 **Features demonstrated:**
+
 - Markdown-specific indexing
 - Hierarchical search
 - Result grouping
@@ -81,6 +87,7 @@ python realtime_monitor.py /path/to/watch
 ```
 
 **Features demonstrated:**
+
 - File watching
 - Automatic re-indexing
 - Change detection
@@ -95,6 +102,7 @@ python api_server.py
 ```
 
 **Endpoints:**
+
 - `POST /index` - Index a directory
 - `GET /search?q=query` - Search for context
 - `GET /stats` - Get statistics
@@ -109,6 +117,7 @@ python benchmark.py /path/to/test
 ```
 
 **Tests:**
+
 - Indexing speed
 - Search latency
 - Cache performance
@@ -195,6 +204,7 @@ pip install -e .
 ## Advanced Usage
 
 For more advanced usage patterns, see:
+
 - [TUTORIAL.md](../TUTORIAL.md) - Complete tutorial
 - [API Documentation](../docs/api.md) - API reference
 - [Configuration Guide](../docs/configuration.md) - Configuration options
@@ -202,6 +212,7 @@ For more advanced usage patterns, see:
 ## Contributing
 
 Feel free to add your own examples! Please follow the existing pattern:
+
 1. Clear documentation in the script
 2. Error handling
 3. Help text for CLI scripts

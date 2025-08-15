@@ -8,7 +8,9 @@
 - Verify estimated timeline
 
 ## Validation Checklist
+
 Before moving to pending:
+
 - [ ] Clear objectives stated
 - [ ] Success criteria defined
 - [ ] Dependencies listed

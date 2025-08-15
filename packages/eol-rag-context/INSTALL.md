@@ -115,6 +115,7 @@ make dev
 The project uses `pyproject.toml` to manage dependencies in groups:
 
 ### Core Dependencies (Always Installed)
+
 - Redis client and numpy for vector operations
 - Pydantic for configuration management
 - FastMCP for MCP server
@@ -125,30 +126,39 @@ The project uses `pyproject.toml` to manage dependencies in groups:
 ### Optional Dependencies
 
 #### Development (`dev`)
+
 ```bash
 pip install -e ".[dev]"
 ```
+
 Includes: pytest, black, ruff, mypy, coverage tools
 
 #### Testing (`test`)
+
 ```bash
 pip install -e ".[test]"
 ```
+
 Includes: pytest and testing utilities
 
 #### Local Embeddings (`embeddings-local`)
+
 ```bash
 pip install -e ".[embeddings-local]"
 ```
+
 Includes: sentence-transformers for local embedding generation
 
 #### OpenAI Embeddings (`embeddings-openai`)
+
 ```bash
 pip install -e ".[embeddings-openai]"
 ```
+
 Includes: openai client for OpenAI embeddings
 
 #### All Optional Dependencies
+
 ```bash
 pip install -e ".[all]"
 ```
@@ -172,6 +182,7 @@ make dev
 ### Manual Setup
 
 1. **Install dependencies:**
+
 ```bash
 make install-dev
 # or
@@ -179,6 +190,7 @@ pip install -e ".[dev]"
 ```
 
 2. **Start Redis Stack:**
+
 ```bash
 make redis-start
 # or
@@ -186,6 +198,7 @@ redis-stack-server --daemonize yes
 ```
 
 3. **Run tests to verify:**
+
 ```bash
 make test
 # or
@@ -233,6 +246,7 @@ print("Installation successful!")
 #### 1. ModuleNotFoundError: No module named 'magic'
 
 **Solution:** Install libmagic system dependency
+
 ```bash
 # macOS
 brew install libmagic
@@ -247,6 +261,7 @@ pip install --force-reinstall python-magic
 #### 2. Redis connection failed
 
 **Solution:** Ensure Redis Stack is running
+
 ```bash
 # Check if Redis is running
 redis-cli ping
@@ -261,6 +276,7 @@ docker run -d -p 6379:6379 redis/redis-stack:latest
 #### 3. FT.CREATE command not found
 
 **Solution:** You have regular Redis, not Redis Stack. Install Redis Stack:
+
 ```bash
 # macOS
 brew install --cask redis-stack-server
@@ -272,6 +288,7 @@ docker run -d -p 6379:6379 redis/redis-stack:latest
 #### 4. Import errors with tree-sitter
 
 **Solution:** Reinstall tree-sitter languages
+
 ```bash
 pip install --force-reinstall tree-sitter tree-sitter-python tree-sitter-javascript
 ```
@@ -280,7 +297,7 @@ pip install --force-reinstall tree-sitter tree-sitter-python tree-sitter-javascr
 
 1. Check the [Testing Guide](tests/integration/TESTING_GUIDE.md)
 2. Run diagnostics: `python -m eol.rag_context.diagnostics`
-3. File an issue: https://github.com/eoln/eol-rag-context/issues
+3. File an issue: <https://github.com/eoln/eol-rag-context/issues>
 
 ## Docker Installation (Alternative)
 
@@ -331,6 +348,7 @@ services:
 ```
 
 Run with:
+
 ```bash
 docker-compose up
 ```

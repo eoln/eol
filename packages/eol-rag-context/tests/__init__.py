@@ -1,3 +1,1 @@
-"""
-Tests for EOL RAG Context MCP Server.
-"""
+"""Tests for EOL RAG Context MCP Server."""

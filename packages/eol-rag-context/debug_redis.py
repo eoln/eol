@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Debug Redis import issue in tests."""
 
-import sys
 import os
+import sys
 
 # Set PYTHONPATH
 sys.path.insert(0, "src")
@@ -34,6 +34,7 @@ print(f"   Is Mock? {'Mock' in str(type(redis_client.AsyncRedis))}")
 print("\n3. Check if fallback was triggered:")
 # Add debug to redis_client to see what happened
 import importlib
+
 import eol.rag_context.redis_client as rc
 
 # Check the actual values

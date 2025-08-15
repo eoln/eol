@@ -14,6 +14,18 @@ An intelligent RAG-based context management MCP server for the EOL Framework. Re
 
 ## Installation
 
+### Quick Install with uv (Recommended - Ultra Fast)
+
+```bash
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install eol-rag-context
+uv pip install eol-rag-context
+```
+
+### Alternative: Install with pip
+
 ```bash
 pip install eol-rag-context
 ```
@@ -350,11 +362,14 @@ Automatically extracts:
 git clone https://github.com/eoln/eol.git
 cd eol/packages/eol-rag-context
 
-# Create virtual environment
+# Using uv (recommended - ultra fast)
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+# Alternative: Using standard pip
 python -m venv .venv
 source .venv/bin/activate
-
-# Install in development mode
 pip install -e ".[dev]"
 ```
 

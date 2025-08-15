@@ -10,7 +10,7 @@ on:
       - 'uv.lock'
       - 'README.md'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, feat/*, fix/* ]
     paths:
       - 'packages/**'
       - '.github/**'

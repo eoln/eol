@@ -1,7 +1,6 @@
-"""Integration tests for full RAG workflow.
-
+"""
+Integration tests for full RAG workflow.
 Tests complete indexing, searching, and caching workflow.
-
 """
 
 import asyncio
@@ -50,9 +49,7 @@ class TestFullWorkflowIntegration:
                 assert "content" in data
 
     @pytest.mark.asyncio
-    async def test_semantic_cache_workflow(
-        self, semantic_cache_instance, embedding_manager
-    ):
+    async def test_semantic_cache_workflow(self, semantic_cache_instance, embedding_manager):
         """Test semantic caching workflow."""
         # Initialize cache (creates index)
         await semantic_cache_instance.initialize()
@@ -71,14 +68,12 @@ class TestFullWorkflowIntegration:
 
         # Step 3: Try similar query
         query2 = "What's ML?"  # Similar but not exact
-        cached2 = await semantic_cache_instance.get(query2)
+        await semantic_cache_instance.get(query2)
         # May or may not match depending on similarity threshold
 
         # Step 4: Store more entries
         for i in range(5):
-            await semantic_cache_instance.set(
-                f"Query {i}", f"Response {i}", {"index": i}
-            )
+            await semantic_cache_instance.set(f"Query {i}", f"Response {i}", {"index": i})
 
         # Step 5: Check cache stats
         stats = semantic_cache_instance.get_stats()
@@ -112,9 +107,7 @@ class TestFullWorkflowIntegration:
         if len(knowledge_graph_instance.entities) > 0:
             # Get the first entity ID to query
             entity_id = list(knowledge_graph_instance.entities.keys())[0]
-            subgraph = await knowledge_graph_instance.query_subgraph(
-                entity_id, max_depth=2
-            )
+            subgraph = await knowledge_graph_instance.query_subgraph(entity_id, max_depth=2)
 
             assert hasattr(subgraph, "entities")
             assert hasattr(subgraph, "relationships")
@@ -186,19 +179,22 @@ class TestFullWorkflowIntegration:
         query_embedding = await embedding_manager.get_embedding(query)
 
         # Search concepts (level 1)
-        concepts = await redis_store.vector_search(
+        concepts_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=1, k=3
         )
+        assert len(concepts_results) >= 0
 
         # Search sections (level 2)
-        sections = await redis_store.vector_search(
+        sections_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=2, k=5
         )
+        assert len(sections_results) >= 0
 
         # Search chunks (level 3)
-        chunks = await redis_store.vector_search(
+        chunks_results = await redis_store.vector_search(
             query_embedding=query_embedding, hierarchy_level=3, k=10
         )
+        assert len(chunks_results) >= 0
 
         # Hierarchical search (all levels)
         all_results = await redis_store.hierarchical_search(
@@ -214,14 +210,10 @@ class TestFullWorkflowIntegration:
         """Test concurrent operations across components."""
 
         async def index_operation():
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".txt", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
                 f.write("Concurrent indexing test")
                 f.flush()
-                result = await indexer_instance.index_file(
-                    Path(f.name), "concurrent_src"
-                )
+                result = await indexer_instance.index_file(Path(f.name), "concurrent_src")
                 Path(f.name).unlink()
                 return result
 
@@ -277,17 +269,14 @@ class TestFullWorkflowIntegration:
         index_time = time.time() - start_time
 
         files_per_second = index_result.file_count / index_time if index_time > 0 else 0
-        chunks_per_second = (
-            index_result.total_chunks / index_time if index_time > 0 else 0
-        )
+        chunks_per_second = index_result.total_chunks / index_time if index_time > 0 else 0
 
-        print(f"\nIndexing Performance:")
+        print("\nIndexing Performance:")
         print(
-            f"  Files: {index_result.file_count} in {index_time:.2f}s ({files_per_second:.1f} files/s)"
+            f"  Files: {index_result.file_count} in {index_time:.2f}s "
+            f"({files_per_second:.1f} files/s)"
         )
-        print(
-            f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)"
-        )
+        print(f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)")
 
         # Measure search speed
         query = "performance test query"
@@ -299,10 +288,8 @@ class TestFullWorkflowIntegration:
         search_time = time.time() - start_time
 
         searches_per_second = 10 / search_time if search_time > 0 else 0
-        print(f"\nSearch Performance:")
-        print(
-            f"  10 searches in {search_time:.2f}s ({searches_per_second:.1f} searches/s)"
-        )
+        print("\nSearch Performance:")
+        print(f"  10 searches in {search_time:.2f}s ({searches_per_second:.1f} searches/s)")
 
         # Measure cache performance
         start_time = time.time()
@@ -315,13 +302,9 @@ class TestFullWorkflowIntegration:
             await semantic_cache_instance.get(f"q{i}")
         cache_read_time = time.time() - start_time
 
-        print(f"\nCache Performance:")
-        print(
-            f"  Writes: 20 in {cache_write_time:.2f}s ({20/cache_write_time:.1f} writes/s)"
-        )
-        print(
-            f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)"
-        )
+        print("\nCache Performance:")
+        print(f"  Writes: 20 in {cache_write_time:.2f}s ({20/cache_write_time:.1f} writes/s)")
+        print(f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)")
 
         # All operations should complete reasonably fast
         assert index_time < 30  # Indexing should be under 30 seconds

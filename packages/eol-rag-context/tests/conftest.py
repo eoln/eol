@@ -44,7 +44,10 @@ def test_config(temp_dir: Path) -> RAGConfig:
 @pytest.fixture
 def redis_config() -> RedisConfig:
     """Redis configuration for tests."""
-    return RedisConfig(host="localhost", port=6379, db=15)  # Use separate DB for tests
+    import os
+
+    redis_port = int(os.environ.get("REDIS_PORT", "6379"))
+    return RedisConfig(host="localhost", port=redis_port, db=15)  # Use separate DB for tests
 
 
 @pytest.fixture

@@ -102,7 +102,7 @@ mock_openai.OpenAI.return_value = mock_openai_client
 sys.modules["openai"] = mock_openai
 
 # Now import our modules - Redis will use real implementation
-from eol.rag_context import (
+from eol.rag_context import (  # noqa: E402
     config,
     document_processor,
     embeddings,

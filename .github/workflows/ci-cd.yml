@@ -1,0 +1,778 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feat/*, fix/* ]
+    paths:
+      - 'packages/**'
+      - '.github/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'README.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/**'
+      - '.github/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly on Sunday for maintenance
+  workflow_dispatch:
+    inputs:
+      build_wheels:
+        description: 'Build wheel cache for ultra-fast CI/CD'
+        required: false
+        default: 'true'
+        type: boolean
+      run_security_audit:
+        description: 'Run comprehensive security audit'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PACKAGE_PATH: packages/eol-rag-context
+  PYTHON_VERSION: '3.11'
+  UNIT_COVERAGE_THRESHOLD: 80
+  INTEGRATION_COVERAGE_THRESHOLD: 60
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
+
+jobs:
+  # =========================================
+  # Setup & Validation
+  # =========================================
+  setup:
+    name: 🔧 Setup & Validation
+    runs-on: ubuntu-latest
+    outputs:
+      package-changed: ${{ steps.changes.outputs.package }}
+      dependency-changed: ${{ steps.changes.outputs.dependencies }}
+      wheel-cache-needed: ${{ steps.wheel-decision.outputs.needed }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Detect changes
+      uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          package:
+            - 'packages/eol-rag-context/**'
+            - '.github/workflows/**'
+            - '.github/actions/**'
+            - '.github/scripts/**'
+          dependencies:
+            - '**/pyproject.toml'
+            - '**/requirements*.txt'
+            - 'uv.lock'
+
+    - name: Validate project structure
+      if: steps.changes.outputs.package == 'true'
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        echo "🔍 Validating project structure..."
+        required_files=(
+          "pyproject.toml"
+          "src/eol/rag_context/__init__.py"
+          "tests/conftest.py"
+          "tests/integration/conftest.py"
+          "pytest.ini"
+        )
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing required file: $file"
+            exit 1
+          fi
+        done
+        echo "✅ Project structure validation passed"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Validate workspace
+      run: |
+        echo "🔍 Validating UV workspace configuration..."
+        uv --version
+
+        # Check workspace structure
+        test -f pyproject.toml || (echo "Root pyproject.toml missing" && exit 1)
+        test -f uv.toml || (echo "uv.toml missing" && exit 1)
+
+        # Validate each package
+        for package in packages/*; do
+          if [ -d "$package" ]; then
+            echo "Validating $package..."
+            test -f "$package/pyproject.toml" || (echo "$package/pyproject.toml missing" && exit 1)
+          fi
+        done
+
+        # Test workspace sync
+        uv sync --all-packages --dry-run
+        echo "✅ Workspace validation passed"
+
+    - name: Check dependency conflicts
+      if: steps.changes.outputs.dependencies == 'true'
+      run: |
+        uv venv temp-check
+        source temp-check/bin/activate
+        pip install -r ${{ env.PACKAGE_PATH }}/requirements.txt
+        uv pip check
+
+    - name: Decide wheel cache building
+      id: wheel-decision
+      run: |
+        # Always skip for PR events from forks (no cache write access)
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+          echo "needed=false" >> $GITHUB_OUTPUT
+          echo "⏭️ Wheel cache building skipped (PR from fork)"
+        elif [ "${{ github.event_name }}" = "schedule" ] ||
+             [ "${{ github.event.inputs.build_wheels }}" = "true" ] ||
+             [ "${{ steps.changes.outputs.dependencies }}" = "true" ]; then
+          echo "needed=true" >> $GITHUB_OUTPUT
+          echo "🏗️ Wheel cache building needed (dependencies changed or scheduled/manual build)"
+        else
+          echo "needed=false" >> $GITHUB_OUTPUT
+          echo "⏭️ Wheel cache building skipped (no dependency changes)"
+        fi
+
+  # =========================================
+  # Build Wheel Caches (Conditional)
+  # =========================================
+  build-wheel-caches:
+    name: 🏗️ Build Wheel Cache (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.wheel-cache-needed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Generate wheel cache key
+      id: wheel-cache-key
+      run: |
+        # Generate cache key from dependency files
+        echo "cache-key=wheels-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/requirements*.txt') }}" >> $GITHUB_OUTPUT
+        echo "📝 Cache key: wheels-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/requirements*.txt') }}"
+
+    - name: Check wheel cache
+      id: cache-wheels
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        key: ${{ steps.wheel-cache-key.outputs.cache-key }}
+        restore-keys: |
+          wheels-${{ runner.os }}-py${{ matrix.python-version }}-
+
+    - name: Install uv
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Create wheel cache
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        echo "🔄 Creating optimized wheel cache for Python ${{ matrix.python-version }}..."
+
+        # Create wheel download directory
+        mkdir -p .wheels-py${{ matrix.python-version }}
+
+        # Create requirements from lock file
+        uv export --no-hashes > temp-requirements.txt
+
+        # Remove editable installs (they won't work for wheel caching)
+        grep -v "^-e " temp-requirements.txt > filtered-requirements.txt || true
+        mv filtered-requirements.txt temp-requirements.txt
+
+        # Add CI/CD dependencies from pyproject.toml
+        # This ensures all CI tools are in the wheel cache
+        cat >> temp-requirements.txt << EOF
+        pytest>=7.4.0
+        pytest-asyncio>=0.21.0
+        pytest-cov>=4.1.0
+        pytest-timeout>=2.1.0
+        pytest-xdist>=3.3.0
+        pytest-benchmark>=4.0.0
+        coverage>=7.3.0
+        black>=23.0.0
+        isort>=5.12.0
+        flake8>=6.1.0
+        ruff>=0.1.0
+        mypy>=1.5.0
+        bandit>=1.7.5
+        safety>=3.0.0
+        pip-audit>=2.6.0
+        redis>=5.0.0
+        redisvl>=0.1.0
+        sentence-transformers>=2.2.0
+        aioredis>=2.0.0
+        watchdog>=3.0.0
+        gitignore-parser>=0.1.0
+        pip-tools>=7.3.0
+        pipdeptree>=2.13.0
+        EOF
+
+        # Create temporary venv and install pip
+        uv venv temp-venv --python ${{ matrix.python-version }}
+        uv pip install --python temp-venv/bin/python pip
+
+        # Download wheels
+        echo "⬇️ Downloading wheels for $(wc -l < temp-requirements.txt) packages..."
+        temp-venv/bin/pip download \
+          --dest .wheels-py${{ matrix.python-version }} \
+          -r temp-requirements.txt \
+          --prefer-binary
+
+        # Create compressed archive
+        wheel_count=$(ls -1 .wheels-py${{ matrix.python-version }}/*.whl 2>/dev/null | wc -l)
+        tar czf wheels-py${{ matrix.python-version }}.tar.gz .wheels-py${{ matrix.python-version }}
+
+        archive_size=$(du -sh wheels-py${{ matrix.python-version }}.tar.gz | cut -f1)
+        echo "✅ Wheel cache created: $archive_size, $wheel_count packages"
+
+    - name: Report cache status
+      if: steps.cache-wheels.outputs.cache-hit == 'true'
+      run: |
+        echo "✅ Using cached wheels for Python ${{ matrix.python-version }}"
+        echo "📦 Cache hit! Skipping wheel download - saved ~1-2 minutes"
+        ls -lh ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz || true
+
+    - name: Save wheel cache to GitHub cache
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        key: ${{ steps.wheel-cache-key.outputs.cache-key }}
+
+    - name: Upload wheel cache
+      if: steps.cache-wheels.outputs.cache-hit != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-py${{ matrix.python-version }}
+        path: ${{ env.PACKAGE_PATH }}/wheels-py${{ matrix.python-version }}.tar.gz
+        retention-days: 30
+
+  # =========================================
+  # Code Quality Checks
+  # =========================================
+  code-quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        test-type: quality
+        working-directory: ${{ env.PACKAGE_PATH }}
+
+    - name: Run quality checks
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
+
+        echo "🔍 Code formatting (Black)..."
+        black --check --diff src/ tests/
+
+        echo "🔍 Import sorting (isort)..."
+        isort --check-only --diff src/ tests/
+
+        echo "🔍 Linting (flake8)..."
+        flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+
+        echo "🔍 Security scan (bandit)..."
+        bandit -r src/ -ll
+
+  # =========================================
+  # Unit Tests (Matrix)
+  # =========================================
+  unit-tests:
+    name: 🧪 Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [setup, build-wheel-caches]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ matrix.python-version }}
+        test-type: unit
+        working-directory: ${{ env.PACKAGE_PATH }}
+
+    - name: Run unit tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+      run: |
+        source .venv-${{ matrix.python-version }}/bin/activate
+
+        python -m pytest tests/unit/ \
+          -v --tb=short \
+          -n auto --maxprocesses=4 \
+          --cov=eol.rag_context \
+          --cov-report=xml:unit-coverage-${{ matrix.python-version }}.xml \
+          --cov-report=html:unit-coverage-${{ matrix.python-version }} \
+          --junit-xml=unit-test-results-${{ matrix.python-version }}.xml \
+          --timeout=300
+
+    - name: Upload unit test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-test-results-${{ matrix.python-version }}
+        path: |
+          ${{ env.PACKAGE_PATH }}/unit-test-results-${{ matrix.python-version }}.xml
+          ${{ env.PACKAGE_PATH }}/unit-coverage-${{ matrix.python-version }}.xml
+
+  # =========================================
+  # Integration Tests (Matrix)
+  # =========================================
+  integration-tests:
+    name: 🔄 Integration Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [setup, build-wheel-caches]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+        include:
+          # Use different Redis ports for each Python version to avoid conflicts
+          - python-version: '3.11'
+            redis-port: 6379
+            redis-ui-port: 8001
+          - python-version: '3.12'
+            redis-port: 6380
+            redis-ui-port: 8002
+          - python-version: '3.13'
+            redis-port: 6381
+            redis-ui-port: 8003
+      fail-fast: false
+
+    services:
+      redis:
+        image: redis/redis-stack:latest
+        ports:
+          - ${{ matrix.redis-port }}:6379
+          - ${{ matrix.redis-ui-port }}:8001
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ matrix.python-version }}
+        test-type: integration
+        working-directory: ${{ env.PACKAGE_PATH }}
+
+    - name: Wait for Redis
+      run: |
+        echo "⏳ Waiting for Redis Stack on port ${{ matrix.redis-port }}..."
+        timeout 30s bash -c 'until redis-cli -h localhost -p ${{ matrix.redis-port }} ping; do sleep 1; done'
+        redis-cli -h localhost -p ${{ matrix.redis-port }} MODULE LIST | grep search || exit 1
+        echo "✅ Redis Stack ready on port ${{ matrix.redis-port }}"
+
+    - name: Run integration tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+        REDIS_PORT: ${{ matrix.redis-port }}
+      run: |
+        source .venv-${{ matrix.python-version }}/bin/activate
+
+        # Clear Redis data
+        redis-cli -h localhost -p ${{ matrix.redis-port }} FLUSHALL
+
+        # Run integration tests with custom Redis port
+        python -m pytest tests/integration/ \
+          -v --tb=short \
+          -n auto --maxprocesses=4 \
+          --cov=eol.rag_context --cov-append \
+          --cov-report=xml:integration-coverage-${{ matrix.python-version }}.xml \
+          --cov-report=html:integration-coverage-${{ matrix.python-version }} \
+          --junit-xml=integration-test-results-${{ matrix.python-version }}.xml \
+          --timeout=300 \
+          -m integration
+
+    - name: Upload integration test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-test-results-${{ matrix.python-version }}
+        path: |
+          ${{ env.PACKAGE_PATH }}/integration-test-results-${{ matrix.python-version }}.xml
+          ${{ env.PACKAGE_PATH }}/integration-coverage-${{ matrix.python-version }}.xml
+
+  # =========================================
+  # Performance Tests
+  # =========================================
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    needs: [setup, integration-tests]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+
+    services:
+      redis:
+        image: redis/redis-stack:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup dependencies (ultra-fast)
+      uses: ./.github/actions/setup-python-deps-ultra-fast
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        test-type: performance
+        working-directory: ${{ env.PACKAGE_PATH }}
+
+    - name: Run performance tests
+      working-directory: ${{ env.PACKAGE_PATH }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}/${{ env.PACKAGE_PATH }}/src
+      run: |
+        source .venv-${{ env.PYTHON_VERSION }}/bin/activate
+
+        python -m pytest tests/integration/test_full_workflow_integration.py::TestFullWorkflowIntegration::test_performance_metrics \
+          -v --tb=short \
+          --benchmark-json=performance-results.json \
+          -m performance || true
+
+    - name: Upload performance results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: ${{ env.PACKAGE_PATH }}/performance-results.json
+
+  # =========================================
+  # Coverage Analysis
+  # =========================================
+  coverage-analysis:
+    name: 📈 Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Download all test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-test-results*'
+        path: test-results/
+        merge-multiple: true
+
+    - name: Install uv and coverage tools
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        cd ${{ env.PACKAGE_PATH }}
+        uv venv .venv
+        uv pip install --python .venv/bin/python -e ".[ci]"
+        echo "Coverage tools installed with uv"
+
+    - name: Analyze unit test coverage
+      working-directory: test-results
+      run: |
+        echo "📊 Analyzing unit test coverage..."
+
+        # Find unit coverage files (from all Python versions)
+        unit_files=($(find . -name 'unit-coverage-*.xml' 2>/dev/null))
+
+        if [ ${#unit_files[@]} -gt 0 ]; then
+          # Use the coverage from the primary Python version (3.11)
+          if [ -f "unit-coverage-3.11.xml" ]; then
+            cp unit-coverage-3.11.xml unit-coverage-final.xml
+            echo "✅ Using unit coverage from Python 3.11"
+          else
+            # Fallback to first available unit coverage
+            cp "${unit_files[0]}" unit-coverage-final.xml
+            echo "✅ Using unit coverage from: ${unit_files[0]}"
+          fi
+
+          # Check unit coverage threshold
+          echo "🎯 Checking unit test coverage against ${UNIT_COVERAGE_THRESHOLD}% threshold..."
+          python ${{ github.workspace }}/.github/scripts/coverage_check.py \
+            unit-coverage-final.xml \
+            ${{ env.UNIT_COVERAGE_THRESHOLD }} \
+            --badge unit-coverage-badge.json \
+            --type "Unit Tests"
+        else
+          echo "⚠️ No unit coverage files found"
+          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > unit-coverage-final.xml
+        fi
+
+    - name: Analyze integration test coverage
+      working-directory: test-results
+      run: |
+        echo "📊 Analyzing integration test coverage..."
+
+        # Find integration coverage files (from all Python versions)
+        integration_files=($(find . -name 'integration-coverage-*.xml' 2>/dev/null))
+
+        if [ ${#integration_files[@]} -gt 0 ]; then
+          # Use the coverage from the primary Python version (3.11)
+          if [ -f "integration-coverage-3.11.xml" ]; then
+            cp integration-coverage-3.11.xml integration-coverage-final.xml
+            echo "✅ Using integration coverage from Python 3.11"
+          else
+            # Fallback to first available integration coverage
+            cp "${integration_files[0]}" integration-coverage-final.xml
+            echo "✅ Using integration coverage from: ${integration_files[0]}"
+          fi
+
+          # Check integration coverage threshold
+          echo "🎯 Checking integration test coverage against ${INTEGRATION_COVERAGE_THRESHOLD}% threshold..."
+          python ${{ github.workspace }}/.github/scripts/coverage_check.py \
+            integration-coverage-final.xml \
+            ${{ env.INTEGRATION_COVERAGE_THRESHOLD }} \
+            --badge integration-coverage-badge.json \
+            --type "Integration Tests"
+        else
+          echo "⚠️ No integration coverage files found"
+          echo '<?xml version="1.0" ?><coverage line-rate="0.0" lines-covered="0" lines-valid="1"/>' > integration-coverage-final.xml
+        fi
+
+    - name: Generate coverage summary
+      working-directory: test-results
+      run: |
+        # Use external Python script to generate coverage summary
+        unit_file=""
+        integration_file=""
+
+        [ -f "unit-coverage-final.xml" ] && unit_file="--unit-file unit-coverage-final.xml"
+        [ -f "integration-coverage-final.xml" ] && integration_file="--integration-file integration-coverage-final.xml"
+
+        # Run coverage summary script and capture environment variables
+        summary_output=$(python ${{ github.workspace }}/.github/scripts/coverage_summary.py \
+          $unit_file --unit-threshold ${{ env.UNIT_COVERAGE_THRESHOLD }} \
+          $integration_file --integration-threshold ${{ env.INTEGRATION_COVERAGE_THRESHOLD }})
+
+        # Display the summary
+        echo "$summary_output"
+
+        # Extract and set environment variables
+        if echo "$summary_output" | grep -q "UNIT_COVERAGE_PASS="; then
+          unit_pass=$(echo "$summary_output" | grep "UNIT_COVERAGE_PASS=" | cut -d'=' -f2)
+          echo "UNIT_COVERAGE_PASS=$unit_pass" >> $GITHUB_ENV
+        fi
+
+        if echo "$summary_output" | grep -q "INTEGRATION_COVERAGE_PASS="; then
+          integration_pass=$(echo "$summary_output" | grep "INTEGRATION_COVERAGE_PASS=" | cut -d'=' -f2)
+          echo "INTEGRATION_COVERAGE_PASS=$integration_pass" >> $GITHUB_ENV
+        fi
+
+    - name: Commit coverage badges
+      if: github.ref == 'refs/heads/main'
+      working-directory: test-results
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        # Copy badge files to root and commit
+        mkdir -p ${{ github.workspace }}/.github/badges
+        [ -f unit-coverage-badge.json ] && cp unit-coverage-badge.json ${{ github.workspace }}/.github/badges/
+        [ -f integration-coverage-badge.json ] && cp integration-coverage-badge.json ${{ github.workspace }}/.github/badges/
+
+        cd ${{ github.workspace }}
+        git add .github/badges/*.json
+
+        # Only commit if there are changes
+        if ! git diff --cached --quiet; then
+          git commit -m "chore: update coverage badges [skip ci]
+
+          🤖 Generated with Claude Code
+
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+          git push
+        else
+          echo "No badge changes to commit"
+        fi
+
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          test-results/unit-coverage-final.xml
+          test-results/integration-coverage-final.xml
+          test-results/unit-coverage-badge.json
+          test-results/integration-coverage-badge.json
+
+  # =========================================
+  # Security Audit
+  # =========================================
+  security-audit:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.package-changed == 'true' || github.event.inputs.run_security_audit == 'true'
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv and security tools
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        cd ${{ env.PACKAGE_PATH }}
+        uv venv .venv
+        uv pip install --python .venv/bin/python -e ".[ci]"
+        echo "Security tools installed with uv"
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: ${{ env.PACKAGE_PATH }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: 'trivy-security-scan'
+
+    - name: Dependency vulnerability check
+      working-directory: ${{ env.PACKAGE_PATH }}
+      run: |
+        source .venv/bin/activate
+
+        echo "🔍 Running pip-audit..."
+        pip-audit -r requirements.txt --format=json --output=pip-audit-report.json || true
+
+        echo "🔍 Running bandit security scan..."
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ || true
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          trivy-results.sarif
+          ${{ env.PACKAGE_PATH }}/pip-audit-report.json
+          ${{ env.PACKAGE_PATH }}/bandit-report.json
+
+  # =========================================
+  # Quality Gate
+  # =========================================
+  quality-gate:
+    name: 🚦 Quality Gate
+    runs-on: ubuntu-latest
+    needs: [code-quality, unit-tests, integration-tests, coverage-analysis, security-audit]
+    if: always() && needs.setup.outputs.package-changed == 'true'
+
+    steps:
+    - name: Quality gate decision
+      run: |
+        echo "🚦 Quality Gate Decision..."
+
+        # Check results
+        quality_result="${{ needs.code-quality.result }}"
+        unit_result="${{ needs.unit-tests.result }}"
+        integration_result="${{ needs.integration-tests.result }}"
+        coverage_result="${{ needs.coverage-analysis.result }}"
+        security_result="${{ needs.security-audit.result }}"
+
+        echo "📊 Results:"
+        echo "• Code Quality: $quality_result"
+        echo "• Unit Tests: $unit_result"
+        echo "• Integration Tests: $integration_result"
+        echo "• Coverage: $coverage_result"
+        echo "• Security: $security_result"
+
+        # Determine overall result
+        failed_gates=""
+        [ "$quality_result" = "failure" ] && failed_gates="$failed_gates quality"
+        [ "$unit_result" = "failure" ] && failed_gates="$failed_gates unit-tests"
+        [ "$integration_result" = "failure" ] && failed_gates="$failed_gates integration-tests"
+        [ "$coverage_result" = "failure" ] && failed_gates="$failed_gates coverage"
+        [ "$security_result" = "failure" ] && failed_gates="$failed_gates security"
+
+        if [ -n "$failed_gates" ]; then
+          echo "❌ QUALITY GATE FAILED"
+          echo "Failed gates:$failed_gates"
+          echo "::error title=Quality Gate Failed::Failed gates:$failed_gates"
+          exit 1
+        else
+          echo "✅ QUALITY GATE PASSED"
+          echo "::notice title=Quality Gate Success::All checks passed!"
+        fi

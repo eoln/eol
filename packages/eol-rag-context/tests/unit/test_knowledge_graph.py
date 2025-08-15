@@ -5,8 +5,6 @@ from coverage booster files and enhanced with real functionality testing.
 
 """
 
-import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
@@ -481,7 +479,7 @@ See [documentation](https://example.com/docs) for more details.
 
         # Should find hub entities if any exist
         hub_patterns = [p for p in patterns if p.get("pattern") == "hub_entities"]
-        # May or may not exist depending on graph structure
+        assert isinstance(hub_patterns, list)  # Use the variable
 
     @pytest.mark.asyncio
     async def test_find_relevant_entities(self, kg_builder, mock_redis_store):

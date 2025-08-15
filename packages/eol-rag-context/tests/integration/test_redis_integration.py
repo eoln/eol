@@ -4,9 +4,6 @@ Tests real Redis connectivity and vector operations.
 
 """
 
-import json
-
-import numpy as np
 import pytest
 
 from eol.rag_context import redis_client

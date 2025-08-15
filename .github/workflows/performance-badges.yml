@@ -1,0 +1,107 @@
+name: Update Performance Badges
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  update-badges:
+    name: Update Performance Badges
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: main
+
+    - name: Download performance results
+      uses: actions/download-artifact@v4
+      with:
+        name: performance-results
+        path: ./
+      continue-on-error: true
+
+    - name: Parse performance metrics
+      id: metrics
+      run: |
+        if [ -f performance-results.json ]; then
+          # Parse JSON and extract metrics
+          INDEXING_SPEED=$(python3 -c "import json; data=json.load(open('performance-results.json')); print(f\"{data.get('indexing_speed', 0):.1f}\")" 2>/dev/null || echo "0")
+          SEARCH_LATENCY=$(python3 -c "import json; data=json.load(open('performance-results.json')); print(f\"{data.get('search_latency_ms', 0):.0f}\")" 2>/dev/null || echo "0")
+          CACHE_HIT_RATE=$(python3 -c "import json; data=json.load(open('performance-results.json')); print(f\"{data.get('cache_hit_rate', 0):.1f}\")" 2>/dev/null || echo "0")
+        else
+          # Use placeholder values if no results
+          INDEXING_SPEED="N/A"
+          SEARCH_LATENCY="N/A"
+          CACHE_HIT_RATE="N/A"
+        fi
+
+        echo "indexing_speed=$INDEXING_SPEED" >> $GITHUB_OUTPUT
+        echo "search_latency=$SEARCH_LATENCY" >> $GITHUB_OUTPUT
+        echo "cache_hit_rate=$CACHE_HIT_RATE" >> $GITHUB_OUTPUT
+
+    - name: Generate badge JSON files
+      run: |
+        mkdir -p .github/badges
+
+        # Indexing Speed Badge
+        cat > .github/badges/indexing-speed.json << EOF
+        {
+          "schemaVersion": 1,
+          "label": "Indexing",
+          "message": "${{ steps.metrics.outputs.indexing_speed }} docs/s",
+          "color": "${{ steps.metrics.outputs.indexing_speed >= 10 && 'success' || 'yellow' }}"
+        }
+        EOF
+
+        # Search Latency Badge
+        cat > .github/badges/search-latency.json << EOF
+        {
+          "schemaVersion": 1,
+          "label": "Search",
+          "message": "${{ steps.metrics.outputs.search_latency }}ms",
+          "color": "${{ steps.metrics.outputs.search_latency <= 100 && 'success' || 'yellow' }}"
+        }
+        EOF
+
+        # Cache Hit Rate Badge
+        cat > .github/badges/cache-hit-rate.json << EOF
+        {
+          "schemaVersion": 1,
+          "label": "Cache Hit",
+          "message": "${{ steps.metrics.outputs.cache_hit_rate }}%",
+          "color": "${{ steps.metrics.outputs.cache_hit_rate >= 31 && 'success' || 'yellow' }}"
+        }
+        EOF
+
+    - name: Update Gist with performance data
+      uses: exuanbo/actions-deploy-gist@v1
+      with:
+        token: ${{ secrets.GIST_TOKEN }}
+        gist_id: ${{ secrets.PERFORMANCE_GIST_ID }}
+        file_path: .github/badges/*.json
+
+    - name: Update README with latest metrics
+      run: |
+        # Use the Python script to update README
+        if [ -f performance-results.json ]; then
+          python3 .github/scripts/update-performance-badges.py performance-results.json README.md
+        else
+          echo "No performance results found, skipping README update"
+        fi
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+        git add .github/badges/*.json README.md
+        git diff --cached --quiet || git commit -m "chore: update performance metrics [skip ci]"
+        git push
+      continue-on-error: true

@@ -1,14 +1,11 @@
 """Tests for MCP server functionality."""
 
-import asyncio
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastmcp import FastMCP
 
-from eol.rag_context.config import RAGConfig
 from eol.rag_context.server import EOLRAGContextServer
 
 
@@ -115,7 +112,6 @@ class TestMCPServer:
     async def test_search_context_functionality(self, server):
         """Test search context functionality via server methods."""
         # Test the search functionality by calling server methods directly
-        query = "test query"
 
         # The search will use the mocked redis_store.hierarchical_search
         results = server.redis_store.hierarchical_search.return_value
@@ -129,7 +125,6 @@ class TestMCPServer:
     async def test_knowledge_graph_functionality(self, server):
         """Test knowledge graph functionality via server methods."""
         # Test the knowledge graph functionality
-        query = "test query"
 
         # The KG query will use the mocked knowledge_graph.query_subgraph
         kg_result = server.knowledge_graph.query_subgraph.return_value

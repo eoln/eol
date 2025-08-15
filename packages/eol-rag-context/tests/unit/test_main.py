@@ -1,8 +1,6 @@
 """Unit tests for main CLI module."""
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -67,7 +65,7 @@ class TestMainCLI:
             return None
 
         with patch("sys.argv", ["eol-rag-context", "bad_config.json"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print"):
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()
@@ -97,7 +95,7 @@ class TestMainCLI:
             return None  # Let other sys.exit calls be mocked normally
 
         with patch("sys.argv", ["eol-rag-context", "--help"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print") as mock_print:
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()
@@ -113,9 +111,27 @@ class TestMainCLI:
             return None  # Let other sys.exit calls be mocked normally
 
         with patch("sys.argv", ["eol-rag-context", "-h"]):
-            with patch("sys.exit", side_effect=exit_side_effect) as mock_exit:
+            with patch("sys.exit", side_effect=exit_side_effect):
                 with patch("builtins.print") as mock_print:
                     with pytest.raises(SystemExit) as exc_info:
                         main.main()
                     assert exc_info.value.code == 0
                     mock_print.assert_called()
+
+    @patch("eol.rag_context.main.asyncio")
+    @patch("eol.rag_context.main.EOLRAGContextServer")
+    @patch("eol.rag_context.main.RAGConfig")
+    def test_main_function_keyboard_interrupt(self, mock_config, mock_server, mock_asyncio):
+        """Test main entry point with keyboard interrupt."""
+        mock_config.return_value = MagicMock()
+        mock_server_instance = MagicMock()
+        mock_server.return_value = mock_server_instance
+        mock_asyncio.run.side_effect = KeyboardInterrupt()
+
+        with patch("sys.argv", ["eol-rag-context"]):
+            # Should handle KeyboardInterrupt gracefully without sys.exit
+            main.main()
+
+            mock_config.assert_called_once()
+            mock_server.assert_called_once()
+            mock_asyncio.run.assert_called_once()

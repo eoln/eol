@@ -1,9 +1,5 @@
 """Test configuration module."""
 
-from pathlib import Path
-
-import pytest
-
 from eol.rag_context.config import (
     CacheConfig,
     ChunkingConfig,
@@ -145,5 +141,7 @@ class TestRAGConfig:
 
         config = RAGConfig(data_dir=data_dir, index_dir=index_dir)
 
+        # Verify directories were created
         assert data_dir.exists()
         assert index_dir.exists()
+        assert config.data_dir == data_dir

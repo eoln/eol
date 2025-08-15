@@ -11,7 +11,7 @@ rich>=13.9.4
 aiofiles>=23.0.0
 
 # Data processing
-numpy>=1.24.0
+numpy>=1.26.0  # Updated for Python 3.12/3.13 wheel compatibility
 pyyaml>=6.0
 
 # File monitoring
@@ -39,3 +39,4 @@ tree-sitter-javascript>=0.20.0
 # Graph and utilities
 networkx>=3.0
 gitignore-parser>=0.1.0
+# Trigger dependency optimization - czw 14 sie 16:10:10 2025 CEST

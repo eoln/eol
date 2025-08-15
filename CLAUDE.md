@@ -193,15 +193,35 @@ except RedisError as e:
 - All public APIs must have tests
 - Both unit and integration tests required
 
+### Test Isolation Standards
+
+- **NEVER modify global state** (like `sys.modules`) at module import time
+- Use pytest fixtures with proper setup/teardown for all mocking
+- Ensure tests pass regardless of execution order
+- Create centralized mock utilities in `conftest.py`
+
 ### Test Patterns
 
 ```python
-# Use fixtures for setup
-@pytest.fixture
-async def setup():
-    # Setup code
-    yield resources
-    # Teardown code
+# Use fixtures for setup with proper isolation
+@pytest.fixture(autouse=True)
+def mock_external_dependencies():
+    # Save original modules
+    original_modules = {}
+    for module in ['networkx', 'redis']:
+        if module in sys.modules:
+            original_modules[module] = sys.modules[module]
+
+    # Install mocks with __spec__ for Python 3.13 compatibility
+    mock_module = MagicMock()
+    mock_module.__spec__ = importlib.machinery.ModuleSpec("networkx", None)
+    sys.modules["networkx"] = mock_module
+
+    yield  # Run test
+
+    # Cleanup: restore original modules
+    for module_name in original_modules:
+        sys.modules[module_name] = original_modules[module_name]
 
 # Test both success and failure cases
 async def test_operation_success(setup):
@@ -210,6 +230,13 @@ async def test_operation_success(setup):
 async def test_operation_failure(setup):
     # Test error handling
 ```
+
+### Mock Design Principles
+
+- Mock objects must accurately simulate real API behavior
+- Include `__spec__` attributes for Python 3.13+ compatibility
+- Handle optional parameters and return types correctly
+- Use consistent mock implementations across all tests
 
 ## Security Considerations
 
@@ -267,6 +294,8 @@ async def health_check() -> Dict[str, Any]:
 3. **Monitor Redis**: Use RedisInsight on port 8001
 4. **Track context usage**: Check window status regularly
 5. **Profile performance**: Use `cProfile` for bottlenecks
+6. **Debug test isolation**: Run tests individually vs together to catch contamination
+7. **Python version compatibility**: Test with `python3.11`, `python3.12`, `python3.13` locally
 
 ## Do's and Don'ts
 
@@ -279,6 +308,9 @@ async def health_check() -> Dict[str, Any]:
 - ✅ Document dependencies
 - ✅ Optimize for context window
 - ✅ Use semantic caching
+- ✅ Use pytest fixtures for test isolation
+- ✅ Add `__spec__` to mocked modules for Python 3.13+
+- ✅ Test across multiple Python versions
 
 ### DON'T
 
@@ -288,6 +320,9 @@ async def health_check() -> Dict[str, Any]:
 - ❌ Use synchronous I/O
 - ❌ Forget dependency resolution
 - ❌ Skip tests
+- ❌ Modify `sys.modules` at module import time in tests
+- ❌ Create test dependencies on execution order
+- ❌ Use incompatible mock implementations across test files
 
 ## Getting Help
 

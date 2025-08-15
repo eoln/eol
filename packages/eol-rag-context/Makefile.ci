@@ -1,0 +1,51 @@
+# Makefile for CI/CD optimization testing
+
+.PHONY: build-test-image run-ci-tests clean-ci help
+
+DOCKER_IMAGE = ghcr.io/eoln/eol-rag-context-test:latest
+COMPOSE_FILE = docker-compose.ci.yml
+
+## Help
+help:
+	@echo "CI/CD Testing Commands:"
+	@echo "  make build-test-image  - Build optimized test Docker image"
+	@echo "  make run-ci-tests      - Run integration tests in CI-like environment"
+	@echo "  make clean-ci          - Clean up CI test artifacts"
+	@echo "  make benchmark-ci      - Compare CI test performance"
+
+## Build optimized test image
+build-test-image:
+	@echo "Building optimized test image..."
+	docker build -f Dockerfile.test -t $(DOCKER_IMAGE) .
+	@echo "Image size: $$(docker images $(DOCKER_IMAGE) --format '{{.Size}}')"
+
+## Run tests in CI environment
+run-ci-tests:
+	@echo "Starting CI-like test environment..."
+	docker-compose -f $(COMPOSE_FILE) up --build --abort-on-container-exit
+	@echo "Tests completed. Results in test-results/"
+
+## Clean CI artifacts
+clean-ci:
+	docker-compose -f $(COMPOSE_FILE) down -v
+	rm -rf test-results/
+	docker system prune -f
+
+## Benchmark CI performance
+benchmark-ci:
+	@echo "Benchmarking CI test performance..."
+	@start=$$(date +%s); \
+	make run-ci-tests > /dev/null 2>&1; \
+	end=$$(date +%s); \
+	echo "Total test time: $$((end-start)) seconds"
+
+## Run tests with dependency caching simulation
+test-with-cache:
+	@echo "Testing with pre-cached dependencies..."
+	@if [ ! -d ".pip-cache" ]; then \
+		echo "Building pip cache..."; \
+		pip download -d .pip-cache -r requirements.txt; \
+	fi
+	@echo "Using cached dependencies from .pip-cache/"
+	pip install --no-index --find-links .pip-cache -r requirements.txt
+	pytest tests/integration/ -v --tb=short

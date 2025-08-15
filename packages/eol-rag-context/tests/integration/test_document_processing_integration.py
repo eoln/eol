@@ -8,10 +8,7 @@ import json
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
-
-from eol.rag_context import document_processor
 
 
 @pytest.mark.integration

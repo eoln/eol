@@ -5,7 +5,7 @@
 Comprehensive plan to increase test coverage from 68.18% to 80% for both unit and integration tests in the eol-rag-context package, focusing on critical low-coverage modules and fixing existing test failures.
 
 **Created**: 2025-08-13
-**Status**: Draft
+**Status**: Pending
 **Priority**: High
 **Estimated Duration**: 2 weeks
 **Scope**: Unit tests, integration tests, and test infrastructure improvements
@@ -119,7 +119,11 @@ tests/
 
 ### Phase 1: Fix Failing Tests (Days 1-2)
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Standardize on Python 3.13 across project and CI**
+=======
+- [x] **Standardize on Python 3.13 across project and CI**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```bash
   # Update .pre-commit-config.yaml to use Python 3.13
@@ -141,7 +145,11 @@ tests/
   python --version  # Should show 3.13.x
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Update GitHub Actions workflow for Python 3.13 matrix**
+=======
+- [x] **Update GitHub Actions workflow for Python 3.13 matrix**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```yaml
   # Update .github/workflows/test.yml (or create if missing)
@@ -151,7 +159,11 @@ tests/
   # Only upload coverage report once (from Python 3.13)
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Reorganize test structure with proper fixture separation**
+=======
+- [x] **Reorganize test structure with proper fixture separation**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```bash
   # Create unit test directory and move existing unit tests
@@ -162,7 +174,11 @@ tests/
   # tests/integration/ already exists with proper conftest.py
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Fix file_watcher fixture issues**
+=======
+- [x] **Fix file_watcher fixture issues**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
   # Fix mock configuration in tests/test_file_watcher.py
@@ -175,7 +191,11 @@ tests/
       return FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Fix MCP server async mock issues**
+=======
+- [x] **Fix MCP server async mock issues**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
   # Properly mock async MCP server
@@ -187,7 +207,11 @@ tests/
       return server
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Fix semantic cache Redis mocks**
+=======
+- [x] **Fix semantic cache Redis mocks**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
   # tests/conftest.py - Unit test fixtures (MOCKED)
@@ -200,7 +224,11 @@ tests/
       return redis_mock
   ```
 
+<<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
 - [ ] **Create dedicated unit test fixtures directory**
+=======
+- [x] **Create dedicated unit test fixtures directory**
+>>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
   # tests/conftest.py - MINIMAL shared utilities only

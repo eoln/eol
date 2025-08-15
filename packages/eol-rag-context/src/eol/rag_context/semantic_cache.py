@@ -401,7 +401,7 @@ class SemanticCache:
         query_embedding = await self.embeddings.get_embedding(query)
 
         # Create cache entry
-        cache_id = hashlib.md5(f"{query}:{time.time()}".encode()).hexdigest()
+        cache_id = hashlib.md5(f"{query}:{time.time()}".encode(), usedforsecurity=False).hexdigest()
         cache_key = f"cache:{cache_id}"
 
         cache_data = {

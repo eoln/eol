@@ -1,11 +1,9 @@
 """Focused tests for file_watcher.py module.
 
-This test file contains meaningful tests for the file watching components, extracted
-from coverage booster files and enhanced with real functionality testing.
-
+This test file contains meaningful tests for the file watching components,
+extracted from coverage booster files and enhanced with real functionality testing.
 """
 
-import asyncio
 import tempfile
 import time
 from pathlib import Path
@@ -125,18 +123,18 @@ class TestFileChangeHandler:
         return scanner
 
     @pytest.fixture
-    def handler(self, mock_watcher, mock_scanner):
+    def handler(self, mock_watcher):
         """Create FileChangeHandler instance."""
         source_path = Path("/test/project")
         source_id = "test_src"
         file_patterns = ["*.py", "*.md"]
 
-        with patch(
-            "eol.rag_context.file_watcher.FolderScanner", return_value=mock_scanner
-        ):
-            handler = FileChangeHandler(
-                mock_watcher, source_path, source_id, file_patterns
-            )
+        # Mock the FolderScanner class completely
+        mock_scanner = MagicMock()
+        mock_scanner._should_ignore.return_value = False
+
+        with patch("eol.rag_context.file_watcher.FolderScanner", return_value=mock_scanner):
+            handler = FileChangeHandler(mock_watcher, source_path, source_id, file_patterns)
 
         return handler
 
@@ -150,9 +148,7 @@ class TestFileChangeHandler:
     def test_should_process_valid_file(self, handler):
         """Test _should_process with valid file."""
         with patch("pathlib.Path.is_dir", return_value=False):
-            with patch(
-                "pathlib.Path.match", side_effect=lambda pattern: pattern == "*.py"
-            ):
+            with patch("pathlib.Path.match", side_effect=lambda pattern: pattern == "*.py"):
                 result = handler._should_process("/test/file.py")
                 assert result is True
 
@@ -273,9 +269,7 @@ class TestFileWatcher:
             return_value=[Path("/test/file1.py"), Path("/test/file2.md")]
         )
 
-        indexer.index_folder = AsyncMock(
-            return_value=MagicMock(file_count=5, total_chunks=20)
-        )
+        indexer.index_folder = AsyncMock(return_value=MagicMock(file_count=5, total_chunks=20))
         indexer.index_file = AsyncMock(return_value=3)
         indexer.redis = MagicMock()
 
@@ -359,9 +353,7 @@ class TestFileWatcher:
             # Start watcher first
             await file_watcher.start()
 
-            source_id = await file_watcher.watch(
-                path, recursive=True, file_patterns=["*.py"]
-            )
+            source_id = await file_watcher.watch(path, recursive=True, file_patterns=["*.py"])
 
             assert source_id == "test_source_123"
             assert source_id in file_watcher.watched_sources
@@ -488,9 +480,7 @@ class TestFileWatcher:
         await file_watcher._process_file_change(change)
 
         # Verify indexer was called
-        mock_indexer.index_file.assert_called_once_with(
-            change.path, source_id="test_src"
-        )
+        mock_indexer.index_file.assert_called_once_with(change.path, source_id="test_src")
         assert file_watcher.stats["reindex_count"] == 1
 
     @pytest.mark.asyncio
@@ -565,9 +555,7 @@ class TestFileWatcher:
         """Test getting change history."""
         # Add some test changes
         changes = [
-            FileChange(
-                Path(f"/test/file{i}.py"), ChangeType.CREATED, timestamp=1000 + i
-            )
+            FileChange(Path(f"/test/file{i}.py"), ChangeType.CREATED, timestamp=1000 + i)
             for i in range(5)
         ]
 
@@ -584,9 +572,7 @@ class TestFileWatcher:
     async def test_force_rescan(self, file_watcher, mock_indexer):
         """Test force rescan of watched sources."""
         # Add a watched source
-        watched_source = WatchedSource(
-            path=Path("/test"), source_id="test_src", recursive=True
-        )
+        watched_source = WatchedSource(path=Path("/test"), source_id="test_src", recursive=True)
         file_watcher.watched_sources["test_src"] = watched_source
 
         # Mock indexer response

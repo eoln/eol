@@ -6,7 +6,6 @@ import os
 # Only mock what's absolutely necessary for missing packages
 import sys
 import tempfile
-import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -41,7 +40,7 @@ for module in mock_modules:
     if module not in sys.modules:
         sys.modules[module] = MagicMock()
 
-from eol.rag_context import (
+from eol.rag_context import (  # noqa: E402
     config,
     document_processor,
     embeddings,
@@ -50,7 +49,6 @@ from eol.rag_context import (
     knowledge_graph,
     redis_client,
     semantic_cache,
-    server,
 )
 
 
@@ -86,7 +84,7 @@ async def redis_store(redis_config):
             await store.connect_async()
             store.connect()  # Also establish sync connection
             break
-        except Exception as e:
+        except Exception:
             if i == max_retries - 1:
                 raise
             print(f"Waiting for Redis... attempt {i+1}/{max_retries}")

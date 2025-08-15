@@ -2,14 +2,14 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from eol.rag_context import server
-from eol.rag_context.config import RAGConfig
+from eol.rag_context import server  # noqa: E402
+from eol.rag_context.config import RAGConfig  # noqa: E402
 
 
 class TestEOLRAGContextServer:
@@ -181,18 +181,14 @@ class TestServerRequestModels:
 
     def test_search_context_request(self):
         """Test SearchContextRequest model."""
-        req = server.SearchContextRequest(
-            query="test query", max_results=5, min_relevance=0.8
-        )
+        req = server.SearchContextRequest(query="test query", max_results=5, min_relevance=0.8)
         assert req.query == "test query"
         assert req.max_results == 5
         assert req.min_relevance == 0.8
 
     def test_query_knowledge_graph_request(self):
         """Test QueryKnowledgeGraphRequest model."""
-        req = server.QueryKnowledgeGraphRequest(
-            query="TestEntity", max_depth=3, max_entities=10
-        )
+        req = server.QueryKnowledgeGraphRequest(query="TestEntity", max_depth=3, max_entities=10)
         assert req.query == "TestEntity"
         assert req.max_depth == 3
         assert req.max_entities == 10

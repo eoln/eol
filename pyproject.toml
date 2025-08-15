@@ -38,7 +38,7 @@ constraint-dependencies = [
     "pydantic-settings>=2.1.0",
     "typer>=0.15.2",
     "rich>=13.9.4",
-    "numpy==1.24.4",
+    "numpy>=1.26.0",
     "redis==5.1.0",
     "pytest==7.4.4",
 ]

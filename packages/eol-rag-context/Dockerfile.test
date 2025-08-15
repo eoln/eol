@@ -1,33 +1,45 @@
+# Optimized test image for eol-rag-context integration tests
 FROM python:3.11-slim
-
-WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    redis-tools \
+    git \
     gcc \
     g++ \
-    make \
-    git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY pyproject.toml ./
+# Install uv for fast package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
-# Install Python dependencies
-RUN pip install --no-cache-dir uv && \
-    uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout && \
-    uv pip install --system redis aioredis aiofiles numpy pydantic pydantic-settings && \
-    uv pip install --system sentence-transformers pypdf python-docx python-magic-bin && \
-    uv pip install --system beautifulsoup4 markdown pyyaml networkx watchdog gitignore-parser && \
-    uv pip install --system fastmcp typer rich
+# Create virtual environment and install Python dependencies with uv
+RUN uv venv /venv
+ENV VIRTUAL_ENV=/venv
+ENV PATH="/venv/bin:$PATH"
 
-# Copy source code
-COPY src/ ./src/
-COPY tests/ ./tests/
+# Install Python dependencies with uv (much faster than pip)
+RUN uv pip install \
+    pytest \
+    pytest-asyncio \
+    pytest-cov \
+    pytest-timeout \
+    pytest-xdist \
+    redis \
+    redisvl \
+    sentence-transformers \
+    aioredis \
+    watchdog \
+    gitignore-parser \
+    tomli \
+    typer \
+    rich \
+    fastmcp \
+    numpy \
+    pydantic
 
-# Set Python path
-ENV PYTHONPATH=/app/src:$PYTHONPATH
+# Pre-download sentence transformer model
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
-# Default command
-CMD ["python", "-m", "pytest", "tests/integration/", "-xvs", "--cov=eol.rag_context", "--cov-report=term"]
+WORKDIR /app

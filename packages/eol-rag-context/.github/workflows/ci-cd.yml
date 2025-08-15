@@ -33,7 +33,7 @@ on:
 
 env:
   PACKAGE_PATH: packages/eol-rag-context
-  PYTHON_VERSION: '3.13'
+  PYTHON_VERSION: '3.11'
   UNIT_COVERAGE_THRESHOLD: 80
   INTEGRATION_COVERAGE_THRESHOLD: 60
   REDIS_HOST: localhost
@@ -158,7 +158,7 @@ jobs:
     if: needs.setup.outputs.wheel-cache-needed == 'true'
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.11', '3.12', '3.13']
       fail-fast: false
 
     steps:
@@ -323,7 +323,7 @@ jobs:
     if: always() && needs.setup.outputs.package-changed == 'true'
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.11', '3.12', '3.13']
       fail-fast: false
 
     steps:
@@ -372,12 +372,18 @@ jobs:
     if: always() && needs.setup.outputs.package-changed == 'true'
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.11', '3.12', '3.13']
         include:
-          # Use single Python version for simplified CI/CD
-          - python-version: '3.13'
+          # Use different Redis ports for each Python version to avoid conflicts
+          - python-version: '3.11'
             redis-port: 6379
             redis-ui-port: 8001
+          - python-version: '3.12'
+            redis-port: 6380
+            redis-ui-port: 8002
+          - python-version: '3.13'
+            redis-port: 6381
+            redis-ui-port: 8003
       fail-fast: false
 
     services:

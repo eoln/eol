@@ -33,7 +33,7 @@ import logging
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Optional
 
 import gitignore_parser
 
@@ -628,7 +628,7 @@ class DocumentIndexer:
         source_id: str | None = None,
         recursive: bool = True,
         force_reindex: bool = False,
-        progress_callback: callable | None = None,
+        progress_callback: Optional[Callable] = None,
     ) -> IndexedSource:
         """Index all supported documents in a folder with hierarchical organization.
 

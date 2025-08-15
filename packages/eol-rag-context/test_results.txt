@@ -498,7 +498,7 @@ ______________ TestFileChangeHandler.test_handler_initialization _______________
 tests/test_file_watcher.py:141: in test_handler_initialization
     assert handler.watcher == mock_watcher
 E   AssertionError: assert <MagicMock na...='4455820576'> == <MagicMock id='4455820336'>
-E     
+E
 E     Full diff:
 E     - <MagicMock id='4455820336'>
 E     + <MagicMock name='mock.FileSystemEventHandler.watcher' id='4455820576'>

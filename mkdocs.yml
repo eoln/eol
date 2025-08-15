@@ -1,0 +1,171 @@
+site_name: EOL Framework
+site_description: End-of-Line AI Framework - Production-ready RAG infrastructure for intelligent applications
+site_url: https://eoln.github.io/eol/
+repo_url: https://github.com/eoln/eol
+repo_name: eoln/eol
+edit_uri: edit/main/docs/
+
+# Theme configuration
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+  icon:
+    repo: fontawesome/brands/github
+  favicon: docs/assets/favicon.ico
+  logo: docs/assets/logo.svg
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-\.]+'
+
+# Markdown extensions
+markdown_extensions:
+  - admonition
+  - abbr
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: eoln
+      repo: eol
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+      - First Steps: getting-started/first-steps.md
+  - Packages:
+      - Overview: packages/index.md
+      - EOL RAG Context:
+          - Introduction: packages/eol-rag-context/index.md
+          - User Guide:
+              - Overview: packages/eol-rag-context/user-guide/index.md
+              - Indexing: packages/eol-rag-context/user-guide/indexing.md
+              - Searching: packages/eol-rag-context/user-guide/searching.md
+              - Advanced Features: packages/eol-rag-context/user-guide/advanced-features.md
+              - Integrations: packages/eol-rag-context/user-guide/integrations.md
+          - API Reference:
+              - Overview: packages/eol-rag-context/api-reference/index.md
+              - Config: packages/eol-rag-context/api-reference/config.md
+              - Document Processor: packages/eol-rag-context/api-reference/document-processor.md
+              - Embeddings: packages/eol-rag-context/api-reference/embeddings.md
+              - File Watcher: packages/eol-rag-context/api-reference/file-watcher.md
+              - Indexer: packages/eol-rag-context/api-reference/indexer.md
+              - Knowledge Graph: packages/eol-rag-context/api-reference/knowledge-graph.md
+              - Redis Client: packages/eol-rag-context/api-reference/redis-client.md
+              - Semantic Cache: packages/eol-rag-context/api-reference/semantic-cache.md
+              - Server: packages/eol-rag-context/api-reference/server.md
+          - Examples:
+              - Overview: packages/eol-rag-context/examples/index.md
+              - Basic Usage: packages/eol-rag-context/examples/basic-usage.md
+              - Advanced Usage: packages/eol-rag-context/examples/advanced-usage.md
+              - Integration Examples: packages/eol-rag-context/examples/integration-examples.md
+              - Troubleshooting: packages/eol-rag-context/examples/troubleshooting.md
+      - EOL Core: packages/eol-core/index.md
+      - EOL CLI: packages/eol-cli/index.md
+      - EOL SDK: packages/eol-sdk/index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Monorepo Structure: architecture/monorepo-structure.md
+      - Design Decisions: architecture/design-decisions.md
+      - RAG Patterns: architecture/rag-patterns.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Testing: development/testing.md
+      - CI/CD: development/ci-cd.md
+      - Documentation: development/documentation.md
+  - API Reference:
+      - Overview: api-reference/index.md
+
+# Extra configuration
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/eoln/eol
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/eol-rag-context/
+  version:
+    provider: mike
+    default: latest
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+
+# Extra CSS and JavaScript
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

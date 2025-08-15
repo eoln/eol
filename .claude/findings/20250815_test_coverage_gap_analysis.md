@@ -1,9 +1,9 @@
 # Test Coverage Gap Analysis - Path to 80%
 
-**Date**: 2025-08-15  
-**Type**: Analysis  
-**Status**: Complete  
-**Confidence**: High  
+**Date**: 2025-08-15
+**Type**: Analysis
+**Status**: Complete
+**Confidence**: High
 
 ## Summary
 
@@ -40,7 +40,9 @@ Following user request to run all tests and check coverage, this analysis identi
 ### Test Failure Analysis
 
 #### StopIteration Errors (10 failures)
+
 **Root Cause**: Mock setup issue in `tests/test_file_watcher.py:135`
+
 ```python
 # Current problematic fixture
 @pytest.fixture
@@ -49,6 +51,7 @@ def handler(mock_watcher):
 ```
 
 **Fix Required**:
+
 ```python
 @pytest.fixture
 def handler(mock_watcher):
@@ -57,7 +60,9 @@ def handler(mock_watcher):
 ```
 
 #### Redis Integration Failures (31 failures)
+
 **Root Cause**: Redis connection issues and missing vector search module
+
 - Connection refused on 127.0.0.1:6379
 - Missing RediSearch module for vector operations
 - Async client mock issues in semantic_cache tests
@@ -65,7 +70,9 @@ def handler(mock_watcher):
 ### Critical Coverage Gaps
 
 #### redis_client.py (46.39% → 80%)
+
 **Uncovered Areas**:
+
 - Connection management (lines 269-308)
 - Vector operations (lines 344-427)
 - Batch operations (lines 472-504)
@@ -73,14 +80,18 @@ def handler(mock_watcher):
 - Index management (lines 664-726)
 
 #### embeddings.py (50.26% → 80%)
+
 **Uncovered Areas**:
+
 - OpenAI provider implementation
 - Local model support
 - Batch embedding generation
 - Error handling and retries
 
 #### server.py (54.84% → 80%)
+
 **Uncovered Areas**:
+
 - Tool implementations (search_documents, index_folder)
 - Resource handlers
 - Prompt generation
@@ -91,12 +102,14 @@ def handler(mock_watcher):
 ### Immediate Actions (Fix Test Infrastructure)
 
 1. **Fix StopIteration Errors**
+
 ```bash
 # Update test_file_watcher.py fixture
 sed -i '' 's/mock_watcher.side_effect = StopIteration/mock_watcher.side_effect = None/' tests/test_file_watcher.py
 ```
 
 2. **Setup Redis for Tests**
+
 ```bash
 # Option A: Use Docker
 docker run -d --name redis-test -p 6379:6379 redis/redis-stack:latest
@@ -106,6 +119,7 @@ docker run -d --name redis-test -p 6379:6379 redis/redis-stack:latest
 ```
 
 3. **Fix Async Mock Issues**
+
 ```python
 # Add to conftest.py
 @pytest.fixture
@@ -139,11 +153,13 @@ async def mock_redis_async():
 ### Coverage Improvement Strategy
 
 #### Week 1: Foundation (67% → 73%)
+
 - Fix all test infrastructure issues
 - Add Redis client unit tests (+6% coverage)
 - Resolve StopIteration errors
 
 #### Week 2: Core Modules (73% → 80%)
+
 - Complete embeddings tests (+3% coverage)
 - Add server tool tests (+2% coverage)
 - Enhance document processor tests (+2% coverage)
@@ -151,6 +167,7 @@ async def mock_redis_async():
 ## Impact
 
 Achieving 80% coverage will:
+
 - Meet project quality standards
 - Enable confident refactoring
 - Reduce regression risks
@@ -177,6 +194,7 @@ Achieving 80% coverage will:
 ## Test Implementation Examples
 
 ### Redis Client Test Template
+
 ```python
 # tests/test_redis_client_unit.py
 import pytest
@@ -192,7 +210,7 @@ class TestRedisStoreUnit:
         mock.hset = MagicMock(return_value=1)
         mock.hget = MagicMock(return_value=b'{"content": "test"}')
         return mock
-    
+
     @pytest.fixture
     def redis_store(self, mock_redis, monkeypatch):
         """RedisStore with mocked client"""
@@ -200,7 +218,7 @@ class TestRedisStoreUnit:
         store = RedisStore()
         store.connect()
         return store
-    
+
     def test_store_document(self, redis_store):
         doc = {"id": "test1", "content": "test content"}
         result = redis_store.store_document(doc)
@@ -209,6 +227,7 @@ class TestRedisStoreUnit:
 ```
 
 ### Embeddings Test Template
+
 ```python
 # tests/test_embeddings_unit.py
 class TestEmbeddingsUnit:
@@ -221,7 +240,7 @@ class TestEmbeddingsUnit:
             lambda *args, **kwargs: mock_model
         )
         return mock_model
-    
+
     def test_generate_embeddings(self, mock_sentence_transformer):
         manager = EmbeddingManager(provider="sentence-transformers")
         embeddings = manager.generate_embeddings(["test text"])
@@ -240,5 +259,5 @@ class TestEmbeddingsUnit:
 
 ---
 
-*Generated for feat/test-coverage-80 branch*  
+*Generated for feat/test-coverage-80 branch*
 *Analysis based on pytest execution results and existing coverage reports*

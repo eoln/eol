@@ -44,6 +44,7 @@ repos:
         name: Fix end of files
       - id: check-yaml
         name: Check YAML syntax
+        exclude: mkdocs.yml  # MkDocs uses special tags
       - id: check-added-large-files
         name: Check for large files
         args: [--maxkb=5000]
@@ -53,3 +54,29 @@ repos:
         name: Check JSON syntax
       - id: check-toml
         name: Check TOML syntax
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        name: Lint Markdown files
+        args: [--fix]
+        exclude: ^(site/|\.github/|packages/.*/site/)
+
+  # Documentation validation (custom hooks)
+  - repo: local
+    hooks:
+      - id: validate-docs
+        name: Validate Documentation Coverage
+        entry: python scripts/validate_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: mkdocs-build
+        name: Test MkDocs Build
+        entry: bash -c 'mkdocs build --strict --quiet'
+        language: system
+        pass_filenames: false
+        files: ^(docs/|mkdocs.yml|packages/.*/src/.*\.py)$

@@ -78,18 +78,18 @@ repos:
         exclude: ^(site/|.github/)
 
   # Documentation validation (custom hook)
-  # - repo: local
-  #   hooks:
-  #     - id: validate-docs
-  #       name: Validate Documentation Coverage
-  #       entry: python scripts/validate_docs.py
-  #       language: system
-  #       pass_filenames: false
-  #       always_run: true
-  #
-  #     - id: mkdocs-build
-  #       name: Test MkDocs Build
-  #       entry: bash -c 'mkdocs build --strict --quiet'
-  #       language: system
-  #       pass_filenames: false
-  #       files: ^(docs/|mkdocs.yml|src/.*\.py)$
+  - repo: local
+    hooks:
+      - id: validate-docs
+        name: Validate Documentation Coverage
+        entry: python scripts/validate_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: mkdocs-build
+        name: Test MkDocs Build
+        entry: mkdocs build --strict --quiet
+        language: system
+        pass_filenames: false
+        files: ^(docs/|mkdocs.yml|src/.*\.py)$

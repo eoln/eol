@@ -47,8 +47,8 @@ theme:
     - toc.integrate
   icon:
     repo: fontawesome/brands/github
-  favicon: docs/assets/favicon.ico
-  logo: docs/assets/logo.svg
+  favicon: assets/favicon.svg
+  logo: assets/logo.svg
 
 # Plugins
 plugins:

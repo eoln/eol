@@ -428,7 +428,7 @@ async def search_context(query: str, max_results: int = 10) -> list:
                 {
                     "rank": i + 1,
                     "score": float(score),
-                    "text": data.get("text", ""),
+                    "text": data.get("content", data.get("text", "")),
                     "source": data.get("source", "Unknown"),
                     "chunk_index": data.get("chunk_index", 0),
                 }

@@ -350,6 +350,8 @@ class DocumentProcessor:
             return await self._process_docx(file_path)
         elif suffix in [".json", ".yaml", ".yml"]:
             return await self._process_structured(file_path)
+        elif suffix in [".xml", ".rss", ".atom", ".svg", ".xhtml"]:
+            return await self._process_xml(file_path)
         elif suffix in [
             ".py",
             ".js",
@@ -818,6 +820,338 @@ class DocumentProcessor:
                     format=format,
                 )
             )
+
+        return chunks
+
+    async def _process_xml(self, file_path: Path) -> ProcessedDocument:
+        """Process XML files with structure preservation.
+
+        Processes XML files by parsing the tree structure, extracting elements
+        and attributes, and creating semantic chunks based on XML hierarchy.
+        Supports various XML formats including RSS, Atom, SVG, and configuration files.
+
+        Features:
+            - XML tree structure parsing and preservation
+            - Namespace handling
+            - Attribute extraction as metadata
+            - XPath tracking for precise location
+            - Specialized handling for RSS/Atom feeds
+            - Element-based semantic chunking
+
+        Args:
+            file_path: Path to the XML file.
+
+        Returns:
+            ProcessedDocument with structured XML content and semantic chunks.
+        """
+        import xml.etree.ElementTree as ET
+
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
+            content = await f.read()
+
+        # Parse XML
+        try:
+            tree = ET.fromstring(content)
+        except ET.ParseError as e:
+            logger.warning(f"Failed to parse XML {file_path}: {e}")
+            # Fall back to text processing
+            return await self._process_text(file_path)
+
+        # Extract metadata
+        metadata = {
+            "format": "xml",
+            "root_tag": tree.tag,
+            "root_attributes": tree.attrib,
+            "element_count": len(tree.findall(".//*")),
+        }
+
+        # Extract namespaces
+        namespaces = {}
+        for elem in tree.iter():
+            if elem.tag.startswith("{"):
+                ns_end = elem.tag.find("}")
+                ns = elem.tag[1:ns_end]
+                if ns not in namespaces:
+                    namespaces[ns] = ns.split("/")[-1]
+
+        if namespaces:
+            metadata["namespaces"] = namespaces
+
+        # Detect special XML types
+        suffix = file_path.suffix.lower()
+        if suffix in [".rss", ".atom"] or any(
+            tag in content[:500] for tag in ["<rss", "<feed", "<channel"]
+        ):
+            doc_type = "feed"
+            chunks = self._chunk_xml_feed(tree, str(file_path))
+        elif suffix == ".svg" or "<svg" in content[:100]:
+            doc_type = "svg"
+            chunks = self._chunk_svg(tree, str(file_path))
+        elif any(tag in content[:500] for tag in ["<configuration>", "<config>", "<settings>"]):
+            doc_type = "config"
+            chunks = self._chunk_xml_config(tree, str(file_path))
+        else:
+            doc_type = "xml"
+            chunks = self._chunk_xml_generic(tree, str(file_path))
+
+        # Extract text content for full-text search
+        text_content = self._extract_xml_text(tree)
+
+        doc = ProcessedDocument(
+            file_path=file_path, content=text_content, doc_type=doc_type, metadata=metadata
+        )
+        doc.chunks = chunks
+
+        return doc
+
+    def _extract_xml_text(self, element) -> str:
+        """Extract all text content from XML element recursively."""
+        text_parts = []
+
+        if element.text:
+            text_parts.append(element.text.strip())
+
+        for child in element:
+            child_text = self._extract_xml_text(child)
+            if child_text:
+                text_parts.append(child_text)
+
+        if element.tail:
+            text_parts.append(element.tail.strip())
+
+        return " ".join(filter(None, text_parts))
+
+    def _chunk_xml_generic(self, root, source_path: str) -> list[dict[str, Any]]:
+        """Create chunks from generic XML structure."""
+        chunks = []
+
+        def process_element(elem, xpath="", parent_context="", depth=0):
+            # Build XPath
+            tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+            current_xpath = f"{xpath}/{tag_name}" if xpath else tag_name
+
+            # Extract element text
+            elem_text = self._extract_xml_text(elem)
+
+            # Determine if element should be a chunk
+            if self._should_chunk_xml_element(elem, elem_text):
+                chunks.append(
+                    self._create_chunk(
+                        content=elem_text,
+                        chunk_type="xml_element",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        xpath=current_xpath,
+                        tag=tag_name,
+                        attributes=elem.attrib,
+                        depth=depth,
+                        parent_context=parent_context[:200] if parent_context else "",
+                        has_children=len(elem) > 0,
+                    )
+                )
+                # Update parent context for children
+                parent_context = elem_text[:200] if elem_text else ""
+
+            # Process children
+            for child in elem:
+                process_element(child, current_xpath, parent_context, depth + 1)
+
+        # Start processing from root
+        process_element(root)
+
+        # If no chunks were created, create one for the entire document
+        if not chunks:
+            chunks.append(
+                self._create_chunk(
+                    content=self._extract_xml_text(root),
+                    chunk_type="xml_document",
+                    chunk_index=0,
+                    source=source_path,
+                    root_tag=root.tag,
+                )
+            )
+
+        return chunks
+
+    def _should_chunk_xml_element(self, element, text_content: str) -> bool:
+        """Determine if an XML element should become a chunk."""
+        if not text_content or len(text_content.strip()) < 50:
+            return False
+
+        # Common semantic XML elements
+        semantic_tags = {
+            "paragraph",
+            "p",
+            "section",
+            "article",
+            "chapter",
+            "description",
+            "abstract",
+            "summary",
+            "content",
+            "body",
+            "text",
+            "note",
+            "comment",
+            "entry",
+            "record",
+            "item",
+            "row",
+            "document",
+            "div",
+            "message",
+            "post",
+            "block",
+            "field",
+        }
+
+        tag_name = element.tag.split("}")[-1].lower() if "}" in element.tag else element.tag.lower()
+
+        if tag_name in semantic_tags:
+            return True
+
+        # Chunk if it's a leaf with substantial content
+        if len(element) == 0 and len(text_content) > 100:
+            return True
+
+        # Chunk if it has few children but substantial content
+        if len(element) < 5 and len(text_content) > 200:
+            return True
+
+        return False
+
+    def _chunk_xml_feed(self, root, source_path: str) -> list[dict[str, Any]]:
+        """Process RSS/Atom feeds."""
+        chunks = []
+
+        # Handle RSS - items are under channel
+        channel = root.find("channel")
+        if channel is not None:
+            items = channel.findall("item")
+        else:
+            # Handle both RSS (without channel) and Atom formats
+            items = root.findall(".//item")  # RSS
+            if not items:
+                items = root.findall(".//{http://www.w3.org/2005/Atom}entry")  # Atom
+
+        for item in items:
+            content_parts = []
+            metadata = {"type": "feed_item"}
+
+            # Extract common fields
+            title = item.find("title")
+            if title is None:
+                title = item.find("{http://www.w3.org/2005/Atom}title")
+            if title is not None and title.text:
+                metadata["title"] = title.text
+                content_parts.append(f"Title: {title.text}")
+
+            description = item.find("description")
+            if description is None:
+                description = item.find("{http://www.w3.org/2005/Atom}summary")
+            if description is None:
+                description = item.find("{http://www.w3.org/2005/Atom}content")
+            if description is not None and description.text:
+                metadata["description"] = description.text[:500]
+                content_parts.append(f"Content: {description.text}")
+
+            link = item.find("link")
+            if link is None:
+                link = item.find("{http://www.w3.org/2005/Atom}link")
+            if link is not None:
+                if link.text:
+                    metadata["link"] = link.text
+                else:
+                    metadata["link"] = link.get("href", "")
+
+            pubDate = item.find("pubDate")
+            if pubDate is None:
+                pubDate = item.find("{http://www.w3.org/2005/Atom}published")
+            if pubDate is None:
+                pubDate = item.find("{http://www.w3.org/2005/Atom}updated")
+            if pubDate is not None and pubDate.text:
+                metadata["date"] = pubDate.text
+
+            if content_parts:
+                chunks.append(
+                    self._create_chunk(
+                        content="\n".join(content_parts),
+                        chunk_type="feed_item",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        **metadata,
+                    )
+                )
+
+        return chunks
+
+    def _chunk_svg(self, root, source_path: str) -> list[dict[str, Any]]:
+        """Process SVG files."""
+        chunks = []
+
+        # Extract text elements
+        text_elements = root.findall(".//{http://www.w3.org/2000/svg}text")
+        if not text_elements:
+            text_elements = root.findall(".//text")
+
+        text_content = []
+        for text_elem in text_elements:
+            if text_elem.text:
+                text_content.append(text_elem.text)
+
+        # Create a single chunk for SVG
+        metadata = {
+            "type": "svg",
+            "width": root.get("width", "unknown"),
+            "height": root.get("height", "unknown"),
+            "viewBox": root.get("viewBox", ""),
+            "has_text": len(text_content) > 0,
+            "text_count": len(text_content),
+        }
+
+        content = f"SVG Image: {root.get('id', 'unnamed')}"
+        if text_content:
+            content += f"\nText elements: {', '.join(text_content)}"
+
+        chunks.append(
+            self._create_chunk(
+                content=content, chunk_type="svg", chunk_index=0, source=source_path, **metadata
+            )
+        )
+
+        return chunks
+
+    def _chunk_xml_config(self, root, source_path: str) -> list[dict[str, Any]]:
+        """Process configuration XML files."""
+        chunks = []
+
+        def extract_config_items(elem, path=""):
+            tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+            current_path = f"{path}.{tag_name}" if path else tag_name
+
+            # If leaf node with value
+            if not list(elem) and elem.text and elem.text.strip():
+                chunks.append(
+                    self._create_chunk(
+                        content=f"{current_path} = {elem.text.strip()}",
+                        chunk_type="config_value",
+                        chunk_index=len(chunks),
+                        source=source_path,
+                        config_path=current_path,
+                        value=elem.text.strip(),
+                        attributes=elem.attrib,
+                    )
+                )
+
+            # Process children
+            for child in elem:
+                extract_config_items(child, current_path)
+
+        extract_config_items(root)
+
+        # If no config items found, treat as generic XML
+        if not chunks:
+            return self._chunk_xml_generic(root, source_path)
 
         return chunks
 

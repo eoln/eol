@@ -1,0 +1,24 @@
+# MCP Server Configuration
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+
+embedding:
+  provider: sentence-transformers
+  model: all-MiniLM-L6-v2
+  dimension: 384
+  batch_size: 32
+
+index:
+  enabled: true
+  batch_size: 100
+
+cache:
+  enabled: true
+  ttl_seconds: 3600
+  similarity_threshold: 0.95
+  target_hit_rate: 0.31
+
+debug: true
+server_name: eol-rag-context-dev

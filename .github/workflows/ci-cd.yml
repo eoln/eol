@@ -9,13 +9,6 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - 'README.md'
-  pull_request:
-    branches: [ main, develop, feat/*, fix/* ]
-    paths:
-      - 'packages/**'
-      - '.github/**'
-      - 'pyproject.toml'
-      - 'uv.lock'
   schedule:
     - cron: '0 6 * * 0'  # Weekly on Sunday for maintenance
   workflow_dispatch:

@@ -238,10 +238,7 @@ class SemanticCache:
         except Exception:
             # Create new cache index
             from redis.commands.search.field import NumericField, TextField, VectorField
-            from redis.commands.search.index_definition import (
-                IndexDefinition,
-                IndexType,
-            )
+            from redis.commands.search.index_definition import IndexDefinition, IndexType
 
             schema = [
                 TextField("query"),
@@ -350,9 +347,7 @@ class SemanticCache:
         self._update_stats()
         return None
 
-    async def set(
-        self, query: str, response: str, metadata: dict[str, Any] | None = None
-    ) -> None:
+    async def set(self, query: str, response: str, metadata: dict[str, Any] | None = None) -> None:
         """Store query-response pair in cache with automatic size management.
 
         Caches a query-response pair with its vector embedding for future semantic

@@ -327,3 +327,25 @@ def process_data(data):
         )
 
         yield test_dir
+
+
+@pytest.fixture
+async def server_instance(redis_config):
+    """Create a server instance with non-blocking capabilities for testing."""
+    from eol.rag_context.server import EOLRAGContextServer
+    
+    # Create server with test config - configure Redis to use test instance
+    test_config = config.RAGConfig()
+    test_config.redis = redis_config  # Use the test Redis config
+    server = EOLRAGContextServer(test_config)
+    
+    # Initialize server - this creates all components with proper connections
+    await server.initialize()
+    
+    yield server
+    
+    # Clean up
+    try:
+        await server.shutdown()
+    except Exception:
+        pass

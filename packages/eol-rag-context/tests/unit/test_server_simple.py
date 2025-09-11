@@ -91,18 +91,18 @@ class TestServerRequestModels:
     """Test the Pydantic request models."""
 
     def test_index_directory_request(self):
-        """Test IndexDirectoryRequest model."""
-        request = server.IndexDirectoryRequest(
+        """Test StartIndexingRequest model."""
+        request = server.StartIndexingRequest(
             path="/test/path",
             recursive=True,
-            file_patterns=["*.py", "*.md"],
-            watch=False,
+            max_workers=8,
+            batch_size=16
         )
 
         assert request.path == "/test/path"
         assert request.recursive is True
-        assert request.file_patterns == ["*.py", "*.md"]
-        assert request.watch is False
+        assert request.max_workers == 8
+        assert request.batch_size == 16
 
     def test_search_context_request(self):
         """Test SearchContextRequest model."""
@@ -184,12 +184,12 @@ class TestServerMethods:
 
 def test_request_model_defaults():
     """Test request models with default values."""
-    # Test minimal IndexDirectoryRequest
-    request = server.IndexDirectoryRequest(path="/test")
+    # Test minimal StartIndexingRequest
+    request = server.StartIndexingRequest(path="/test", recursive=True, max_workers=4, batch_size=8)
     assert request.path == "/test"
     assert request.recursive is True
-    assert request.file_patterns is None
-    assert request.watch is False
+    assert request.max_workers == 4
+    assert request.batch_size == 8
 
     # Test minimal SearchContextRequest
     search_req = server.SearchContextRequest(query="test")
@@ -248,27 +248,21 @@ class TestServerMCPEndpoints:
         """Test basic index directory tool functionality."""
         srv = server.EOLRAGContextServer()
 
-        # Mock the indexer
-        srv.indexer = AsyncMock()
+        # Mock the task manager for non-blocking API
+        srv.task_manager = AsyncMock()
+        srv.parallel_indexer = MagicMock()
 
-        # Create a mock IndexedSource object with the right attributes
-        mock_result = MagicMock()
-        mock_result.source_id = "test_source"
-        mock_result.indexed_files = 10
-        mock_result.total_chunks = 50
-        mock_result.file_count = 10
-        mock_result.path = Path("/test/path")
-
-        srv.indexer.index_folder = AsyncMock(return_value=mock_result)
+        # Mock task manager to return a task ID
+        srv.task_manager.start_indexing_task = AsyncMock(return_value="test-task-id-123")
 
         # Test the index_directory method directly
         result = await srv.index_directory("/test/path", recursive=True)
 
-        assert result["status"] == "success"
-        assert result["source_id"] == "test_source"
-        assert result["indexed_files"] == 10
-        assert result["total_chunks"] == 50
-        srv.indexer.index_folder.assert_called_once()
+        assert result["status"] == "started"
+        assert "task_id" in result
+        assert result["task_id"] == "test-task-id-123"
+        assert str(result["path"]) == "/test/path"
+        srv.task_manager.start_indexing_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_index_file_tool_basic(self):

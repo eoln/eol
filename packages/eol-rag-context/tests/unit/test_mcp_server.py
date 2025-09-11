@@ -1,7 +1,7 @@
 """Tests for MCP server functionality."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastmcp import FastMCP
@@ -85,9 +85,14 @@ class TestMCPServer:
     async def test_index_directory_tool(self, server):
         """Test index_directory MCP tool."""
         # Test the server's API compatibility method directly
-        from eol.rag_context.server import IndexDirectoryRequest
+        from eol.rag_context.server import StartIndexingRequest
 
-        request = IndexDirectoryRequest(path="/test/path", recursive=True, watch=False)
+        request = StartIndexingRequest(path="/test/path", recursive=True, max_workers=4, batch_size=16)
+
+        # Mock the non-blocking components
+        server.task_manager = AsyncMock()
+        server.parallel_indexer = MagicMock()
+        server.task_manager.start_indexing_task = AsyncMock(return_value="test-task-123")
 
         # Call the tool method directly since MCP internals are complex
         from fastmcp.server.context import Context, _current_context
@@ -97,10 +102,10 @@ class TestMCPServer:
         # The tool is registered, so we can test by calling server methods directly
         result = await server.index_directory(request.path, recursive=request.recursive)
 
-        assert result["source_id"] == "test_source"
-        assert result["indexed_files"] == 10  # This is what the indexer mock returns as file_count
-        assert result["total_chunks"] == 50
-        server.indexer.index_folder.assert_called_once()
+        assert result["status"] == "started"
+        assert "task_id" in result
+        assert result["task_id"] == "test-task-123"
+        server.task_manager.start_indexing_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_search_context_functionality(self, server):

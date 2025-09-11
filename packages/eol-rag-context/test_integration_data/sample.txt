@@ -1,0 +1,9 @@
+This is a sample text file for testing the indexing system.
+
+The file contains multiple paragraphs to test the document processing and chunking capabilities of the RAG system.
+
+This paragraph discusses the importance of semantic search and how vector embeddings can be used to find relevant content based on meaning rather than just keyword matching.
+
+Another paragraph covers the benefits of hierarchical indexing, where documents are broken down into concepts, sections, and chunks for more granular retrieval.
+
+Finally, this paragraph explains how non-blocking indexing allows the system to process documents without blocking other operations, improving overall system responsiveness.

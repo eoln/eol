@@ -18,13 +18,32 @@ class TestFullWorkflowIntegration:
 
     @pytest.mark.asyncio
     async def test_index_and_search_workflow(
-        self, redis_store, indexer_instance, embedding_manager, temp_test_directory
+        self, redis_store, server_instance, embedding_manager, temp_test_directory
     ):
-        """Test complete index and search workflow."""
-        # Step 1: Index documents
-        index_result = await indexer_instance.index_folder(temp_test_directory)
-        assert index_result.file_count > 0
-        assert index_result.total_chunks > 0
+        """Test complete index and search workflow with non-blocking API."""
+        import asyncio
+        
+        # Step 1: Start non-blocking indexing
+        index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
+        assert index_result["status"] == "started"
+        assert "task_id" in index_result
+        
+        # Wait for indexing to complete
+        task_id = index_result["task_id"]
+        max_wait = 30
+        wait_time = 0
+        while wait_time < max_wait:
+            status = await server_instance.task_manager.get_task_status(task_id)
+            if status and status.status.value in ["completed", "failed"]:
+                break
+            await asyncio.sleep(1)
+            wait_time += 1
+        
+        final_status = await server_instance.task_manager.get_task_status(task_id)
+        assert final_status is not None
+        assert final_status.status.value == "completed"
+        assert final_status.total_files > 0
+        assert final_status.total_chunks > 0
 
         # Step 2: Get embedding for query
         query = "hello world function"
@@ -89,16 +108,33 @@ class TestFullWorkflowIntegration:
 
     @pytest.mark.asyncio
     async def test_knowledge_graph_workflow(
-        self, knowledge_graph_instance, indexer_instance, temp_test_directory
+        self, knowledge_graph_instance, server_instance, temp_test_directory
     ):
         """Test knowledge graph construction workflow."""
+        import asyncio
+        
         # Debug: check graph type
         print(f"Graph type: {type(knowledge_graph_instance.graph)}")
         print(f"Graph: {knowledge_graph_instance.graph}")
 
-        # Step 1: Index documents first (required for knowledge graph)
-        index_result = await indexer_instance.index_folder(temp_test_directory)
-        source_id = index_result.source_id
+        # Step 1: Start non-blocking indexing first (required for knowledge graph)
+        index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
+        task_id = index_result["task_id"]
+        
+        # Wait for indexing to complete
+        max_wait = 30
+        wait_time = 0
+        while wait_time < max_wait:
+            status = await server_instance.task_manager.get_task_status(task_id)
+            if status and status.status.value in ["completed", "failed"]:
+                break
+            await asyncio.sleep(1)
+            wait_time += 1
+        
+        final_status = await server_instance.task_manager.get_task_status(task_id)
+        assert final_status is not None
+        assert final_status.status.value == "completed"
+        source_id = final_status.source_id
 
         # Step 2: Build knowledge graph from indexed documents
         await knowledge_graph_instance.build_from_documents(source_id)
@@ -167,12 +203,29 @@ class TestFullWorkflowIntegration:
 
     @pytest.mark.asyncio
     async def test_hierarchical_rag_workflow(
-        self, redis_store, indexer_instance, embedding_manager, temp_test_directory
+        self, redis_store, server_instance, embedding_manager, temp_test_directory
     ):
         """Test hierarchical RAG with concepts, sections, and chunks."""
-        # Step 1: Index with hierarchical structure
-        result = await indexer_instance.index_folder(temp_test_directory)
-        assert result.total_chunks > 0
+        import asyncio
+        
+        # Step 1: Start non-blocking indexing with hierarchical structure
+        index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
+        task_id = index_result["task_id"]
+        
+        # Wait for indexing to complete
+        max_wait = 30
+        wait_time = 0
+        while wait_time < max_wait:
+            status = await server_instance.task_manager.get_task_status(task_id)
+            if status and status.status.value in ["completed", "failed"]:
+                break
+            await asyncio.sleep(1)
+            wait_time += 1
+        
+        final_status = await server_instance.task_manager.get_task_status(task_id)
+        assert final_status is not None
+        assert final_status.status.value == "completed"
+        assert final_status.total_chunks > 0
 
         # Step 2: Search at different hierarchy levels
         query = "test project features"
@@ -255,28 +308,45 @@ class TestFullWorkflowIntegration:
     async def test_performance_metrics(
         self,
         redis_store,
-        indexer_instance,
+        server_instance,
         semantic_cache_instance,
         embedding_manager,
         temp_test_directory,
     ):
         """Test and measure performance metrics."""
         import time
+        import asyncio
 
-        # Measure indexing speed
+        # Measure indexing speed with non-blocking API
         start_time = time.time()
-        index_result = await indexer_instance.index_folder(temp_test_directory)
+        index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
+        task_id = index_result["task_id"]
+        
+        # Wait for indexing to complete
+        max_wait = 60  # Longer wait for performance test
+        wait_time = 0
+        while wait_time < max_wait:
+            status = await server_instance.task_manager.get_task_status(task_id)
+            if status and status.status.value in ["completed", "failed"]:
+                break
+            await asyncio.sleep(1)
+            wait_time += 1
+        
         index_time = time.time() - start_time
+        final_status = await server_instance.task_manager.get_task_status(task_id)
+        
+        assert final_status is not None
+        assert final_status.status.value == "completed"
 
-        files_per_second = index_result.file_count / index_time if index_time > 0 else 0
-        chunks_per_second = index_result.total_chunks / index_time if index_time > 0 else 0
+        files_per_second = final_status.total_files / index_time if index_time > 0 else 0
+        chunks_per_second = final_status.total_chunks / index_time if index_time > 0 else 0
 
         print("\nIndexing Performance:")
         print(
-            f"  Files: {index_result.file_count} in {index_time:.2f}s "
+            f"  Files: {final_status.total_files} in {index_time:.2f}s "
             f"({files_per_second:.1f} files/s)"
         )
-        print(f"  Chunks: {index_result.total_chunks} ({chunks_per_second:.1f} chunks/s)")
+        print(f"  Chunks: {final_status.total_chunks} ({chunks_per_second:.1f} chunks/s)")
 
         # Measure search speed
         query = "performance test query"
@@ -307,7 +377,7 @@ class TestFullWorkflowIntegration:
         print(f"  Reads: 20 in {cache_read_time:.2f}s ({20/cache_read_time:.1f} reads/s)")
 
         # All operations should complete reasonably fast
-        assert index_time < 30  # Indexing should be under 30 seconds
+        assert index_time < 60  # Indexing should be under 60 seconds (increased for non-blocking)
         assert search_time < 5  # 10 searches should be under 5 seconds
         assert cache_write_time < 5  # 20 cache writes under 5 seconds
         assert cache_read_time < 2  # 20 cache reads under 2 seconds

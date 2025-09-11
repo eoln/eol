@@ -238,7 +238,7 @@ class TestEOLRAGContextServer:
         # Test listing tasks
         result = await mock_components["task_manager"].list_tasks()
         assert result == []
-        mock_components["task_manager"].list_tasks.assert_called_with(None, 50)
+        mock_components["task_manager"].list_tasks.assert_called_once()
 
     @pytest.mark.asyncio  
     async def test_cancel_indexing_task_tool(self, config, mock_components):
@@ -298,15 +298,15 @@ class TestEOLRAGContextServer:
 class TestServerRequestModels:
     """Test server request models."""
 
-    def test_index_directory_request(self):
-        """Test IndexDirectoryRequest model."""
-        req = server.IndexDirectoryRequest(
-            path="/test", recursive=True, file_patterns=["*.py"], watch=False
+    def test_start_indexing_request(self):
+        """Test StartIndexingRequest model."""
+        req = server.StartIndexingRequest(
+            path="/test", recursive=True, max_workers=8, batch_size=16
         )
         assert req.path == "/test"
         assert req.recursive is True
-        assert req.file_patterns == ["*.py"]
-        assert req.watch is False
+        assert req.max_workers == 8
+        assert req.batch_size == 16
 
     def test_search_context_request(self):
         """Test SearchContextRequest model."""

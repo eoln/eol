@@ -1171,8 +1171,10 @@ class DocumentIndexer:
             elif doc.doc_type == "markdown":
                 chunk_metadata["headers"] = doc.metadata.get("headers", [])
 
-            # Generate chunk ID
-            chunk_id = f"{base_metadata.source_id}_chunk_{i}"
+            # Generate chunk ID with file hash to ensure uniqueness
+            # Use first 8 chars of file hash for readability
+            file_hash_short = base_metadata.file_hash[:8] if base_metadata.file_hash else "nohash"
+            chunk_id = f"{base_metadata.source_id}_{file_hash_short}_chunk_{i}"
 
             # Generate embedding
             embedding = await self.embeddings.get_embedding(chunk["content"])

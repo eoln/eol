@@ -890,6 +890,11 @@ class DocumentProcessor:
         elif any(tag in content[:500] for tag in ["<configuration>", "<config>", "<settings>"]):
             doc_type = "config"
             chunks = self._chunk_xml_config(tree, str(file_path))
+        elif tree.tag == "event" or any(
+            tag in content[:500] for tag in ["<event>", "<calendar>", "<date>"]
+        ):
+            doc_type = "event"
+            chunks = self._chunk_xml_event(tree, str(file_path))
         else:
             doc_type = "xml"
             chunks = self._chunk_xml_generic(tree, str(file_path))
@@ -921,43 +926,127 @@ class DocumentProcessor:
 
         return " ".join(filter(None, text_parts))
 
+    def _extract_temporal_metadata(self, root) -> dict[str, Any]:
+        """Extract temporal information from XML document."""
+        temporal = {}
+
+        # Common temporal element names
+        temporal_tags = [
+            "date",
+            "time",
+            "datetime",
+            "calendar",
+            "when",
+            "schedule",
+            "pubdate",
+            "published",
+            "updated",
+            "created",
+            "modified",
+            "start",
+            "end",
+            "begin",
+            "finish",
+            "deadline",
+        ]
+
+        for tag in temporal_tags:
+            # Search case-insensitively
+            elements = root.findall(f".//{tag}")
+            if not elements:
+                # Try with different case
+                elements = root.findall(f".//{tag.capitalize()}")
+            if not elements:
+                elements = root.findall(f".//{tag.upper()}")
+
+            for elem in elements:
+                if elem.text and elem.text.strip():
+                    # Store the first found date/time
+                    if "date" not in temporal:
+                        temporal["date"] = elem.text.strip()
+                        temporal["date_source"] = tag
+                    # Store all found dates with their tag names
+                    temporal[f"{tag}_value"] = elem.text.strip()
+
+        # Also check attributes for temporal information
+        for elem in root.iter():
+            for attr_name, attr_value in elem.attrib.items():
+                if any(t in attr_name.lower() for t in ["date", "time", "when"]):
+                    temporal[f"attr_{attr_name}"] = attr_value
+
+        return temporal
+
     def _chunk_xml_generic(self, root, source_path: str) -> list[dict[str, Any]]:
-        """Create chunks from generic XML structure."""
+        """Create chunks from generic XML structure with enhanced temporal context."""
         chunks = []
 
-        def process_element(elem, xpath="", parent_context="", depth=0):
+        # First pass: Extract any temporal information from the document
+        temporal_metadata = self._extract_temporal_metadata(root)
+
+        def process_element(elem, xpath="", parent_context="", depth=0, inherited_temporal=None):
             # Build XPath
             tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
             current_xpath = f"{xpath}/{tag_name}" if xpath else tag_name
+
+            # Check if this element contains temporal information
+            local_temporal = {}
+            if tag_name.lower() in ["date", "time", "datetime", "calendar", "when", "schedule"]:
+                if elem.text and elem.text.strip():
+                    local_temporal["date"] = elem.text.strip()
+
+            # Merge inherited and local temporal context
+            current_temporal = {**(inherited_temporal or {}), **local_temporal}
 
             # Extract element text
             elem_text = self._extract_xml_text(elem)
 
             # Determine if element should be a chunk
             if self._should_chunk_xml_element(elem, elem_text):
+                chunk_metadata = {
+                    "xpath": current_xpath,
+                    "tag": tag_name,
+                    "attributes": elem.attrib,
+                    "depth": depth,
+                    "parent_context": parent_context[:200] if parent_context else "",
+                    "has_children": len(elem) > 0,
+                }
+
+                # Add temporal context to metadata if available
+                if current_temporal:
+                    chunk_metadata.update(current_temporal)
+
+                # If we have temporal context, add it to the content
+                content = elem_text
+                if current_temporal and tag_name.lower() not in [
+                    "date",
+                    "time",
+                    "datetime",
+                    "calendar",
+                ]:
+                    temporal_prefix = []
+                    if "date" in current_temporal:
+                        temporal_prefix.append(f"Date/Time: {current_temporal['date']}")
+                    if temporal_prefix:
+                        content = "\n".join(temporal_prefix) + "\n\n" + elem_text
+
                 chunks.append(
                     self._create_chunk(
-                        content=elem_text,
+                        content=content,
                         chunk_type="xml_element",
                         chunk_index=len(chunks),
                         source=source_path,
-                        xpath=current_xpath,
-                        tag=tag_name,
-                        attributes=elem.attrib,
-                        depth=depth,
-                        parent_context=parent_context[:200] if parent_context else "",
-                        has_children=len(elem) > 0,
+                        **chunk_metadata,
                     )
                 )
                 # Update parent context for children
                 parent_context = elem_text[:200] if elem_text else ""
 
-            # Process children
+            # Process children with inherited temporal context
             for child in elem:
-                process_element(child, current_xpath, parent_context, depth + 1)
+                process_element(child, current_xpath, parent_context, depth + 1, current_temporal)
 
-        # Start processing from root
-        process_element(root)
+        # Start processing from root with global temporal metadata
+        process_element(root, inherited_temporal=temporal_metadata)
 
         # If no chunks were created, create one for the entire document
         if not chunks:
@@ -1152,6 +1241,94 @@ class DocumentProcessor:
         # If no config items found, treat as generic XML
         if not chunks:
             return self._chunk_xml_generic(root, source_path)
+
+        return chunks
+
+    def _chunk_xml_event(self, root, source_path: str) -> list[dict[str, Any]]:
+        """Process event XML files with temporal context preservation.
+
+        For event XMLs, we create a single comprehensive chunk with all information
+        since these are typically small, focused documents about single events.
+        """
+        chunks = []
+
+        # Extract all relevant information
+        temporal_context = {}
+
+        # Look for calendar/date information
+        calendar_elem = root.find(".//calendar")
+        if calendar_elem is not None:
+            date_elem = calendar_elem.find("date")
+            if date_elem is not None and date_elem.text:
+                temporal_context["date"] = date_elem.text
+                temporal_context["datetime_raw"] = date_elem.text
+
+            location_elem = calendar_elem.find("location")
+            if location_elem is not None and location_elem.text:
+                temporal_context["location"] = location_elem.text
+
+        # Also check for direct date elements
+        date_elem = root.find(".//date")
+        if date_elem is not None and date_elem.text and "date" not in temporal_context:
+            temporal_context["date"] = date_elem.text
+
+        # Extract event ID
+        event_id = None
+        id_elem = root.find("id")
+        if id_elem is not None and id_elem.text:
+            event_id = id_elem.text
+            temporal_context["event_id"] = event_id
+
+        # Extract title
+        title = None
+        title_elem = root.find("title")
+        if title_elem is not None and title_elem.text:
+            title = title_elem.text
+            temporal_context["title"] = title
+
+        # Extract URL
+        url_elem = root.find("url")
+        if url_elem is not None and url_elem.text:
+            temporal_context["url"] = url_elem.text
+
+        # Extract details
+        details = None
+        details_elem = root.find("details")
+        if details_elem is not None and details_elem.text:
+            details = details_elem.text
+
+        # Build comprehensive event content
+        content_parts = []
+
+        # Add structured header with key information
+        if title:
+            content_parts.append(f"Event: {title}")
+        if temporal_context.get("date"):
+            content_parts.append(f"Date/Time: {temporal_context['date']}")
+        if temporal_context.get("location"):
+            content_parts.append(f"Location: {temporal_context['location']}")
+        if event_id:
+            content_parts.append(f"Event ID: {event_id}")
+
+        # Add main details
+        if details:
+            content_parts.append(f"\nDetails:\n{details}")
+
+        # Add URL if present
+        if temporal_context.get("url"):
+            content_parts.append(f"\nMore info: {temporal_context['url']}")
+
+        # Create single comprehensive chunk for the entire event
+        # This ensures all temporal and event information stays together
+        chunks.append(
+            self._create_chunk(
+                content="\n".join(content_parts),
+                chunk_type="event_complete",
+                chunk_index=0,
+                source=source_path,
+                **temporal_context,  # Include all metadata
+            )
+        )
 
         return chunks
 

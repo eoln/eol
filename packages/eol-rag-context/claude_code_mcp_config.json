@@ -1,0 +1,90 @@
+{
+  "name": "eol-rag-context",
+  "version": "1.0.0",
+  "description": "EOL RAG Context MCP Server for intelligent code search and indexing",
+  "author": "EOL",
+  "license": "GPL-3.0",
+  "mcp": {
+    "command": "/Users/eoln/Devel/eol/.venv/bin/python",
+    "args": [
+      "/Users/eoln/Devel/eol/packages/eol-rag-context/mcp_launcher_final.py"
+    ],
+    "env": {
+      "PYTHONPATH": "/Users/eoln/Devel/eol/packages/eol-rag-context/src"
+    }
+  },
+  "tools": [
+    {
+      "name": "get_stats",
+      "description": "Get current indexing statistics",
+      "parameters": {}
+    },
+    {
+      "name": "list_sources",
+      "description": "List all indexed sources with metadata",
+      "parameters": {}
+    },
+    {
+      "name": "index_directory",
+      "description": "Index a directory of documents",
+      "parameters": {
+        "path": {
+          "type": "string",
+          "description": "Directory path to index",
+          "required": true
+        },
+        "recursive": {
+          "type": "boolean",
+          "description": "Whether to index subdirectories",
+          "default": true
+        },
+        "force_reindex": {
+          "type": "boolean",
+          "description": "Force reindex even if files unchanged",
+          "default": false
+        }
+      }
+    },
+    {
+      "name": "search_context",
+      "description": "Search for relevant context",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "Search query",
+          "required": true
+        },
+        "max_results": {
+          "type": "integer",
+          "description": "Maximum number of results",
+          "default": 10
+        }
+      }
+    },
+    {
+      "name": "test_sandbox",
+      "description": "Test sandbox environment and permissions",
+      "parameters": {}
+    }
+  ],
+  "features": {
+    "vector_search": true,
+    "semantic_caching": true,
+    "hierarchical_indexing": true,
+    "temporal_context": true,
+    "file_types": [
+      "*.py", "*.js", "*.ts", "*.jsx", "*.tsx",
+      "*.java", "*.cpp", "*.c", "*.h", "*.hpp",
+      "*.go", "*.rs", "*.rb", "*.php",
+      "*.md", "*.txt", "*.rst", "*.adoc",
+      "*.xml", "*.json", "*.yaml", "*.yml",
+      "*.html", "*.css", "*.scss", "*.sass"
+    ]
+  },
+  "requirements": {
+    "redis": ">=8.0.0",
+    "python": ">=3.13",
+    "memory": "512MB",
+    "disk": "1GB"
+  }
+}

@@ -6,10 +6,13 @@ import json
 import logging
 import os
 import sys
+import time
 import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+import psutil
 
 # Create log directory in home
 log_dir = Path.home() / ".eol-rag-context"
@@ -93,6 +96,36 @@ embedding_manager: Optional[EmbeddingManager] = None
 document_processor: Optional[DocumentProcessor] = None
 indexer: Optional[DocumentIndexer] = None
 initialized = False
+
+# Performance metrics storage
+performance_metrics = {}
+
+
+def log_performance(func_name: str, start_time: float, **kwargs):
+    """Log performance metrics for a function."""
+    duration = time.time() - start_time
+
+    # Get memory usage
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_mb = memory_info.rss / 1024 / 1024
+
+    # Log metrics
+    logger.info(
+        f"📊 PERFORMANCE | {func_name} | Duration: {duration:.3f}s | Memory: {memory_mb:.1f}MB | {kwargs}"
+    )
+
+    # Store metrics
+    if func_name not in performance_metrics:
+        performance_metrics[func_name] = []
+    performance_metrics[func_name].append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "duration": duration,
+            "memory_mb": memory_mb,
+            **kwargs,
+        }
+    )
 
 
 async def initialize_components():
@@ -237,6 +270,7 @@ async def get_stats() -> dict:
     Returns:
         Current statistics
     """
+    start_time = time.time()
     logger.debug("=" * 40)
     logger.debug("get_stats called")
 
@@ -281,6 +315,12 @@ async def get_stats() -> dict:
         logger.info(
             f"✅ Stats retrieved successfully: {result['documents_indexed']} docs, {result['chunks_created']} chunks"
         )
+        log_performance(
+            "get_stats",
+            start_time,
+            docs=result["documents_indexed"],
+            chunks=result["chunks_created"],
+        )
         return result
 
     except Exception as e:
@@ -301,6 +341,7 @@ async def list_sources() -> list:
     Returns:
         List of indexed sources with metadata
     """
+    start_time = time.time()
     logger.debug("=" * 40)
     logger.debug("list_sources called")
 
@@ -328,6 +369,7 @@ async def list_sources() -> list:
             logger.debug(f"Source: {source.source_id} - {source.file_count} files")
 
         logger.info(f"✅ Listed {len(result)} sources successfully")
+        log_performance("list_sources", start_time, sources_count=len(result))
         return result
 
     except Exception as e:
@@ -339,18 +381,22 @@ async def list_sources() -> list:
 
 
 @mcp.tool()
-async def index_directory(path: str, recursive: bool = True) -> dict:
+async def index_directory(path: str, recursive: bool = True, force_reindex: bool = False) -> dict:
     """Index a directory of documents with detailed logging.
 
     Args:
         path: Directory path to index
         recursive: Whether to index subdirectories
+        force_reindex: If True, reindex all files even if unchanged
 
     Returns:
         Indexing statistics
     """
+    start_time = time.time()
     logger.debug("=" * 40)
-    logger.debug(f"index_directory called with path={path}, recursive={recursive}")
+    logger.debug(
+        f"index_directory called with path={path}, recursive={recursive}, force_reindex={force_reindex}"
+    )
 
     try:
         await initialize_components()
@@ -359,8 +405,8 @@ async def index_directory(path: str, recursive: bool = True) -> dict:
             logger.error("❌ Indexer is None after initialization!")
             return {"status": "error", "error": "Indexer not initialized"}
 
-        logger.info(f"📁 Starting to index directory: {path}")
-        result = await indexer.index_folder(path, recursive=recursive)
+        logger.info(f"📁 Starting to index directory: {path} (force_reindex={force_reindex})")
+        result = await indexer.index_folder(path, recursive=recursive, force_reindex=force_reindex)
 
         response = {
             "status": "success",
@@ -371,8 +417,24 @@ async def index_directory(path: str, recursive: bool = True) -> dict:
             "timestamp": datetime.now().isoformat(),
         }
 
+        duration = time.time() - start_time
+        docs_per_second = response["files_indexed"] / duration if duration > 0 else 0
+        chunks_per_second = response["chunks_created"] / duration if duration > 0 else 0
+
         logger.info(
             f"✅ Indexed {response['files_indexed']} files, created {response['chunks_created']} chunks"
+        )
+        logger.info(
+            f"📈 Throughput: {docs_per_second:.1f} docs/sec, {chunks_per_second:.1f} chunks/sec"
+        )
+        log_performance(
+            "index_directory",
+            start_time,
+            files=response["files_indexed"],
+            chunks=response["chunks_created"],
+            docs_per_second=docs_per_second,
+            chunks_per_second=chunks_per_second,
+            path=path,
         )
         return response
 
@@ -398,6 +460,7 @@ async def search_context(query: str, max_results: int = 10) -> list:
     Returns:
         List of relevant documents
     """
+    start_time = time.time()
     logger.debug("=" * 40)
     logger.debug(f"search_context called with query='{query}', max_results={max_results}")
 
@@ -424,18 +487,27 @@ async def search_context(query: str, max_results: int = 10) -> list:
         # Format results
         formatted_results = []
         for i, (doc_id, score, data) in enumerate(results):
+            # Get metadata which contains the source_path
+            metadata = data.get("metadata", {})
+            source_path = metadata.get("source_path", metadata.get("source", "Unknown"))
+            chunk_index = metadata.get("chunk_index", 0)
+
             formatted_results.append(
                 {
                     "rank": i + 1,
                     "score": float(score),
                     "text": data.get("content", data.get("text", "")),
-                    "source": data.get("source", "Unknown"),
-                    "chunk_index": data.get("chunk_index", 0),
+                    "source": source_path,
+                    "chunk_index": chunk_index,
+                    "metadata": metadata,  # Include full metadata for debugging
                 }
             )
-            logger.debug(f"Result {i+1}: score={score:.3f}, source={data.get('source', 'Unknown')}")
+            logger.debug(f"Result {i+1}: score={score:.3f}, source={source_path}")
 
         logger.info(f"✅ Search complete: {len(formatted_results)} results for query '{query}'")
+        log_performance(
+            "search_context", start_time, results=len(formatted_results), query_length=len(query)
+        )
         return formatted_results
 
     except Exception as e:

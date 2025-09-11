@@ -49,27 +49,29 @@ import numpy as np
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
-    from redis.commands.search.field import (
-        NumericField,
-        TagField,
-        TextField,
-        VectorField,
-    )
-    from redis.commands.search.index_definition import IndexDefinition, IndexType
+    from redis.commands.search.field import NumericField, TagField, TextField, VectorField
+    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
-except ImportError:
-    # Fallback for testing without redis-py[search]
-    from unittest.mock import MagicMock
+except ImportError as e:
+    import sys
 
-    Redis = MagicMock
-    AsyncRedis = MagicMock
-    TextField = MagicMock
-    VectorField = MagicMock
-    NumericField = MagicMock
-    TagField = MagicMock
-    IndexDefinition = MagicMock
-    IndexType = MagicMock
-    Query = MagicMock
+    error_msg = f"""
+CRITICAL ERROR: Redis module not available!
+
+The redis package with search support is required but not installed.
+Error: {e}
+
+To fix this, run:
+    uv pip install redis[search]
+
+Or if using pip:
+    pip install redis[search]
+
+Python executable: {sys.executable}
+Python path: {sys.path}
+"""
+    print(error_msg, file=sys.stderr)
+    sys.exit(1)
 
 from .config import IndexConfig, RedisConfig
 
@@ -408,7 +410,7 @@ class RedisVectorStore:
                             "TYPE": "FLOAT32",
                             "DIM": embedding_dim,
                             "DISTANCE_METRIC": self.index_config.distance_metric,
-                            "INITIAL_CAP": self.index_config.initial_cap * 100,
+                            "INITIAL_CAP": min(self.index_config.initial_cap * 10, 100000),
                         },
                     ),
                     TagField("parent"),

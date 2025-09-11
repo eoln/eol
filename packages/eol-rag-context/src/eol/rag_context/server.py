@@ -17,18 +17,44 @@ from .indexer import DocumentIndexer
 from .knowledge_graph import KnowledgeGraphBuilder
 from .redis_client import RedisVectorStore
 from .semantic_cache import SemanticCache
+from .async_task_manager import AsyncTaskManager, TaskStatus
+from .parallel_indexer import ParallelIndexer, ParallelIndexingConfig
 
 logger = logging.getLogger(__name__)
 
 
 # Pydantic models for MCP tools
-class IndexDirectoryRequest(BaseModel):
-    """Request to index a directory."""
-
+class StartIndexingRequest(BaseModel):
+    """Request to start asynchronous indexing."""
+    
     path: str = Field(description="Directory path to index")
     recursive: bool = Field(default=True, description="Index subdirectories")
-    file_patterns: list[str] | None = Field(default=None, description="File patterns to index")
+    force_reindex: bool = Field(default=False, description="Force reindex of unchanged files")
     watch: bool = Field(default=False, description="Watch for changes after indexing")
+    
+    # Parallel processing configuration
+    max_workers: int = Field(default=16, description="Maximum concurrent workers")
+    batch_size: int = Field(default=32, description="Batch size for processing")
+    enable_streaming: bool = Field(default=True, description="Enable streaming for large files")
+
+
+class IndexingStatusRequest(BaseModel):
+    """Request to get indexing task status."""
+    
+    task_id: str = Field(description="Task ID to check status for")
+
+
+class ListTasksRequest(BaseModel):
+    """Request to list indexing tasks."""
+    
+    status_filter: str | None = Field(default=None, description="Filter by status (pending, running, completed, failed, cancelled)")
+    limit: int = Field(default=50, description="Maximum tasks to return")
+
+
+class CancelTaskRequest(BaseModel):
+    """Request to cancel an indexing task."""
+    
+    task_id: str = Field(description="Task ID to cancel")
 
 
 class SearchContextRequest(BaseModel):
@@ -137,6 +163,10 @@ class EOLRAGContextServer:
         self.semantic_cache: SemanticCache | None = None
         self.knowledge_graph: KnowledgeGraphBuilder | None = None
         self.file_watcher: FileWatcher | None = None
+        
+        # Non-blocking indexing components
+        self.task_manager: AsyncTaskManager | None = None
+        self.parallel_indexer: ParallelIndexer | None = None
 
         # Setup MCP handlers
         self._setup_resources()
@@ -209,7 +239,16 @@ class EOLRAGContextServer:
         self.file_watcher = FileWatcher(self.indexer, self.knowledge_graph, debounce_seconds=2.0)
         await self.file_watcher.start()
 
-        logger.info("Server initialization complete")
+        # Initialize non-blocking indexing components
+        self.task_manager = AsyncTaskManager(self.redis_store)
+        self.parallel_indexer = ParallelIndexer(
+            self.config,
+            self.document_processor,
+            self.embedding_manager,
+            self.redis_store
+        )
+        
+        logger.info("Server initialization complete with non-blocking indexing capabilities")
 
     async def shutdown(self) -> None:
         """Shutdown all server components gracefully.
@@ -404,56 +443,257 @@ class EOLRAGContextServer:
         """
 
         @self.mcp.tool()
-        async def index_directory(request: IndexDirectoryRequest, ctx: Context) -> dict[str, Any]:
-            """Index all documents in a directory with hierarchical organization.
-
-            Processes all supported files in the specified directory, creating embeddings
-            and storing them in Redis with hierarchical structure. Optionally builds
-            knowledge graph and starts file watching.
-
+        async def start_indexing(request: StartIndexingRequest, ctx: Context) -> dict[str, Any]:
+            """Start asynchronous indexing and return task ID immediately.
+            
+            This tool starts indexing in the background and returns immediately
+            with a task ID that can be used to check progress. The AI agent is
+            never blocked waiting for indexing to complete.
+            
             Args:
-                request: IndexDirectoryRequest containing:
-                    - path: Directory path to index
-                    - recursive: Whether to process subdirectories
-                    - file_patterns: Optional glob patterns for file filtering
-                    - watch: Whether to start file watching after indexing
+                request: StartIndexingRequest containing indexing parameters
                 ctx: MCP context for the request
-
+                
             Returns:
                 Dictionary containing:
-                - source_id: Unique identifier for this indexed source
-                - path: Absolute path to the indexed directory
-                - indexed_at: ISO timestamp of indexing completion
-                - file_count: Number of files successfully processed
-                - total_chunks: Total chunks created across all files
-                - watching: Whether file watching was started
-
+                - task_id: Unique identifier for tracking this indexing operation
+                - status: Initial task status (pending)
+                - path: Directory path being indexed
+                - message: Human-readable status message
+                - estimated_files: Rough estimate of files to be processed
             """
-            path = Path(request.path)
-
-            # Index the directory
-            result = await self.indexer.index_folder(
-                path, recursive=request.recursive, force_reindex=False
+            if not self.task_manager or not self.parallel_indexer:
+                raise RuntimeError("Non-blocking indexing not initialized")
+            
+            path = Path(request.path).resolve()
+            if not path.exists() or not path.is_dir():
+                raise ValueError(f"Directory does not exist: {path}")
+            
+            # Create parallel config
+            parallel_config = ParallelIndexingConfig(
+                max_document_workers=request.max_workers,
+                max_embedding_workers=request.max_workers // 2,
+                max_redis_workers=request.max_workers // 4,
+                batch_size=request.batch_size,
+                enable_streaming=request.enable_streaming
             )
-
-            # Build knowledge graph
-            await self.knowledge_graph.build_from_documents(result.source_id)
-
-            # Start watching if requested
+            
+            # Start indexing task
+            task_id = await self.task_manager.start_indexing_task(
+                path,
+                self.parallel_indexer,
+                recursive=request.recursive,
+                force_reindex=request.force_reindex,
+                parallel_config=parallel_config
+            )
+            
+            # Quick file count estimate
+            estimated_files = self._estimate_file_count(path, request.recursive)
+            
+            # Start watching if requested (this is immediate and non-blocking)
             if request.watch:
                 await self.file_watcher.watch(
                     path,
                     recursive=request.recursive,
-                    file_patterns=request.file_patterns,
+                    file_patterns=None,
                 )
-
+            
             return {
-                "source_id": result.source_id,
-                "path": str(result.path),
-                "indexed_at": datetime.fromtimestamp(result.indexed_at).isoformat(),
-                "file_count": result.file_count,
-                "total_chunks": result.total_chunks,
+                "task_id": task_id,
+                "status": "pending",
+                "path": str(path),
+                "message": f"Indexing started for {path} with {request.max_workers} workers",
+                "estimated_files": estimated_files,
                 "watching": request.watch,
+                "parallel_config": {
+                    "max_workers": request.max_workers,
+                    "batch_size": request.batch_size,
+                    "streaming_enabled": request.enable_streaming
+                }
+            }
+
+        @self.mcp.tool()
+        async def get_indexing_status(request: IndexingStatusRequest, ctx: Context) -> dict[str, Any]:
+            """Get current status and progress of an indexing task.
+            
+            Args:
+                request: IndexingStatusRequest with task_id
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing detailed task status and progress information
+            """
+            if not self.task_manager:
+                raise RuntimeError("Task manager not initialized")
+            
+            task_info = await self.task_manager.get_task_status(request.task_id)
+            
+            if not task_info:
+                return {
+                    "error": "Task not found",
+                    "task_id": request.task_id,
+                    "message": "No indexing task found with the specified ID"
+                }
+            
+            result = {
+                "task_id": task_info.task_id,
+                "status": task_info.status.value,
+                "path": task_info.folder_path,
+                "progress": {
+                    "completed_files": task_info.completed_files,
+                    "total_files": task_info.total_files,
+                    "percentage": task_info.progress_percentage,
+                    "files_per_second": task_info.files_per_second
+                },
+                "timing": {
+                    "created_at": datetime.fromtimestamp(task_info.created_at).isoformat(),
+                    "elapsed_time": task_info.elapsed_time
+                },
+                "results": {
+                    "total_chunks": task_info.total_chunks,
+                    "indexed_files": task_info.indexed_files,
+                    "failed_files": task_info.failed_files
+                }
+            }
+            
+            # Add completion estimate for running tasks
+            if task_info.status == TaskStatus.RUNNING and task_info.estimated_completion_time:
+                result["timing"]["estimated_completion_seconds"] = task_info.estimated_completion_time
+                result["timing"]["estimated_completion"] = datetime.fromtimestamp(
+                    task_info.created_at + task_info.estimated_completion_time
+                ).isoformat()
+            
+            # Add current file being processed
+            if task_info.current_file:
+                result["current_file"] = task_info.current_file
+            
+            # Add error information for failed tasks
+            if task_info.status == TaskStatus.FAILED:
+                result["error"] = {
+                    "message": task_info.error_message,
+                    "details": task_info.errors[:10] if task_info.errors else []  # Limit error details
+                }
+            
+            # Add result information for completed tasks
+            if task_info.status == TaskStatus.COMPLETED and task_info.result:
+                result["indexing_result"] = {
+                    "source_id": task_info.result.get("source_id"),
+                    "indexed_at": datetime.fromtimestamp(
+                        task_info.result.get("indexed_at", task_info.completed_at)
+                    ).isoformat(),
+                    "performance": task_info.result.get("metadata", {}).get("performance", {})
+                }
+            
+            return result
+
+        @self.mcp.tool()
+        async def list_indexing_tasks(request: ListTasksRequest, ctx: Context) -> dict[str, Any]:
+            """List indexing tasks with optional status filtering.
+            
+            Args:
+                request: ListTasksRequest with optional filters
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing list of tasks and summary statistics
+            """
+            if not self.task_manager:
+                raise RuntimeError("Task manager not initialized")
+            
+            # Convert status filter
+            status_filter = None
+            if request.status_filter:
+                try:
+                    status_filter = TaskStatus(request.status_filter.lower())
+                except ValueError:
+                    return {
+                        "error": f"Invalid status filter: {request.status_filter}",
+                        "valid_statuses": [s.value for s in TaskStatus]
+                    }
+            
+            tasks = await self.task_manager.list_tasks(status_filter, request.limit)
+            
+            # Convert to response format
+            task_list = []
+            for task_info in tasks:
+                task_summary = {
+                    "task_id": task_info.task_id,
+                    "status": task_info.status.value,
+                    "path": task_info.folder_path,
+                    "created_at": datetime.fromtimestamp(task_info.created_at).isoformat(),
+                    "progress_percentage": task_info.progress_percentage,
+                    "completed_files": task_info.completed_files,
+                    "total_files": task_info.total_files,
+                    "elapsed_time": task_info.elapsed_time
+                }
+                
+                if task_info.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+                    task_summary["completed_at"] = datetime.fromtimestamp(
+                        task_info.completed_at
+                    ).isoformat()
+                
+                task_list.append(task_summary)
+            
+            # Calculate summary statistics
+            status_counts = {}
+            for task in tasks:
+                status = task.status.value
+                status_counts[status] = status_counts.get(status, 0) + 1
+            
+            return {
+                "tasks": task_list,
+                "total_tasks": len(task_list),
+                "status_summary": status_counts,
+                "filter_applied": request.status_filter,
+                "limit_applied": request.limit
+            }
+
+        @self.mcp.tool()
+        async def cancel_indexing_task(request: CancelTaskRequest, ctx: Context) -> dict[str, Any]:
+            """Cancel a running indexing task.
+            
+            Args:
+                request: CancelTaskRequest with task_id
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing cancellation result
+            """
+            if not self.task_manager:
+                raise RuntimeError("Task manager not initialized")
+            
+            success = await self.task_manager.cancel_task(request.task_id)
+            
+            return {
+                "task_id": request.task_id,
+                "cancelled": success,
+                "message": (
+                    "Task cancelled successfully" if success 
+                    else "Task not found or not cancellable"
+                )
+            }
+
+        @self.mcp.tool()
+        async def cleanup_old_indexing_tasks(ctx: Context) -> dict[str, Any]:
+            """Clean up old completed/failed indexing tasks.
+            
+            Removes old tasks from memory and Redis to free up resources.
+            Tasks older than 24 hours are automatically cleaned up.
+            
+            Args:
+                ctx: MCP context for the request
+                
+            Returns:
+                Dictionary containing cleanup results
+            """
+            if not self.task_manager:
+                raise RuntimeError("Task manager not initialized")
+            
+            cleaned_count = await self.task_manager.cleanup_old_tasks()
+            
+            return {
+                "cleaned_tasks": cleaned_count,
+                "message": f"Cleaned up {cleaned_count} old indexing tasks"
             }
 
         @self.mcp.tool()
@@ -891,85 +1131,80 @@ Output Format:
    - What documentation gaps exist?
    - What refactoring opportunities are evident?"""
 
-        # API compatibility methods for tests and external usage
+    def _estimate_file_count(self, path: Path, recursive: bool) -> int:
+        """Quick estimate of files to be processed."""
+        try:
+            if recursive:
+                # Quick estimate by sampling
+                count = 0
+                for _ in path.rglob("*"):
+                    count += 1
+                    if count > 10000:  # Cap the estimate
+                        return 10000
+                return count
+            else:
+                return len([f for f in path.glob("*") if f.is_file()])
+        except Exception:
+            return 0  # Return 0 if we can't estimate
+
+    # API compatibility methods for tests and external usage
 
     async def index_directory(self, path: str, **kwargs) -> dict[str, Any]:
-        """Index all documents in a directory with hierarchical organization.
+        """Start non-blocking directory indexing (API compatibility method).
 
-        This method recursively processes all supported files in the specified directory,
-        creating a hierarchical index structure with concepts, sections, and chunks.
-        The indexing process extracts metadata, creates vector embeddings, and stores
-        everything in Redis for fast similarity search.
-
-        Supported file formats:
-        - Source code: .py, .js, .ts, .java, .cpp, .c, .h
-        - Documentation: .md, .rst, .txt
-        - Structured data: .json, .yaml, .xml
-        - Documents: .pdf, .docx (if available)
+        DEPRECATED: This method is provided for backward compatibility only.
+        New code should use the start_indexing MCP tool directly for better control.
+        
+        This method starts indexing in the background and returns a task ID.
+        Use get_indexing_status() to check progress.
 
         Args:
-            path: Directory path to index. Can be absolute or relative.
+            path: Directory path to index
             **kwargs: Additional indexing options:
                 recursive (bool): Process subdirectories. Defaults to True.
                 force_reindex (bool): Reindex even if unchanged. Defaults to False.
-                file_patterns (List[str]): Glob patterns for files to include.
-                    Defaults to common code and doc formats.
+                max_workers (int): Maximum concurrent workers. Defaults to 16.
 
         Returns:
-            Dictionary containing indexing results with keys:
-            - status: "success" or "error"
-            - source_id: Unique identifier for this indexed source
-            - indexed_files: Number of files successfully processed
-            - total_chunks: Total chunks created across all files
-            - file_count: Total files discovered (including skipped)
-            - path: Absolute path to the indexed directory
-            - message: Error message if status is "error"
-
-        Raises:
-            FileNotFoundError: If the specified directory doesn't exist.
-            PermissionError: If unable to read files in the directory.
-            DocumentProcessingError: If critical files cannot be processed.
-
-        Example:
-            Basic directory indexing:
-
-            >>> result = await server.index_directory("/path/to/project")
-            >>> print(f"Indexed {result['indexed_files']} files")
-            >>> print(f"Created {result['total_chunks']} chunks")
-            Indexed 25 files
-            Created 1247 chunks
-
-            With custom file patterns:
-
-            >>> result = await server.index_directory(
-            ...     "/path/to/docs",
-            ...     recursive=True,
-            ...     file_patterns=["*.md", "*.py"]
-            ... )
-            >>> print(f"Source ID: {result['source_id']}")
-            Source ID: docs_md_py_20241211_143022
+            Dictionary containing:
+            - status: "started" (instead of "success" to indicate async nature)
+            - task_id: Unique identifier for tracking progress
+            - message: Information about task start
+            - path: Directory path being indexed
 
         """
-        if not self.indexer:
-            return {"status": "error", "message": "Indexer not initialized"}
+        if not self.task_manager or not self.parallel_indexer:
+            return {"status": "error", "message": "Non-blocking indexing not initialized"}
 
-        # Extract supported parameters
+        # Extract parameters
         recursive = kwargs.get("recursive", True)
         force_reindex = kwargs.get("force_reindex", False)
+        max_workers = kwargs.get("max_workers", 16)
 
         try:
-            result = await self.indexer.index_folder(
-                path, recursive=recursive, force_reindex=force_reindex
+            # Create parallel config
+            parallel_config = ParallelIndexingConfig(
+                max_document_workers=max_workers,
+                max_embedding_workers=max_workers // 2,
+                max_redis_workers=max_workers // 4,
+                batch_size=32,
+                enable_streaming=True
+            )
+            
+            # Start indexing task
+            task_id = await self.task_manager.start_indexing_task(
+                Path(path),
+                self.parallel_indexer,
+                recursive=recursive,
+                force_reindex=force_reindex,
+                parallel_config=parallel_config
             )
 
-            # Convert IndexedSource to dict for compatibility
             return {
-                "status": "success",
-                "source_id": result.source_id,
-                "indexed_files": result.indexed_files,
-                "total_chunks": result.total_chunks,
-                "file_count": result.file_count,
-                "path": str(result.path),
+                "status": "started",  # Changed from "success" to indicate async nature
+                "task_id": task_id,
+                "message": f"Non-blocking indexing started for {path}. Use get_indexing_status(task_id) to track progress.",
+                "path": path,
             }
         except Exception as e:
             return {"status": "error", "message": str(e)}

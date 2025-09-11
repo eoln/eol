@@ -60,11 +60,11 @@ class TestRedisVectorStore:
         """Test IndexConfig properties."""
         index_config = config.IndexConfig()
 
-        # Check index properties
-        assert index_config.index_name == "eol_context"
+        # Check Vector Set properties (updated for Redis 8.2+)
+        assert index_config.vectorset_name == "eol_context"
         assert index_config.prefix == "doc:"
-        assert index_config.algorithm == "HNSW"
-        assert index_config.distance_metric == "COSINE"
+        assert index_config.algorithm == "SVS-VAMANA"
+        assert index_config.distance_metric == "COSINE"  # Legacy compatibility
 
     def test_redis_vector_store_methods(self):
         """Test that RedisVectorStore has expected methods."""

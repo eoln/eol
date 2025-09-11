@@ -190,6 +190,9 @@ class SemanticCache:
         self.config = cache_config
         self.embeddings = embedding_manager
         self.redis = redis_store
+        
+        # Initialize Vector Set name for fallback (proper initialization via ensure_cache_index)
+        self._cache_vectorset = "semantic_cache"
 
         # Cache performance statistics tracking
         self.stats = {
@@ -231,41 +234,20 @@ class SemanticCache:
             Cache index ready for queries
 
         """
+        # Check if cache Vector Set exists (Vector Sets are created automatically on first VADD)
         try:
-            # Create dedicated cache index
-            await self.redis.async_redis.ft("cache_index").info()
-            logger.info("Cache index already exists")
-        except Exception:
-            # Create new cache index
-            from redis.commands.search.field import NumericField, TextField, VectorField
-            from redis.commands.search.index_definition import IndexDefinition, IndexType
-
-            schema = [
-                TextField("query"),
-                TextField("response"),
-                VectorField(
-                    "embedding",
-                    "HNSW",
-                    {
-                        "TYPE": "FLOAT32",
-                        "DIM": self.embeddings.config.dimension,
-                        "DISTANCE_METRIC": "COSINE",
-                        "INITIAL_CAP": 1000,
-                        "M": 16,
-                        "EF_CONSTRUCTION": 200,
-                    },
-                ),
-                NumericField("timestamp"),
-                NumericField("hit_count"),
-                TextField("metadata"),
-            ]
-
-            definition = IndexDefinition(prefix=["cache:"], index_type=IndexType.HASH)
-
-            await self.redis.async_redis.ft("cache_index").create_index(
-                fields=schema, definition=definition
-            )
-            logger.info("Created cache index")
+            # Check if Vector Set exists using VCARD
+            await self.redis.async_redis.execute_command("VCARD", "semantic_cache")
+            logger.info("Cache Vector Set already exists")
+        except Exception as e:
+            if "VSET does not exist" in str(e):
+                logger.info("Cache Vector Set will be created automatically on first cache entry")
+            else:
+                logger.warning(f"Error checking cache Vector Set: {e}")
+        
+        # Store cache configuration for Vector Set operations
+        self._cache_vectorset = "semantic_cache"
+        logger.info(f"Cache Vector Set prepared: {self._cache_vectorset}")
 
     async def get(self, query: str) -> str | None:
         """Retrieve cached response for semantically similar query.
@@ -408,8 +390,20 @@ class SemanticCache:
             "metadata": json.dumps(metadata or {}),
         }
 
-        # Store in Redis
+        # Store cache data in Redis Hash
         self.redis.redis.hset(cache_key, mapping=cache_data)
+
+        # Add vector to cache Vector Set  
+        # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id
+        embedding_values = query_embedding.astype(np.float32).tolist()
+        vadd_args = ["VADD", self._cache_vectorset, "VALUES", str(len(embedding_values))]
+        vadd_args.extend([str(v) for v in embedding_values])
+        vadd_args.append(cache_id)  # Use cache_id as element identifier
+        
+        try:
+            await self.redis.async_redis.execute_command(*vadd_args)
+        except Exception as e:
+            logger.warning(f"Failed to add vector to cache Vector Set: {e}")
 
         # Set TTL
         self.redis.redis.expire(cache_key, self.config.ttl_seconds)
@@ -419,9 +413,9 @@ class SemanticCache:
     async def _search_similar(
         self, query_embedding: np.ndarray, k: int = 5
     ) -> list[tuple[str, float, dict[str, Any]]]:
-        """Search for cached queries similar to the input embedding.
+        """Search for cached queries similar to the input embedding using Vector Sets.
 
-        Performs vector similarity search against the cache index to find
+        Performs vector similarity search against the cache Vector Set to find
         the k most similar cached queries. Uses cosine similarity and
         returns results sorted by similarity score.
 
@@ -431,48 +425,76 @@ class SemanticCache:
 
         Returns:
             List of tuples containing (cache_id, similarity_score, cached_data).
-            Similarity scores are between 0.0 and 1.0 (higher = more similar).
+            Similarity scores are cosine similarity (higher = more similar).
 
         Note:
             This is an internal method used by get() for cache lookups.
             Handles Redis connection errors gracefully by returning empty list.
 
         """
-        from redis.commands.search.query import Query
-
-        # Prepare query
-        query_vector = query_embedding.astype(np.float32).tobytes()
-
-        redis_query = (
-            Query(f"*=>[KNN {k} @embedding $vec AS similarity]")
-            .return_fields("query", "response", "similarity", "hit_count", "timestamp")
-            .sort_by("similarity", asc=False)
-            .dialect(2)
-        )
-
-        # Execute search
         try:
-            results = self.redis.redis.ft("cache_index").search(
-                redis_query, query_params={"vec": query_vector}
-            )
-
-            # Parse results
+            # Convert query embedding to list for VSIM command
+            query_values = query_embedding.astype(np.float32).tolist()
+            
+            # Build VSIM command
+            vsim_args = ["VSIM", self._cache_vectorset, "VALUES", str(len(query_values))]
+            vsim_args.extend([str(v) for v in query_values])
+            vsim_args.extend(["COUNT", str(k), "WITHSCORES", "EF", "50"])
+            
+            # Execute VSIM command
+            vsim_results = await self.redis.async_redis.execute_command(*vsim_args)
+            
+            # Parse VSIM results
             output = []
-            for doc in results.docs:
-                doc_id = doc.id.split(":")[-1]
-                similarity = 1.0 - float(doc.similarity) if hasattr(doc, "similarity") else 0.0
-
-                data = {
-                    "query": doc.query if hasattr(doc, "query") else "",
-                    "response": doc.response if hasattr(doc, "response") else "",
-                    "hit_count": int(doc.hit_count) if hasattr(doc, "hit_count") else 0,
-                    "timestamp": (float(doc.timestamp) if hasattr(doc, "timestamp") else 0),
-                }
-
-                output.append((doc_id, similarity, data))
-
+            if vsim_results:
+                # Convert Redis bytes to strings/floats
+                parsed_results = []
+                for item in vsim_results:
+                    if isinstance(item, bytes):
+                        parsed_results.append(item.decode())
+                    else:
+                        parsed_results.append(item)
+                
+                # Process pairs of (element_id, score)
+                for i in range(0, len(parsed_results), 2):
+                    if i + 1 < len(parsed_results):
+                        cache_id = parsed_results[i]
+                        similarity = float(parsed_results[i + 1])
+                        
+                        # Fetch cache data from Redis hash
+                        cache_key = f"cache:{cache_id}"
+                        cache_data = await self.redis.async_redis.hgetall(cache_key)
+                        
+                        if cache_data:
+                            # Convert bytes keys/values to strings, skip binary fields
+                            data = {}
+                            for k, v in cache_data.items():
+                                key_str = k.decode() if isinstance(k, bytes) else k
+                                # Skip binary fields like embeddings
+                                if key_str in ['embedding', 'embedding_bytes']:
+                                    continue
+                                try:
+                                    val_str = v.decode() if isinstance(v, bytes) else v
+                                    data[key_str] = val_str
+                                except UnicodeDecodeError:
+                                    # Skip fields that can't be decoded as UTF-8 (likely binary data)
+                                    continue
+                            
+                            processed_data = {
+                                "query": data.get("query", ""),
+                                "response": data.get("response", ""),
+                                "hit_count": int(data.get("hit_count", 0)),
+                                "timestamp": float(data.get("timestamp", 0)),
+                            }
+                            
+                            output.append((cache_id, similarity, processed_data))
+            
             return output
+            
         except Exception as e:
+            if "VSET does not exist" in str(e):
+                logger.debug("Cache Vector Set does not exist yet, returning empty results")
+                return []
             logger.error(f"Error searching cache: {e}")
             return []
 

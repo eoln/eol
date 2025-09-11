@@ -1,6 +1,6 @@
 # EOL RAG Context MCP Server
 
-An intelligent RAG-based context management MCP server for the EOL Framework. Replaces static context files with dynamic, Redis 8-backed retrieval system.
+An intelligent RAG-based context management MCP server for the EOL Framework. Replaces static context files with dynamic, Redis 8.2+ Vector Sets retrieval system.
 
 ## Features
 
@@ -32,7 +32,7 @@ pip install eol-rag-context
 
 ### Dependencies
 
-- Redis Stack 8.0+ (with RediSearch module)
+- Redis 8.2+ (with native Vector Sets support)
 - Python 3.13+
 
 ## Testing

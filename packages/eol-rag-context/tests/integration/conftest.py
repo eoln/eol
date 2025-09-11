@@ -154,9 +154,15 @@ async def redis_store(redis_config):
     # This will fail if RediSearch module is not available - which is correct behavior
     try:
         store.create_hierarchical_indexes(embedding_dim=384)
+        # Test if Vector Sets are available by attempting a VADD operation
+        await store.async_redis.execute_command("VADD", "test_vectorset_check", "VALUES", "3", "1.0", "2.0", "3.0", "test_element")
+        await store.async_redis.execute_command("DEL", "test_vectorset_check")  # Cleanup
     except Exception as e:
-        # Re-raise if it's a module not found error
-        if "unknown command" in str(e).lower() and "ft.create" in str(e).lower():
+        # Check for Vector Set availability
+        if "unknown command" in str(e).lower() and ("vadd" in str(e).lower() or "vset" in str(e).lower()):
+            pytest.skip(f"Redis Vector Sets not available (requires Redis 8.2+): {e}")
+        # Legacy FT check for backward compatibility 
+        elif "unknown command" in str(e).lower() and "ft.create" in str(e).lower():
             pytest.skip(f"RediSearch module not available: {e}")
         raise e
 
@@ -171,6 +177,20 @@ async def redis_store(redis_config):
         cache_keys = await store.async_redis.keys("cache:*")
         if cache_keys:
             await store.async_redis.delete(*cache_keys)
+        
+        # Clean up Vector Sets
+        vector_sets = [
+            store.index_config.concept_vectorset,
+            store.index_config.section_vectorset, 
+            store.index_config.chunk_vectorset,
+            "semantic_cache"  # Cache vector set
+        ]
+        for vs_name in vector_sets:
+            try:
+                await store.async_redis.execute_command("DEL", vs_name)
+            except Exception:
+                pass  # Vector Set might not exist
+                
         await store.close()
     except Exception:
         pass

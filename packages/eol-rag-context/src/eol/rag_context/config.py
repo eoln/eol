@@ -188,20 +188,19 @@ class EmbeddingConfig(BaseSettings):
 
 
 class IndexConfig(BaseSettings):
-    """Vector index configuration for Redis Search with HNSW algorithm.
+    """Vector set configuration for Redis 8.2+ Vector Sets.
 
-    Configures vector index parameters for optimal search performance including
-    HNSW (Hierarchical Navigable Small World) algorithm settings, distance metrics,
-    and hierarchical organization for concepts, sections, and chunks.
+    Configures vector set parameters for optimal search performance using Redis 8.2's
+    built-in Vector Sets with SVS-VAMANA algorithm. Supports hierarchical organization
+    for concepts, sections, and chunks using separate vector sets.
 
-    Environment variables can be prefixed with INDEX_ (e.g., INDEX_ALGORITHM=HNSW).
+    Environment variables can be prefixed with INDEX_ (e.g., INDEX_M=16).
 
     Attributes:
-        index_name: Base name for the vector index.
+        vectorset_name: Base name for the vector set.
         prefix: Key prefix for all indexed documents.
-        algorithm: Vector indexing algorithm (HNSW recommended).
-        distance_metric: Distance metric for similarity calculation (COSINE, L2, IP).
-        initial_cap: Initial capacity hint for index size.
+        algorithm: Vector set algorithm (SVS-VAMANA for Redis 8.2+).
+        quantization: Vector quantization type (int8, noquant, bin).
         m: HNSW parameter - number of bi-directional links per node.
         ef_construction: HNSW parameter - size of candidate set during construction.
         ef_runtime: HNSW parameter - size of candidate set during search.
@@ -209,28 +208,30 @@ class IndexConfig(BaseSettings):
         concept_prefix: Key prefix for concept-level documents.
         section_prefix: Key prefix for section-level documents.
         chunk_prefix: Key prefix for chunk-level documents.
+        concept_vectorset: Vector set name for concepts.
+        section_vectorset: Vector set name for sections.
+        chunk_vectorset: Vector set name for chunks.
 
     Example:
         >>> index_config = IndexConfig(
-        ...     index_name="project_context",
+        ...     vectorset_name="project_context",
         ...     m=32,  # Higher connectivity for better recall
         ...     ef_construction=400  # Higher quality construction
         ... )
         >>> print(f"Algorithm: {index_config.algorithm}")
-        Algorithm: HNSW
+        Algorithm: SVS-VAMANA
 
     """
 
     model_config = ConfigDict(env_prefix="INDEX_")
 
-    # Index parameters
-    index_name: str = Field(default="eol_context")
+    # Vector set parameters
+    vectorset_name: str = Field(default="eol_context")
     prefix: str = Field(default="doc:")
 
-    # HNSW parameters
-    algorithm: str = Field(default="HNSW")
-    distance_metric: str = Field(default="COSINE")
-    initial_cap: int = Field(default=10000)
+    # Vector set algorithm and quantization
+    algorithm: str = Field(default="SVS-VAMANA")
+    quantization: str = Field(default="Q8")  # Q8, NOQUANT, or BIN
     m: int = Field(default=16)  # Number of bi-directional links
     ef_construction: int = Field(default=200)
     ef_runtime: int = Field(default=10)
@@ -240,6 +241,16 @@ class IndexConfig(BaseSettings):
     concept_prefix: str = Field(default="concept:")
     section_prefix: str = Field(default="section:")
     chunk_prefix: str = Field(default="chunk:")
+    
+    # Vector set names for each hierarchy level
+    concept_vectorset: str = Field(default="eol_context_concept")
+    section_vectorset: str = Field(default="eol_context_section")  
+    chunk_vectorset: str = Field(default="eol_context_chunk")
+
+    # Legacy compatibility - remove once FT.SEARCH migration is complete
+    index_name: str = Field(default="eol_context")  # Deprecated: use vectorset_name
+    distance_metric: str = Field(default="COSINE")  # Deprecated: Vector Sets use cosine
+    initial_cap: int = Field(default=10000)  # Deprecated: not used in Vector Sets
 
 
 class ChunkingConfig(BaseSettings):

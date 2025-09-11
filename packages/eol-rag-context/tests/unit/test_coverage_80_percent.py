@@ -114,9 +114,9 @@ class TestConfigExtraProperties:
         """Test IndexConfig properties."""
         idx_config = config.IndexConfig()
 
-        # Test HNSW parameters
-        assert idx_config.algorithm == "HNSW"
-        assert idx_config.distance_metric == "COSINE"
+        # Test Vector Set parameters (updated for Redis 8.2+)
+        assert idx_config.algorithm == "SVS-VAMANA"
+        assert idx_config.distance_metric == "COSINE"  # Legacy compatibility
         assert idx_config.m == 16
         assert idx_config.ef_construction == 200
         assert idx_config.ef_runtime == 10

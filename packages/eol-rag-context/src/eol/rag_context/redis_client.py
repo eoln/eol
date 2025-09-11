@@ -49,6 +49,7 @@ import numpy as np
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
+    # Legacy FT.SEARCH imports - kept for backward compatibility during migration
     from redis.commands.search.field import NumericField, TagField, TextField, VectorField
     from redis.commands.search.indexDefinition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
@@ -122,22 +123,22 @@ class VectorDocument:
 
 
 class RedisVectorStore:
-    """Redis Stack vector store with hierarchical indexing and HNSW search.
+    """Redis 8.2+ vector store with hierarchical Vector Sets and SVS-VAMANA search.
 
-    Provides comprehensive vector storage and retrieval using Redis Stack with
-    vector search capabilities. Supports hierarchical document organization,
-    efficient similarity search using HNSW algorithm, and both synchronous
+    Provides comprehensive vector storage and retrieval using Redis 8.2's built-in
+    Vector Sets with SVS-VAMANA algorithm. Supports hierarchical document organization,
+    efficient similarity search with quantization support, and both synchronous
     and asynchronous operations.
 
-    The store organizes documents in a three-level hierarchy:
-    1. Concepts: High-level topics and themes
-    2. Sections: Mid-level document sections
-    3. Chunks: Fine-grained text chunks
+    The store organizes documents in a three-level hierarchy using separate Vector Sets:
+    1. Concepts: High-level topics and themes (concept_vectorset)
+    2. Sections: Mid-level document sections (section_vectorset)  
+    3. Chunks: Fine-grained text chunks (chunk_vectorset)
 
-    Each level has optimized index settings for different query patterns:
-    - Concepts: High precision for topic discovery
+    Each level uses optimized Vector Set parameters for different query patterns:
+    - Concepts: High precision with higher EF values for topic discovery
     - Sections: Balanced precision/recall for context retrieval
-    - Chunks: High recall for detailed information
+    - Chunks: High recall with optimized quantization for detailed information
 
     Attributes:
         redis_config: Redis connection configuration.
@@ -321,124 +322,50 @@ class RedisVectorStore:
             raise
 
     def create_hierarchical_indexes(self, embedding_dim: int) -> None:
-        """Create optimized vector indexes for each hierarchy level.
+        """Prepare hierarchical Vector Sets for each hierarchy level.
 
-        Creates three specialized vector indexes using HNSW algorithm, each optimized
-        for different search patterns and document types:
+        In Redis 8.2+, Vector Sets are created automatically on first VADD operation.
+        This method prepares the Vector Set names and stores embedding dimensions
+        for use during document storage.
 
-        1. Concept Index: High precision for topic discovery and concept mapping
-        2. Section Index: Balanced precision/recall for contextual information
-        3. Chunk Index: High recall using FLAT algorithm for detailed search
-
-        Each index uses different HNSW parameters tuned for the expected
-        query patterns and document sizes at that hierarchy level.
+        Three Vector Sets will be created automatically:
+        1. Concept Vector Set: High precision for topic discovery and concept mapping
+        2. Section Vector Set: Balanced precision/recall for contextual information
+        3. Chunk Vector Set: High recall with optimized quantization for detailed search
 
         Args:
             embedding_dim: Dimension of the vector embeddings (e.g., 384, 768, 1536).
-
-        Raises:
-            redis.ResponseError: If index creation fails due to Redis configuration.
-            ValueError: If embedding dimension is invalid or unsupported.
 
         Example:
             >>> store = RedisVectorStore(redis_config, index_config)
             >>> store.connect()
             >>> store.create_hierarchical_indexes(embedding_dim=384)
-            >>> print("All indexes created")
-            All indexes created
+            >>> print("Vector Sets prepared")
+            Vector Sets prepared
 
         Note:
-            - Concepts use HNSW with M=16, EF_CONSTRUCTION=200 for precision
-            - Sections use HNSW with M=24, EF_CONSTRUCTION=300 for balance
-            - Chunks use FLAT algorithm for exact nearest neighbor search
+            - Vector Sets use SVS-VAMANA algorithm automatically
+            - Concepts use M=16, EF_CONSTRUCTION=200 for precision  
+            - Sections use M=24, EF_CONSTRUCTION=300 for balance
+            - Chunks use default parameters with Q8 quantization
 
         """
-
-        # Define schemas for each level
-        schemas = {
-            "concept": {
-                "prefix": self.index_config.concept_prefix,
-                "fields": [
-                    TextField("content", weight=1.0),
-                    VectorField(
-                        "embedding",
-                        self.index_config.algorithm,
-                        {
-                            "TYPE": "FLOAT32",
-                            "DIM": embedding_dim,
-                            "DISTANCE_METRIC": self.index_config.distance_metric,
-                            "INITIAL_CAP": self.index_config.initial_cap,
-                            "M": self.index_config.m,
-                            "EF_CONSTRUCTION": self.index_config.ef_construction,
-                        },
-                    ),
-                    TagField("children"),
-                    NumericField("created_at"),
-                    TextField("metadata"),
-                ],
-            },
-            "section": {
-                "prefix": self.index_config.section_prefix,
-                "fields": [
-                    TextField("content", weight=0.8),
-                    VectorField(
-                        "embedding",
-                        self.index_config.algorithm,
-                        {
-                            "TYPE": "FLOAT32",
-                            "DIM": embedding_dim,
-                            "DISTANCE_METRIC": self.index_config.distance_metric,
-                            "INITIAL_CAP": self.index_config.initial_cap * 10,
-                            "M": self.index_config.m + 8,
-                            "EF_CONSTRUCTION": self.index_config.ef_construction + 100,
-                        },
-                    ),
-                    TagField("parent"),
-                    TagField("children"),
-                    NumericField("created_at"),
-                    TextField("metadata"),
-                ],
-            },
-            "chunk": {
-                "prefix": self.index_config.chunk_prefix,
-                "fields": [
-                    TextField("content", weight=0.6),
-                    VectorField(
-                        "embedding",
-                        "FLAT",  # Use FLAT for chunk level (exact search)
-                        {
-                            "TYPE": "FLOAT32",
-                            "DIM": embedding_dim,
-                            "DISTANCE_METRIC": self.index_config.distance_metric,
-                            "INITIAL_CAP": min(self.index_config.initial_cap * 10, 100000),
-                        },
-                    ),
-                    TagField("parent"),
-                    NumericField("position"),
-                    NumericField("created_at"),
-                    TextField("metadata"),
-                    TagField("doc_type"),  # markdown, code, pdf, etc.
-                    TagField("language"),  # for code files
-                ],
-            },
+        
+        # Store embedding dimension for use in document storage
+        self._embedding_dim = embedding_dim
+        
+        # Vector Set names for each hierarchy level
+        vector_sets = {
+            "concept": self.index_config.concept_vectorset,
+            "section": self.index_config.section_vectorset,
+            "chunk": self.index_config.chunk_vectorset,
         }
-
-        # Create indexes
-        for level_name, schema in schemas.items():
-            index_name = f"{self.index_config.index_name}_{level_name}"
-
-            try:
-                # Check if index exists
-                self.redis.ft(index_name).info()
-                logger.info(f"Index {index_name} already exists")
-            except Exception:
-                # Create new index
-                definition = IndexDefinition(prefix=[schema["prefix"]], index_type=IndexType.HASH)
-
-                self.redis.ft(index_name).create_index(
-                    fields=schema["fields"], definition=definition
-                )
-                logger.info(f"Created index {index_name}")
+        
+        logger.info(f"Vector Set names prepared for embedding dimension {embedding_dim}:")
+        for level, vectorset_name in vector_sets.items():
+            logger.info(f"  {level.capitalize()}: {vectorset_name}")
+            
+        logger.info("Vector Sets will be created automatically on first document storage")
 
     async def store_document(self, doc: VectorDocument) -> None:
         """Store document with hierarchical metadata and vector embedding.
@@ -514,9 +441,40 @@ class RedisVectorStore:
             data["doc_type"] = doc.metadata.get("doc_type", "unknown")
             data["language"] = doc.metadata.get("language", "unknown")
 
-        # Store in Redis
+        # Store document metadata in Redis Hash
         await self.async_redis.hset(key, mapping=data)
-        logger.debug(f"Stored document {key}")
+        
+        # Add vector to appropriate Vector Set
+        vectorset_map = {
+            1: self.index_config.concept_vectorset,
+            2: self.index_config.section_vectorset,
+            3: self.index_config.chunk_vectorset,
+        }
+        vectorset_name = vectorset_map.get(doc.hierarchy_level, self.index_config.chunk_vectorset)
+        
+        # Convert embedding to float32 list for VADD command
+        embedding_values = doc.embedding.astype(np.float32).tolist()
+        
+        # Use VADD to add vector to Vector Set 
+        # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id [options]
+        vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
+        vadd_args.extend([str(v) for v in embedding_values])
+        vadd_args.append(doc.id)
+        
+        # Add level-specific parameters after element ID
+        if doc.hierarchy_level == 1:  # Concept level - high precision
+            vadd_args.extend(["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)])
+        elif doc.hierarchy_level == 2:  # Section level - balanced
+            vadd_args.extend(["EF", str(self.index_config.ef_construction + 100), "M", str(self.index_config.m + 8)])
+        # Chunk level uses default parameters
+        
+        # Add quantization
+        vadd_args.append(self.index_config.quantization)
+        
+        # Execute VADD command
+        await self.async_redis.execute_command(*vadd_args)
+        
+        logger.debug(f"Stored document {key} and added to Vector Set {vectorset_name}")
 
     async def vector_search(
         self,
@@ -525,28 +483,25 @@ class RedisVectorStore:
         k: int = 10,
         filters: dict[str, Any] | None = None,
     ) -> list[tuple[str, float, dict[str, Any]]]:
-        """Perform vector similarity search at specified hierarchy level.
+        """Perform vector similarity search using Redis 8.2+ Vector Sets.
 
-        Executes a vector similarity search using Redis Search with KNN queries.
-        Searches within the specified hierarchy level using the appropriate index
-        and returns ranked results by similarity score.
-
-        The search uses cosine similarity by default and supports filtering by
-        metadata fields such as source, document type, or parent relationships.
+        Executes a vector similarity search using VSIM command against the appropriate
+        Vector Set for the specified hierarchy level. Returns ranked results by
+        similarity score using cosine distance.
 
         Args:
             query_embedding: Query vector as numpy array (float32 recommended).
             hierarchy_level: Level to search (1=concept, 2=section, 3=chunk).
             k: Maximum number of results to return.
-            filters: Optional filters as field-value pairs for TAG/NUMERIC fields.
+            filters: Optional filters applied after vector search in application layer.
 
         Returns:
             List of tuples containing (document_id, similarity_score, document_data).
-            Scores are sorted in ascending order (lower = more similar for cosine).
+            Scores are cosine similarity scores (higher = more similar).
 
         Raises:
             redis.ConnectionError: If not connected to Redis.
-            redis.ResponseError: If search query is malformed.
+            redis.ResponseError: If Vector Set doesn't exist or query is malformed.
             ValueError: If hierarchy_level is not 1, 2, or 3.
 
         Example:
@@ -562,70 +517,115 @@ class RedisVectorStore:
             >>> for doc_id, score, data in results:
             ...     print(f"{doc_id}: {score:.3f} - {data['content'][:50]}...")
 
-            Search with filters:
-
-            >>> results = await store.vector_search(
-            ...     query_embedding=query_vec,
-            ...     hierarchy_level=3,
-            ...     k=10,
-            ...     filters={"doc_type": "markdown", "language": "en"}
-            ... )
-
         """
         if not self.async_redis:
             await self.connect_async()
 
-        # Select appropriate index
-        level_map = {1: "concept", 2: "section", 3: "chunk"}
-        index_name = f"{self.index_config.index_name}_{level_map[hierarchy_level]}"
+        # Select appropriate Vector Set
+        vectorset_map = {
+            1: self.index_config.concept_vectorset,
+            2: self.index_config.section_vectorset,
+            3: self.index_config.chunk_vectorset,
+        }
+        vectorset_name = vectorset_map.get(hierarchy_level, self.index_config.chunk_vectorset)
 
-        # Build query
-        query_vector = query_embedding.astype(np.float32).tobytes()
+        # Convert query embedding to list for VSIM command
+        query_values = query_embedding.astype(np.float32).tolist()
+        
+        # Build VSIM command with EF parameter based on hierarchy level
+        vsim_args = ["VSIM", vectorset_name, "VALUES", str(len(query_values))]
+        vsim_args.extend([str(v) for v in query_values])
+        vsim_args.extend(["COUNT", str(k), "WITHSCORES"])
+        
+        # Add EF parameter for search quality
+        if hierarchy_level == 1:  # Concept level - higher quality search
+            vsim_args.extend(["EF", str(self.index_config.ef_runtime * 10)])
+        elif hierarchy_level == 2:  # Section level - balanced search
+            vsim_args.extend(["EF", str(self.index_config.ef_runtime * 5)])
+        else:  # Chunk level - use default EF
+            vsim_args.extend(["EF", str(self.index_config.ef_runtime)])
 
-        # Base KNN query
-        query_str = f"*=>[KNN {k} @embedding $vec AS score]"
+        try:
+            # Execute VSIM command
+            vsim_results = await self.async_redis.execute_command(*vsim_args)
+        except Exception as e:
+            if "VSET does not exist" in str(e):
+                logger.warning(f"Vector Set {vectorset_name} does not exist, returning empty results")
+                return []
+            raise
 
-        # Add filters if provided
-        if filters:
-            filter_clauses = []
-            for field_name, value in filters.items():
-                if isinstance(value, str):
-                    # For TAG fields, escape special characters properly
-                    # Redis TAGs need values wrapped in { } with no escaping inside
-                    filter_clauses.append(f"@{field_name}:{{{value}}}")
-                elif isinstance(value, int | float):
-                    filter_clauses.append(f"@{field_name}:[{value} {value}]")
-
-            if filter_clauses:
-                query_str = f"({' '.join(filter_clauses)}) {query_str}"
-
-        # Create query
-        query = (
-            Query(query_str)
-            .return_fields("content", "metadata", "score", "parent", "children")
-            .sort_by("score", asc=True)
-            .dialect(2)
-        )
-
-        # Execute search
-        results = await self.async_redis.ft(index_name).search(
-            query, query_params={"vec": query_vector}
-        )
-
-        # Parse results
+        # Parse VSIM results (alternating element_id, score pairs)
         output = []
-        for doc in results.docs:
-            doc_id = doc.id.split(":")[-1]
-            score = float(doc.score) if hasattr(doc, "score") else 0.0
-
-            data = {
-                "content": doc.content if hasattr(doc, "content") else "",
-                "metadata": (json.loads(doc.metadata) if hasattr(doc, "metadata") else {}),
-                "parent": doc.parent if hasattr(doc, "parent") else None,
-                "children": doc.children.split(",") if hasattr(doc, "children") else [],
-            }
-
-            output.append((doc_id, score, data))
+        if vsim_results:
+            # Convert Redis bytes to strings/floats
+            parsed_results = []
+            for i, item in enumerate(vsim_results):
+                if isinstance(item, bytes):
+                    parsed_results.append(item.decode())
+                else:
+                    parsed_results.append(item)
+            
+            # Process pairs of (element_id, score)
+            for i in range(0, len(parsed_results), 2):
+                if i + 1 < len(parsed_results):
+                    element_id = parsed_results[i]
+                    score = float(parsed_results[i + 1])
+                    
+                    # Fetch document metadata from Redis hash
+                    prefix_map = {
+                        1: self.index_config.concept_prefix,
+                        2: self.index_config.section_prefix,
+                        3: self.index_config.chunk_prefix,
+                    }
+                    prefix = prefix_map.get(hierarchy_level, self.index_config.chunk_prefix)
+                    doc_key = f"{prefix}{element_id}"
+                    
+                    doc_data = await self.async_redis.hgetall(doc_key)
+                    if doc_data:
+                        # Convert bytes keys/values to strings (skip binary embedding data)
+                        if isinstance(doc_data, dict) and doc_data:
+                            data = {}
+                            for k, v in doc_data.items():
+                                key_str = k.decode() if isinstance(k, bytes) else k
+                                # Skip decoding binary embedding data
+                                if key_str == 'embedding':
+                                    continue  # Skip binary embedding data
+                                try:
+                                    val_str = v.decode() if isinstance(v, bytes) else v
+                                    data[key_str] = val_str
+                                except UnicodeDecodeError:
+                                    # Skip binary data that can't be decoded
+                                    continue
+                        else:
+                            data = {}
+                        
+                        # Parse stored data
+                        processed_data = {
+                            "content": data.get("content", ""),
+                            "metadata": json.loads(data.get("metadata", "{}")),
+                            "parent": data.get("parent"),
+                            "children": data.get("children", "").split(",") if data.get("children") else [],
+                        }
+                        
+                        # Apply filters if provided (application-level filtering)
+                        if filters:
+                            match = True
+                            for field_name, value in filters.items():
+                                if field_name in processed_data:
+                                    if processed_data[field_name] != value:
+                                        match = False
+                                        break
+                                elif field_name in processed_data["metadata"]:
+                                    if processed_data["metadata"][field_name] != value:
+                                        match = False
+                                        break
+                                else:
+                                    match = False
+                                    break
+                            if not match:
+                                continue
+                        
+                        output.append((element_id, score, processed_data))
 
         return output
 

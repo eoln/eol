@@ -19,8 +19,10 @@ if [ ! -f "pyproject.toml" ]; then
     exit 1
 fi
 
+# Get the actual project root (go up two levels from packages/eol-rag-context)
 PROJECT_DIR=$(pwd)
-VENV_DIR="/Users/eoln/Devel/eol/.venv"
+EOL_ROOT=$(cd ../.. && pwd)
+VENV_DIR="$EOL_ROOT/.venv"
 
 # Step 1: Check Python version
 echo -e "\n${YELLOW}Checking Python version...${NC}"
@@ -38,7 +40,7 @@ echo "uv is installed"
 
 # Step 3: Install dependencies
 echo -e "\n${YELLOW}Installing dependencies with uv...${NC}"
-cd /Users/eoln/Devel/eol
+cd "$EOL_ROOT"
 uv sync
 
 # Step 4: Check Redis
@@ -46,7 +48,7 @@ echo -e "\n${YELLOW}Checking Redis...${NC}"
 if ! redis-cli ping &> /dev/null; then
     echo -e "${RED}Redis is not running!${NC}"
     echo "Starting Redis with custom config..."
-    /usr/local/opt/redis/bin/redis-server "$PROJECT_DIR/redis-v8.conf" &
+    /opt/homebrew/bin/redis-server "$PROJECT_DIR/redis-v8.conf" &
     sleep 2
     if redis-cli ping &> /dev/null; then
         echo -e "${GREEN}Redis started successfully${NC}"
@@ -86,11 +88,13 @@ EOF
 
 echo -e "${GREEN}Created MCP config at: $MCP_CONFIG_DIR/mcp-settings.json${NC}"
 
-# Step 6: Create a wrapper script for global usage
-echo -e "\n${YELLOW}Creating global wrapper script...${NC}"
+# Step 6: Create a wrapper script in user's local bin
+echo -e "\n${YELLOW}Creating local wrapper script...${NC}"
 
-WRAPPER_SCRIPT="/usr/local/bin/eol-rag-mcp"
-sudo tee "$WRAPPER_SCRIPT" > /dev/null << EOF
+WRAPPER_SCRIPT="$HOME/.local/bin/eol-rag-mcp"
+mkdir -p "$(dirname "$WRAPPER_SCRIPT")"
+
+tee "$WRAPPER_SCRIPT" > /dev/null << EOF
 #!/bin/bash
 # EOL RAG Context MCP Server Wrapper
 
@@ -98,7 +102,7 @@ export PYTHONPATH="$PROJECT_DIR/src"
 exec "$VENV_DIR/bin/python" "$PROJECT_DIR/mcp_launcher_final.py" "\$@"
 EOF
 
-sudo chmod +x "$WRAPPER_SCRIPT"
+chmod +x "$WRAPPER_SCRIPT"
 echo -e "${GREEN}Created wrapper script at: $WRAPPER_SCRIPT${NC}"
 
 # Step 7: Test the MCP server
@@ -128,7 +132,7 @@ export EOL_RAG_DATA_DIR="$PROJECT_ROOT/.rag-data"
 export EOL_RAG_INDEX_DIR="$PROJECT_ROOT/.rag-index"
 
 # Launch the MCP server
-exec eol-rag-mcp "$@"
+exec "$HOME/.local/bin/eol-rag-mcp" "$@"
 EOF
 
 chmod +x "$PROJECT_DIR/project_mcp_launcher.sh"

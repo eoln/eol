@@ -56,13 +56,20 @@ class TestIndexConfig:
     """Test index configuration."""
 
     def test_default_config(self):
-        """Test default index configuration."""
+        """Test default index configuration for Vector Sets."""
         config = IndexConfig()
-        assert config.index_name == "eol_context"
+        assert config.vectorset_name == "eol_context"
         assert config.prefix == "doc:"
-        assert config.algorithm == "HNSW"
-        assert config.distance_metric == "COSINE"
+        assert config.algorithm == "SVS-VAMANA"  # Updated for Redis 8.2 Vector Sets
+        assert config.quantization == "Q8"  # New Vector Set parameter
         assert config.hierarchy_levels == 3
+        # Test Vector Set names
+        assert config.concept_vectorset == "eol_context_concept"
+        assert config.section_vectorset == "eol_context_section"
+        assert config.chunk_vectorset == "eol_context_chunk"
+        # Legacy compatibility fields
+        assert config.index_name == "eol_context"  # Deprecated but still present
+        assert config.distance_metric == "COSINE"  # Deprecated but still present
 
 
 class TestChunkingConfig:

@@ -320,10 +320,34 @@ def redis_store() -> Mock:
     store.async_redis.hget = AsyncMock(return_value=None)
     store.async_redis.delete = AsyncMock(side_effect=mock_delete)
     store.async_redis.keys = AsyncMock(side_effect=mock_keys)
-    store.async_redis.ft = Mock(return_value=AsyncMock())
+    store.async_redis.ft = Mock(return_value=AsyncMock())  # Legacy FT support
     store.async_redis.expire = AsyncMock()
     store.async_redis.scan = AsyncMock(side_effect=mock_scan)
     store.async_redis.hincrby = AsyncMock()
+    
+    # Add Vector Set mocks for Redis 8.2+
+    async def mock_execute_command(*args):
+        command = args[0].upper() if args else ""
+        if command == "VADD":
+            return 1  # Return number of vectors added
+        elif command == "VSIM":
+            k = 5  # Default
+            for i, arg in enumerate(args):
+                if arg == "COUNT" and i + 1 < len(args):
+                    k = int(args[i + 1])
+                    break
+            # Return mock similar elements with scores
+            results = []
+            for i in range(min(k, 3)):  # Return up to 3 mock results
+                results.extend([f"mock_element_{i}", 0.95 - (i * 0.1)])
+            return results
+        elif command == "VCARD":
+            return 0  # Empty by default
+        elif command == "VDEL":
+            return 1
+        return "OK"
+    
+    store.async_redis.execute_command = AsyncMock(side_effect=mock_execute_command)
 
     # Create sync redis mock
     # The RedisVectorStore has self.redis = Redis client
@@ -339,6 +363,29 @@ def redis_store() -> Mock:
     redis_client_mock.expire = Mock()
     redis_client_mock.scan = Mock(side_effect=mock_scan)
     redis_client_mock.hincrby = Mock()
+    
+    # Add sync Vector Set mocks
+    def mock_execute_command_sync(*args):
+        command = args[0].upper() if args else ""
+        if command == "VADD":
+            return 1
+        elif command == "VSIM":
+            k = 5
+            for i, arg in enumerate(args):
+                if arg == "COUNT" and i + 1 < len(args):
+                    k = int(args[i + 1])
+                    break
+            results = []
+            for i in range(min(k, 3)):
+                results.extend([f"mock_element_{i}", 0.95 - (i * 0.1)])
+            return results
+        elif command == "VCARD":
+            return 0
+        elif command == "VDEL":
+            return 1
+        return "OK"
+    
+    redis_client_mock.execute_command = Mock(side_effect=mock_execute_command_sync)
 
     store.redis = redis_client_mock
 

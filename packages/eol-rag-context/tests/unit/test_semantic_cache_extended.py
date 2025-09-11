@@ -59,8 +59,9 @@ class TestSemanticCacheExtended:
 
         await cache.initialize()
 
-        # Should have attempted to create index
-        cache.redis.async_redis.ft.return_value.create_index.assert_called_once()
+        # Vector Sets don't require explicit index creation - they're auto-created on first VADD
+        # Just verify VCARD was called to check Vector Set existence
+        cache.redis.async_redis.execute_command.assert_called_with("VCARD", "semantic_cache")
 
     @pytest.mark.asyncio
     async def test_initialize_index_exists(self, cache):
@@ -73,8 +74,8 @@ class TestSemanticCacheExtended:
 
         await cache.initialize()
 
-        # Should have checked for existing index
-        cache.redis.async_redis.ft.return_value.info.assert_called_once()
+        # Vector Sets check existence with VCARD, not FT.INFO
+        cache.redis.async_redis.execute_command.assert_called_with("VCARD", "semantic_cache")
 
     @pytest.mark.asyncio
     async def test_get_cache_disabled(self, cache):
@@ -373,24 +374,30 @@ class TestSemanticCacheExtended:
         """Test _search_similar with valid results."""
         query_embedding = np.random.rand(384).astype(np.float32)
 
-        # Mock search results
-        mock_doc = MagicMock()
-        mock_doc.id = "cache:test_123"
-        mock_doc.similarity = 0.05  # Redis returns distance, not similarity
-        mock_doc.query = "cached query"
-        mock_doc.response = "cached response"
-        mock_doc.hit_count = "3"
-        mock_doc.timestamp = "1234567890.0"
+        # Mock VSIM command result (element_id, score pairs)
+        vsim_result = ["test_123", 0.95]
+        
+        # Mock HGETALL result for cache data
+        cache_data = {
+            b"query": b"cached query",
+            b"response": b"cached response", 
+            b"hit_count": b"3",
+            b"timestamp": b"1234567890.0"
+        }
 
-        mock_results = MagicMock()
-        mock_results.docs = [mock_doc]
+        # Mock execute_command for VSIM and hgetall for cache data
+        async def mock_execute_command(*args):
+            command = args[0].upper() if args else ""
+            if command == "VSIM":
+                return vsim_result
+            return None
 
-        cache.redis.redis.ft = MagicMock()
-        cache.redis.redis.ft.return_value.search = MagicMock(return_value=mock_results)
+        cache.redis.async_redis.execute_command = AsyncMock(side_effect=mock_execute_command)
+        cache.redis.async_redis.hgetall = AsyncMock(return_value=cache_data)
 
         results = await cache._search_similar(query_embedding, k=5)
 
         assert len(results) == 1
         assert results[0][0] == "test_123"  # ID without prefix
-        assert results[0][1] == 0.95  # Converted to similarity
+        assert results[0][1] == 0.95  # Similarity score
         assert results[0][2]["response"] == "cached response"

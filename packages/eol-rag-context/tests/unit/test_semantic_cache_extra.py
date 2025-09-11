@@ -80,22 +80,30 @@ class TestSemanticCacheExtra:
         # Setup mocks
         mock_redis_store = AsyncMock()
         mock_redis_store.redis = MagicMock()
+        mock_redis_store.async_redis = AsyncMock()
 
-        # Mock search results
-        mock_doc = MagicMock()
-        mock_doc.id = "cache:entry1"
-        mock_doc.similarity = 0.1  # Distance (1.0 - 0.1 = 0.9 similarity)
-        mock_doc.query = "test query"
-        mock_doc.response = "cached response"
-        mock_doc.hit_count = "1"
-        mock_doc.timestamp = "1234567890"
+        # Mock VSIM command result (element_id, score pairs) 
+        vsim_result = ["entry1", 0.9]  # High similarity score
 
-        mock_results = MagicMock()
-        mock_results.docs = [mock_doc]
+        # Mock HGETALL result for cache data
+        cache_data = {
+            b"query": b"test query",
+            b"response": b"cached response",
+            b"hit_count": b"1", 
+            b"timestamp": b"1234567890"
+        }
 
-        mock_search = MagicMock()
-        mock_search.search = MagicMock(return_value=mock_results)
-        mock_redis_store.redis.ft = MagicMock(return_value=mock_search)
+        # Mock execute_command for VSIM and hgetall for cache data
+        async def mock_execute_command(*args):
+            command = args[0].upper() if args else ""
+            if command == "VSIM":
+                return vsim_result
+            elif command == "VCARD":
+                return 1  # Vector Set exists
+            return None
+
+        mock_redis_store.async_redis.execute_command = AsyncMock(side_effect=mock_execute_command)
+        mock_redis_store.async_redis.hgetall = AsyncMock(return_value=cache_data)
         mock_redis_store.redis.hincrby = MagicMock()  # For incrementing hit count
 
         mock_embedding = AsyncMock()

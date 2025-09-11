@@ -16,9 +16,8 @@
 # Install Python 3.13+
 brew install python@3.13
 
-# Install Redis Stack (includes RediSearch module)
-brew tap redis-stack/redis-stack
-brew install --cask redis-stack-server
+# Install Redis 8.2+ (with native Vector Sets support)
+brew install redis
 
 # Install libmagic (for file type detection)
 brew install libmagic
@@ -235,8 +234,8 @@ pytest tests/
 # Verify Python version
 python --version  # Should be 3.11+
 
-# Verify Redis with RediSearch
-redis-cli MODULE LIST | grep search  # Should show search module
+# Verify Redis 8.2+ with Vector Sets support
+redis-cli COMMAND INFO VADD | grep -q VADD  # Should confirm VADD command exists
 
 # Verify package installation
 python -c "import eol.rag_context; print('OK')"
@@ -295,20 +294,20 @@ redis-cli ping
 # Start Redis Stack
 redis-stack-server --daemonize yes
 
-# Or use Docker
-docker run -d -p 6379:6379 redis/redis-stack:latest
+# Or use Docker with Redis 8.2+
+docker run -d -p 6379:6379 redis:latest
 ```
 
-#### 3. FT.CREATE command not found
+#### 3. VADD command not found
 
-**Solution:** You have regular Redis, not Redis Stack. Install Redis Stack:
+**Solution:** You have an older Redis version. Install Redis 8.2+:
 
 ```bash
 # macOS
-brew install --cask redis-stack-server
+brew install redis
 
-# Or use Docker
-docker run -d -p 6379:6379 redis/redis-stack:latest
+# Or use Docker with Redis 8.2+
+docker run -d -p 6379:6379 redis:latest
 ```
 
 #### 4. Import errors with tree-sitter

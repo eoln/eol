@@ -8,16 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **MAJOR**: Native Redis 8.2+ Vector Sets support with VADD/VSIM commands
+- Q8 quantization for memory-efficient vector storage
+- SVS-VAMANA algorithm for high-performance similarity search
+- Hierarchical Vector Set organization (concepts, sections, chunks)
+- Comprehensive Vector Set testing suite (397 unit + 52 integration tests)
+- Binary data handling improvements for Vector Set operations
 - Comprehensive CI/CD dependencies in pyproject.toml for improved caching
 - Python matrix testing (3.11, 3.12, 3.13) with isolated Redis instances
 - Wheel cache optimization with dependency hash-based caching
 - Unified GitHub workflow (ci-cd.yml) consolidating all CI processes
 
 ### Changed
+- **BREAKING**: Migrated from Redis FT.SEARCH to native Redis 8.2+ Vector Sets
+- **BREAKING**: Now requires Redis 8.2+ instead of Redis Stack with RediSearch module
+- **BREAKING**: Updated IndexConfig to use Vector Set parameters (SVS-VAMANA, Q8 quantization)
+- **BREAKING**: Replaced all FT.CREATE/FT.SEARCH operations with VADD/VSIM Vector Set commands
+- Updated semantic cache to use Vector Sets with proper UTF-8/binary data handling
+- Migrated all test infrastructure to mock Vector Set commands instead of FT.SEARCH
 - **BREAKING**: Migrated from pip to uv as primary package manager for 10x faster installs
-- Updated all documentation to reflect uv as the recommended installation method
+- Updated all documentation to reflect Redis 8.2+ Vector Sets and uv installation
 - Migrated Dockerfile.test from pip to uv for faster container builds
 - Consolidated GitHub workflows into single unified ci-cd.yml
+
+### Removed
+- **BREAKING**: Removed dependency on Redis Stack and RediSearch module
+- **BREAKING**: Removed all FT.SEARCH/FT.CREATE legacy code and configurations
 
 ### Fixed
 - Prevented redundant wheel cache artifact uploads

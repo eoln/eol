@@ -98,10 +98,9 @@ async def test_vector_operations():
     store.redis = mock_redis
     store.create_hierarchical_indexes(embedding_dim=384)
 
-    # Should call ft() twice for each hierarchy level (check + create = 6 total calls for 3 levels)
-    assert mock_redis.ft.call_count == 6
-    # Should call create_index for each level since they don't exist
-    assert mock_ft.create_index.call_count == 3
+    # Vector Sets don't require explicit index creation - they're auto-created on first VADD
+    # Just verify the embedding dimension was stored
+    assert store._embedding_dim == 384
 
 
 async def test_batch_operations():
@@ -780,12 +779,13 @@ def test_index_creation_with_different_dimensions():
     mock_redis.ft.return_value = mock_ft
     store.redis = mock_redis
 
-    # Test index creation with different embedding dimensions
+    # Test Vector Set preparation with different embedding dimensions
     for dimension in [384, 768, 1536]:
         store.create_hierarchical_indexes(embedding_dim=dimension)
 
-        # Each call should attempt to create 3 indexes (concept, section, chunk)
-        assert mock_redis.ft.call_count >= 3
+        # Vector Sets are created automatically on first VADD, not during index preparation
+        # Just verify the embedding dimension is stored
+        assert store._embedding_dim == dimension
 
 
 def test_close_connection_scenarios():

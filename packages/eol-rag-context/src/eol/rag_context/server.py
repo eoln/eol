@@ -206,7 +206,8 @@ class EOLRAGContextServer:
 
         # Initialize Redis
         self.redis_store = RedisVectorStore(self.config.redis, self.config.index)
-        await self.redis_store.connect_async()
+        self.redis_store.connect()  # Initialize sync connection for background operations
+        await self.redis_store.connect_async()  # Initialize async connection for async operations
 
         # Initialize embeddings
         self.embedding_manager = EmbeddingManager(

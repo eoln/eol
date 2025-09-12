@@ -727,7 +727,12 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def search_context(
-            request: SearchContextRequest, ctx: Context
+            query: str,
+            max_results: int = 10,
+            min_relevance: float = 0.7,
+            hierarchy_level: int = None,
+            source_filter: str = None,
+            ctx: Context = None
         ) -> list[dict[str, Any]]:
             """Search for relevant context using vector similarity.
 
@@ -736,12 +741,11 @@ class EOLRAGContextServer:
             specific hierarchy levels.
 
             Args:
-                request: SearchContextRequest containing:
-                    - query: Search query string
-                    - max_results: Maximum number of results to return
-                    - min_relevance: Minimum similarity score threshold
-                    - hierarchy_level: Optional specific level (1=concept, 2=section, 3=chunk)
-                    - source_filter: Optional source ID to filter results
+                query: Search query string
+                max_results: Maximum number of results to return (default: 10)
+                min_relevance: Minimum similarity score threshold (default: 0.7)
+                hierarchy_level: Optional specific level (1=concept, 2=section, 3=chunk)
+                source_filter: Optional source ID to filter results
                 ctx: MCP context for the request
 
             Returns:
@@ -753,16 +757,16 @@ class EOLRAGContextServer:
 
             """
             # Get query embedding
-            query_embedding = await self.embedding_manager.get_embedding(request.query)
+            query_embedding = await self.embedding_manager.get_embedding(query)
 
             # Perform search
-            if request.hierarchy_level:
+            if hierarchy_level:
                 results = await self.redis_store.vector_search(
                     query_embedding,
-                    hierarchy_level=request.hierarchy_level,
-                    k=request.max_results,
+                    hierarchy_level=hierarchy_level,
+                    k=max_results,
                     filters=(
-                        {"source_id": request.source_filter} if request.source_filter else None
+                        {"source_id": source_filter} if source_filter else None
                     ),
                 )
 
@@ -774,15 +778,15 @@ class EOLRAGContextServer:
                         "metadata": data["metadata"],
                     }
                     for doc_id, score, data in results
-                    if score >= request.min_relevance
+                    if score >= min_relevance
                 ]
             else:
                 # Hierarchical search
                 results = await self.redis_store.hierarchical_search(
-                    query_embedding, max_chunks=request.max_results
+                    query_embedding, max_chunks=max_results
                 )
 
-                return [result for result in results if result["score"] >= request.min_relevance]
+                return [result for result in results if result["score"] >= min_relevance]
 
         @self.mcp.tool()
         async def query_knowledge_graph(

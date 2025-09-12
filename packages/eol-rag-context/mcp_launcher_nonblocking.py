@@ -33,9 +33,9 @@ def main():
         logger.info("✅ Server created successfully with non-blocking capabilities")
         logger.info("📊 Non-blocking tools available: start_indexing, get_indexing_status, list_indexing_tasks, cancel_indexing_task, cleanup_old_indexing_tasks")
         
-        # Use the server's blocking run method which handles async internally
-        import asyncio
-        asyncio.run(server.run())
+        # Use FastMCP's run method directly - it handles initialization internally
+        # This avoids asyncio loop conflicts
+        server.mcp.run()
         
     except Exception as e:
         logger.error(f"❌ Server startup failed: {e}")

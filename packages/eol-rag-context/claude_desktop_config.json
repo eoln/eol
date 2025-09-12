@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "eol-rag-context": {
-      "command": "/Users/eoln/Devel/eol/packages/eol-rag-context/.venv/bin/python",
+      "command": "/Users/pmarzec/Devel/eol/.venv/bin/python",
       "args": [
-        "/Users/eoln/Devel/eol/packages/eol-rag-context/mcp_launcher.py"
+        "/Users/pmarzec/Devel/eol/packages/eol-rag-context/mcp_launcher_nonblocking.py"
       ],
       "env": {
-        "PYTHONPATH": "/Users/eoln/Devel/eol/packages/eol-rag-context/src"
+        "PYTHONPATH": "/Users/pmarzec/Devel/eol/packages/eol-rag-context/src"
       }
     }
   }

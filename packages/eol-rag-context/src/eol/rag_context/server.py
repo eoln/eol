@@ -369,6 +369,10 @@ class EOLRAGContextServer:
                 - metadata: Additional source-specific metadata
 
             """
+            # Ensure components are initialized
+            if self.indexer is None:
+                await self.initialize()
+                
             sources = await self.indexer.list_sources()
             return [
                 {
@@ -395,6 +399,10 @@ class EOLRAGContextServer:
                 - knowledge_graph: Graph construction and query statistics
 
             """
+            # Ensure components are initialized
+            if self.indexer is None:
+                await self.initialize()
+                
             return {
                 "indexer": self.indexer.get_stats(),
                 "cache": self.semantic_cache.get_stats(),
@@ -462,8 +470,9 @@ class EOLRAGContextServer:
                 - message: Human-readable status message
                 - estimated_files: Rough estimate of files to be processed
             """
+            # Ensure components are initialized
             if not self.task_manager or not self.parallel_indexer:
-                raise RuntimeError("Non-blocking indexing not initialized")
+                await self.initialize()
             
             path = Path(request.path).resolve()
             if not path.exists() or not path.is_dir():
@@ -513,20 +522,21 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def get_indexing_status(request: IndexingStatusRequest, ctx: Context) -> dict[str, Any]:
+        async def get_indexing_status(task_id: str, ctx: Context) -> dict[str, Any]:
             """Get current status and progress of an indexing task.
             
             Args:
-                request: IndexingStatusRequest with task_id
+                task_id: Task ID to check status for
                 ctx: MCP context for the request
                 
             Returns:
                 Dictionary containing detailed task status and progress information
             """
+            # Ensure components are initialized
             if not self.task_manager:
-                raise RuntimeError("Task manager not initialized")
+                await self.initialize()
             
-            task_info = await self.task_manager.get_task_status(request.task_id)
+            task_info = await self.task_manager.get_task_status(task_id)
             
             if not task_info:
                 return {
@@ -587,31 +597,33 @@ class EOLRAGContextServer:
             return result
 
         @self.mcp.tool()
-        async def list_indexing_tasks(request: ListTasksRequest, ctx: Context) -> dict[str, Any]:
+        async def list_indexing_tasks(status_filter: str = None, limit: int = 50, ctx: Context = None) -> dict[str, Any]:
             """List indexing tasks with optional status filtering.
             
             Args:
-                request: ListTasksRequest with optional filters
+                status_filter: Filter by status (pending, running, completed, failed, cancelled)
+                limit: Maximum tasks to return (default: 50)
                 ctx: MCP context for the request
                 
             Returns:
                 Dictionary containing list of tasks and summary statistics
             """
+            # Ensure components are initialized
             if not self.task_manager:
-                raise RuntimeError("Task manager not initialized")
+                await self.initialize()
             
             # Convert status filter
-            status_filter = None
-            if request.status_filter:
+            status_filter_enum = None
+            if status_filter:
                 try:
-                    status_filter = TaskStatus(request.status_filter.lower())
+                    status_filter_enum = TaskStatus(status_filter.lower())
                 except ValueError:
                     return {
-                        "error": f"Invalid status filter: {request.status_filter}",
+                        "error": f"Invalid status filter: {status_filter}",
                         "valid_statuses": [s.value for s in TaskStatus]
                     }
             
-            tasks = await self.task_manager.list_tasks(status_filter, request.limit)
+            tasks = await self.task_manager.list_tasks(status_filter_enum, limit)
             
             # Convert to response format
             task_list = []
@@ -644,8 +656,8 @@ class EOLRAGContextServer:
                 "tasks": task_list,
                 "total_tasks": len(task_list),
                 "status_summary": status_counts,
-                "filter_applied": request.status_filter,
-                "limit_applied": request.limit
+                "filter_applied": status_filter,
+                "limit_applied": limit
             }
 
         @self.mcp.tool()
@@ -659,8 +671,9 @@ class EOLRAGContextServer:
             Returns:
                 Dictionary containing cancellation result
             """
+            # Ensure components are initialized
             if not self.task_manager:
-                raise RuntimeError("Task manager not initialized")
+                await self.initialize()
             
             success = await self.task_manager.cancel_task(request.task_id)
             
@@ -686,8 +699,9 @@ class EOLRAGContextServer:
             Returns:
                 Dictionary containing cleanup results
             """
+            # Ensure components are initialized
             if not self.task_manager:
-                raise RuntimeError("Task manager not initialized")
+                await self.initialize()
             
             cleaned_count = await self.task_manager.cleanup_old_tasks()
             
@@ -1173,8 +1187,9 @@ Output Format:
             - path: Directory path being indexed
 
         """
+        # Ensure components are initialized
         if not self.task_manager or not self.parallel_indexer:
-            return {"status": "error", "message": "Non-blocking indexing not initialized"}
+            await self.initialize()
 
         # Extract parameters
         recursive = kwargs.get("recursive", True)

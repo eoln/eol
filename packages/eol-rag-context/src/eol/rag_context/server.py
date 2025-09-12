@@ -568,12 +568,12 @@ class EOLRAGContextServer:
                 "progress": {
                     "completed_files": task_info.completed_files,
                     "total_files": task_info.total_files,
-                    "percentage": task_info.progress_percentage,
-                    "files_per_second": task_info.files_per_second
+                    "percentage": round(task_info.progress_percentage, 2),
+                    "files_per_second": round(task_info.files_per_second, 2)
                 },
                 "timing": {
                     "created_at": datetime.fromtimestamp(task_info.created_at).isoformat(),
-                    "elapsed_time": task_info.elapsed_time
+                    "elapsed_time": round(task_info.elapsed_time, 2)
                 },
                 "results": {
                     "total_chunks": task_info.total_chunks,
@@ -584,14 +584,12 @@ class EOLRAGContextServer:
             
             # Add completion estimate for running tasks
             if task_info.status == TaskStatus.RUNNING and task_info.estimated_completion_time:
-                result["timing"]["estimated_completion_seconds"] = task_info.estimated_completion_time
+                result["timing"]["estimated_completion_seconds"] = round(task_info.estimated_completion_time, 2)
                 result["timing"]["estimated_completion"] = datetime.fromtimestamp(
                     task_info.created_at + task_info.estimated_completion_time
                 ).isoformat()
             
-            # Add current file being processed
-            if task_info.current_file:
-                result["current_file"] = task_info.current_file
+            # Current file tracking removed for simplicity
             
             # Add error information for failed tasks
             if task_info.status == TaskStatus.FAILED:
@@ -602,12 +600,19 @@ class EOLRAGContextServer:
             
             # Add result information for completed tasks
             if task_info.status == TaskStatus.COMPLETED and task_info.result:
+                perf = task_info.result.get("metadata", {}).get("performance", {})
+                # Round performance metrics to 2 decimal places
+                if perf:
+                    perf = {
+                        k: round(v, 2) if isinstance(v, float) else v
+                        for k, v in perf.items()
+                    }
                 result["indexing_result"] = {
                     "source_id": task_info.result.get("source_id"),
                     "indexed_at": datetime.fromtimestamp(
                         task_info.result.get("indexed_at", task_info.completed_at)
                     ).isoformat(),
-                    "performance": task_info.result.get("metadata", {}).get("performance", {})
+                    "performance": perf
                 }
             
             return result
@@ -649,10 +654,10 @@ class EOLRAGContextServer:
                     "status": task_info.status.value,
                     "path": task_info.folder_path,
                     "created_at": datetime.fromtimestamp(task_info.created_at).isoformat(),
-                    "progress_percentage": task_info.progress_percentage,
+                    "progress_percentage": round(task_info.progress_percentage, 2),
                     "completed_files": task_info.completed_files,
                     "total_files": task_info.total_files,
-                    "elapsed_time": task_info.elapsed_time
+                    "elapsed_time": round(task_info.elapsed_time, 2)
                 }
                 
                 if task_info.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
@@ -719,11 +724,17 @@ class EOLRAGContextServer:
             if not self.task_manager:
                 await self.initialize()
             
-            cleaned_count = await self.task_manager.cleanup_old_tasks()
+            # Clean up both old tasks and stuck tasks
+            old_cleaned = await self.task_manager.cleanup_old_tasks()
+            stuck_cleaned = await self.task_manager.cleanup_stuck_tasks(timeout_minutes=15)
+            
+            total_cleaned = old_cleaned + stuck_cleaned
             
             return {
-                "cleaned_tasks": cleaned_count,
-                "message": f"Cleaned up {cleaned_count} old indexing tasks"
+                "cleaned_tasks": total_cleaned,
+                "old_tasks_cleaned": old_cleaned,
+                "stuck_tasks_cleaned": stuck_cleaned,
+                "message": f"Cleaned up {total_cleaned} tasks ({old_cleaned} old, {stuck_cleaned} stuck)"
             }
 
         @self.mcp.tool()
@@ -1015,17 +1026,35 @@ class EOLRAGContextServer:
                 - timestamp: ISO timestamp of operation
 
             """
-            # Clear semantic cache
-            await self.semantic_cache.clear()
+            results = {}
+            
+            # Clear semantic cache if available
+            try:
+                if self.semantic_cache:
+                    await self.semantic_cache.clear()
+                    results["semantic_cache"] = "cleared"
+                else:
+                    # Try to initialize if not already done
+                    results["semantic_cache"] = "not available"
+            except AttributeError:
+                results["semantic_cache"] = "not initialized"
+            except Exception as e:
+                results["semantic_cache"] = f"error: {str(e)}"
 
-            # Clear embedding cache
-            await self.embedding_manager.clear_cache()
+            # Clear embedding cache if available
+            try:
+                if self.embedding_manager:
+                    await self.embedding_manager.clear_cache()
+                    results["embedding_cache"] = "cleared"
+                else:
+                    results["embedding_cache"] = "not available"
+            except AttributeError:
+                results["embedding_cache"] = "not initialized"
+            except Exception as e:
+                results["embedding_cache"] = f"error: {str(e)}"
 
-            return {
-                "semantic_cache": "cleared",
-                "embedding_cache": "cleared",
-                "timestamp": datetime.now().isoformat(),
-            }
+            results["timestamp"] = datetime.now().isoformat()
+            return results
 
         @self.mcp.tool()
         async def remove_source(source_id: str, ctx: Context) -> dict[str, Any]:

@@ -347,10 +347,12 @@ class ParallelIndexer(DocumentIndexer):
             
             # Aggregate results
             for result in batch_results:
+                # Always count file as completed, even if it had errors or no chunks
+                self.current_checkpoint.completed_files += 1
+                
                 if result.chunks > 0:
                     total_chunks += result.chunks
                     indexed_files += 1
-                    self.current_checkpoint.completed_files += 1
                     
                 if result.errors:
                     all_errors.extend(result.errors)
@@ -406,11 +408,18 @@ class ParallelIndexer(DocumentIndexer):
     ) -> List[IndexResult]:
         """Process a batch of files concurrently."""
         tasks = []
+        skipped_files = []
         
         for file_path in batch.files:
             # Skip if already processed (resume capability)
             if (not force_reindex and 
                 str(file_path) in self.current_checkpoint.processed_files):
+                # Still need to return a result for skipped files so they're counted
+                skipped_files.append(IndexResult(
+                    source_id=source_id,
+                    chunks=0,  # No new chunks since file was already processed
+                    files=0   # Don't count as newly indexed
+                ))
                 continue
                 
             # Create processing task with semaphore
@@ -436,9 +445,11 @@ class ParallelIndexer(DocumentIndexer):
                 else:
                     processed_results.append(result)
             
-            return processed_results
+            # Include skipped files in results
+            return skipped_files + processed_results
         
-        return []
+        # If all files were skipped, return the skipped results
+        return skipped_files
     
     async def _process_single_file_with_semaphore(
         self,

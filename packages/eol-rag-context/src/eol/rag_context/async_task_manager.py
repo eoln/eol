@@ -73,7 +73,7 @@ class IndexingTaskInfo:
     total_files: int = 0
     completed_files: int = 0
     failed_files: int = 0
-    current_file: Optional[str] = None
+# current_file: Optional[str] = None  # Removed for simplicity
     
     # Results
     total_chunks: int = 0
@@ -132,10 +132,11 @@ class IndexingTaskInfo:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data['status'] = self.status.value
-        data['progress_percentage'] = self.progress_percentage
-        data['files_per_second'] = self.files_per_second
-        data['estimated_completion_time'] = self.estimated_completion_time
-        data['elapsed_time'] = self.elapsed_time
+        # Round numerical values to 2 decimal places
+        data['progress_percentage'] = round(self.progress_percentage, 2)
+        data['files_per_second'] = round(self.files_per_second, 2)
+        data['estimated_completion_time'] = round(self.estimated_completion_time, 2) if self.estimated_completion_time else None
+        data['elapsed_time'] = round(self.elapsed_time, 2)
         return data
 
 
@@ -318,6 +319,71 @@ class AsyncTaskManager:
         logger.info(f"Cleaned up {cleaned_count + redis_cleaned} old indexing tasks")
         return cleaned_count + redis_cleaned
     
+    async def cleanup_stuck_tasks(self, timeout_minutes: int = 30) -> int:
+        """Clean up stuck running tasks that have exceeded timeout.
+        
+        Tasks that have been running for longer than the timeout and show
+        no progress are marked as failed and cleaned up.
+        
+        Args:
+            timeout_minutes: Mark tasks as stuck after this many minutes (default 30)
+            
+        Returns:
+            Number of stuck tasks cleaned up
+        """
+        timeout_seconds = timeout_minutes * 60
+        current_time = time.time()
+        stuck_count = 0
+        
+        # Check both memory and Redis for stuck tasks
+        all_tasks = list(self.task_info.values())
+        
+        # Also load from Redis
+        pattern = "indexing_task:*"
+        cursor = 0
+        while True:
+            cursor, keys = await self.redis_store.async_redis.scan(
+                cursor, match=pattern, count=100
+            )
+            for key in keys:
+                task_id = key.split(":")[-1] if isinstance(key, str) else key.decode().split(":")[-1]
+                if task_id not in self.task_info:
+                    task_info = await self._load_task_info(task_id)
+                    if task_info:
+                        all_tasks.append(task_info)
+            if cursor == 0:
+                break
+        
+        for task_info in all_tasks:
+            # Check if task is stuck
+            if (task_info.status == TaskStatus.RUNNING and 
+                task_info.elapsed_time > timeout_seconds):
+                
+                # Check if there's any progress
+                if (task_info.completed_files == 0 or 
+                    (task_info.files_per_second < 0.01 and task_info.elapsed_time > 60)):
+                    
+                    # Mark as failed
+                    task_info.status = TaskStatus.FAILED
+                    task_info.completed_at = current_time
+                    task_info.error_message = f"Task timed out after {round(task_info.elapsed_time, 2)} seconds with no progress"
+                    
+                    # Store updated status
+                    await self._store_task_info(task_info)
+                    
+                    # Cancel if still in running_tasks
+                    if task_info.task_id in self.running_tasks:
+                        self.running_tasks[task_info.task_id].cancel()
+                        del self.running_tasks[task_info.task_id]
+                    
+                    stuck_count += 1
+                    logger.warning(f"Cleaned up stuck task {task_info.task_id}")
+        
+        if stuck_count > 0:
+            logger.info(f"Cleaned up {stuck_count} stuck running tasks")
+        
+        return stuck_count
+    
     async def _execute_indexing_task(
         self,
         task_id: str,
@@ -336,10 +402,13 @@ class AsyncTaskManager:
             
             # Create progress callback
             def progress_callback(checkpoint: IndexingCheckpoint):
+                # Update task info with latest progress
                 task_info.total_files = checkpoint.total_files
                 task_info.completed_files = checkpoint.completed_files
                 task_info.total_chunks = checkpoint.total_chunks
-                # Don't await here as this runs in callback context
+                # Update memory immediately for get_task_status
+                self.task_info[task_id] = task_info
+                # Store to Redis immediately for live stats (synchronous)
                 asyncio.create_task(self._store_task_info(task_info))
             
             # Set parallel config if provided
@@ -395,7 +464,7 @@ class AsyncTaskManager:
             key = f"indexing_task:{task_info.task_id}"
             data = json.dumps(task_info.to_dict())
             
-            await self.redis_store.redis.setex(
+            await self.redis_store.async_redis.setex(
                 key, 
                 self.task_ttl_hours * 3600,  # TTL in seconds
                 data
@@ -403,11 +472,20 @@ class AsyncTaskManager:
         except Exception as e:
             logger.error(f"Failed to store task info for {task_info.task_id}: {e}")
     
+    async def _store_task_info_safe(self, task_info: IndexingTaskInfo) -> None:
+        """Store task info in Redis with error handling (for background tasks)."""
+        try:
+            await self._store_task_info(task_info)
+        except Exception as e:
+            # Log but don't raise - this runs in background
+            logger.warning(f"Background task info storage failed for {task_info.task_id}: {e}")
+            # Continue without Redis storage - memory storage still works
+    
     async def _load_task_info(self, task_id: str) -> Optional[IndexingTaskInfo]:
         """Load task info from Redis."""
         try:
             key = f"indexing_task:{task_id}"
-            data = await self.redis_store.redis.get(key)
+            data = await self.redis_store.async_redis.get(key)
             
             if data:
                 task_dict = json.loads(data)
@@ -431,7 +509,7 @@ class AsyncTaskManager:
         """Load all task info from Redis."""
         tasks = []
         try:
-            keys = await self.redis_store.redis.keys("indexing_task:*")
+            keys = await self.redis_store.async_redis.keys("indexing_task:*")
             
             for key in keys:
                 if isinstance(key, bytes):
@@ -452,20 +530,20 @@ class AsyncTaskManager:
         """Clean up old tasks from Redis."""
         cleaned = 0
         try:
-            keys = await self.redis_store.redis.keys("indexing_task:*")
+            keys = await self.redis_store.async_redis.keys("indexing_task:*")
             
             for key in keys:
                 if isinstance(key, bytes):
                     key = key.decode()
                 
                 # Get task creation time
-                data = await self.redis_store.redis.get(key)
+                data = await self.redis_store.async_redis.get(key)
                 if data:
                     task_dict = json.loads(data)
                     created_at = task_dict.get('created_at', 0)
                     
                     if created_at < cutoff_time:
-                        await self.redis_store.redis.delete(key)
+                        await self.redis_store.async_redis.delete(key)
                         cleaned += 1
                         
         except Exception as e:

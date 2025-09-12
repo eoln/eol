@@ -676,11 +676,11 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def cancel_indexing_task(request: CancelTaskRequest, ctx: Context) -> dict[str, Any]:
+        async def cancel_indexing_task(task_id: str, ctx: Context = None) -> dict[str, Any]:
             """Cancel a running indexing task.
             
             Args:
-                request: CancelTaskRequest with task_id
+                task_id: Task ID to cancel
                 ctx: MCP context for the request
                 
             Returns:
@@ -690,10 +690,10 @@ class EOLRAGContextServer:
             if not self.task_manager:
                 await self.initialize()
             
-            success = await self.task_manager.cancel_task(request.task_id)
+            success = await self.task_manager.cancel_task(task_id)
             
             return {
-                "task_id": request.task_id,
+                "task_id": task_id,
                 "cancelled": success,
                 "message": (
                     "Task cancelled successfully" if success 
@@ -922,17 +922,21 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def watch_directory(request: WatchDirectoryRequest, ctx: Context) -> dict[str, Any]:
+        async def watch_directory(
+            path: str,
+            recursive: bool = True,
+            file_patterns: list[str] = None,
+            ctx: Context = None
+        ) -> dict[str, Any]:
             """Start watching a directory for file changes.
 
             Begins monitoring the specified directory for file changes, automatically
             reindexing modified files and updating the knowledge graph as needed.
 
             Args:
-                request: WatchDirectoryRequest containing:
-                    - path: Directory path to watch
-                    - recursive: Whether to watch subdirectories
-                    - file_patterns: Optional glob patterns for file filtering
+                path: Directory path to watch
+                recursive: Whether to watch subdirectories (default: True)
+                file_patterns: Optional glob patterns for file filtering
                 ctx: MCP context for the request
 
             Returns:
@@ -944,17 +948,17 @@ class EOLRAGContextServer:
                 - status: Current watching status
 
             """
-            path = Path(request.path)
+            path_obj = Path(path)
 
             source_id = await self.file_watcher.watch(
-                path, recursive=request.recursive, file_patterns=request.file_patterns
+                path_obj, recursive=recursive, file_patterns=file_patterns
             )
 
             return {
                 "source_id": source_id,
-                "path": str(path),
-                "recursive": request.recursive,
-                "patterns": request.file_patterns,
+                "path": str(path_obj),
+                "recursive": recursive,
+                "patterns": file_patterns,
                 "status": "watching",
             }
 

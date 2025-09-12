@@ -451,7 +451,16 @@ class EOLRAGContextServer:
         """
 
         @self.mcp.tool()
-        async def start_indexing(request: StartIndexingRequest, ctx: Context) -> dict[str, Any]:
+        async def start_indexing(
+            path: str,
+            recursive: bool = True,
+            force_reindex: bool = False,
+            watch: bool = False,
+            max_workers: int = 16,
+            batch_size: int = 32,
+            enable_streaming: bool = True,
+            ctx: Context = None
+        ) -> dict[str, Any]:
             """Start asynchronous indexing and return task ID immediately.
             
             This tool starts indexing in the background and returns immediately
@@ -459,7 +468,13 @@ class EOLRAGContextServer:
             never blocked waiting for indexing to complete.
             
             Args:
-                request: StartIndexingRequest containing indexing parameters
+                path: Directory path to index
+                recursive: Index subdirectories (default: True)
+                force_reindex: Force reindex of unchanged files (default: False)
+                watch: Watch for changes after indexing (default: False)
+                max_workers: Maximum concurrent workers (default: 16)
+                batch_size: Batch size for processing (default: 32)
+                enable_streaming: Enable streaming for large files (default: True)
                 ctx: MCP context for the request
                 
             Returns:
@@ -474,50 +489,50 @@ class EOLRAGContextServer:
             if not self.task_manager or not self.parallel_indexer:
                 await self.initialize()
             
-            path = Path(request.path).resolve()
-            if not path.exists() or not path.is_dir():
-                raise ValueError(f"Directory does not exist: {path}")
+            path_obj = Path(path).resolve()
+            if not path_obj.exists() or not path_obj.is_dir():
+                raise ValueError(f"Directory does not exist: {path_obj}")
             
             # Create parallel config
             parallel_config = ParallelIndexingConfig(
-                max_document_workers=request.max_workers,
-                max_embedding_workers=request.max_workers // 2,
-                max_redis_workers=request.max_workers // 4,
-                batch_size=request.batch_size,
-                enable_streaming=request.enable_streaming
+                max_document_workers=max_workers,
+                max_embedding_workers=max_workers // 2,
+                max_redis_workers=max_workers // 4,
+                batch_size=batch_size,
+                enable_streaming=enable_streaming
             )
             
             # Start indexing task
             task_id = await self.task_manager.start_indexing_task(
-                path,
+                path_obj,
                 self.parallel_indexer,
-                recursive=request.recursive,
-                force_reindex=request.force_reindex,
+                recursive=recursive,
+                force_reindex=force_reindex,
                 parallel_config=parallel_config
             )
             
             # Quick file count estimate
-            estimated_files = self._estimate_file_count(path, request.recursive)
+            estimated_files = self._estimate_file_count(path_obj, recursive)
             
             # Start watching if requested (this is immediate and non-blocking)
-            if request.watch:
+            if watch:
                 await self.file_watcher.watch(
-                    path,
-                    recursive=request.recursive,
+                    path_obj,
+                    recursive=recursive,
                     file_patterns=None,
                 )
             
             return {
                 "task_id": task_id,
                 "status": "pending",
-                "path": str(path),
-                "message": f"Indexing started for {path} with {request.max_workers} workers",
+                "path": str(path_obj),
+                "message": f"Indexing started for {path_obj} with {max_workers} workers",
                 "estimated_files": estimated_files,
-                "watching": request.watch,
+                "watching": watch,
                 "parallel_config": {
-                    "max_workers": request.max_workers,
-                    "batch_size": request.batch_size,
-                    "streaming_enabled": request.enable_streaming
+                    "max_workers": max_workers,
+                    "batch_size": batch_size,
+                    "streaming_enabled": enable_streaming
                 }
             }
 

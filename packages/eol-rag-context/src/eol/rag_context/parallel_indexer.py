@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Optional, Set
 from .config import RAGConfig
 from .document_processor import DocumentProcessor, ProcessedDocument
 from .embeddings import EmbeddingManager
-from .indexer import DocumentIndexer, DocumentMetadata, IndexedSource, IndexResult
+from .indexer import DocumentIndexer, DocumentMetadata, IndexedSource, IndexResult, FolderScanner
 from .redis_client import RedisVectorStore, VectorDocument
 
 logger = logging.getLogger(__name__)
@@ -125,8 +125,12 @@ class FileBatch:
 class ParallelFileScanner:
     """Intelligent file discovery and batching for parallel processing."""
     
-    def __init__(self, config: ParallelIndexingConfig):
+    def __init__(self, config: ParallelIndexingConfig, rag_config: RAGConfig):
         self.config = config
+        self.rag_config = rag_config
+        # Reuse FolderScanner for consistent ignore patterns
+        self.folder_scanner = FolderScanner(rag_config)
+        self.ignore_patterns = self.folder_scanner.ignore_patterns
         
     async def scan_repository(
         self, 
@@ -156,9 +160,11 @@ class ParallelFileScanner:
                 files = list(root_path.rglob(pattern))
             else:
                 files = list(root_path.glob(pattern))
-            all_files.extend(files)
+            # Filter out ignored files using FolderScanner's logic
+            filtered_files = [f for f in files if not self.folder_scanner._should_ignore(f)]
+            all_files.extend(filtered_files)
         
-        logger.info(f"Discovered {len(all_files)} files for indexing")
+        logger.info(f"Discovered {len(all_files)} files for indexing (after filtering)")
         
         # Sort by priority and size
         prioritized_files = self._prioritize_files(all_files)
@@ -239,6 +245,7 @@ class ParallelFileScanner:
         
         abs_path = str(path.resolve())
         return hashlib.md5(abs_path.encode("utf-8")).hexdigest()
+    
 
 
 class ParallelIndexer(DocumentIndexer):
@@ -262,7 +269,7 @@ class ParallelIndexer(DocumentIndexer):
     ):
         super().__init__(config, processor, embeddings, redis)
         self.parallel_config = parallel_config or ParallelIndexingConfig()
-        self.scanner = ParallelFileScanner(self.parallel_config)
+        self.scanner = ParallelFileScanner(self.parallel_config, config)
         
         # Worker pool semaphores
         self.document_semaphore = asyncio.Semaphore(self.parallel_config.max_document_workers)
@@ -443,6 +450,8 @@ class ParallelIndexer(DocumentIndexer):
         """Process single file with resource management."""
         async with self.document_semaphore:
             try:
+                # File processing - current_file tracking removed for simplicity
+                
                 # Use existing index_file method but with enhanced error handling
                 result = await self.index_file(
                     file_path,
@@ -468,7 +477,7 @@ class ParallelIndexer(DocumentIndexer):
         """Load existing checkpoint for resumability.""" 
         try:
             checkpoint_key = f"checkpoint:{self.current_checkpoint.source_id}"
-            data = await self.redis.redis.hgetall(checkpoint_key)
+            data = await self.redis.async_redis.hgetall(checkpoint_key)
             
             if data:
                 # Restore checkpoint state
@@ -477,6 +486,7 @@ class ParallelIndexer(DocumentIndexer):
                 )
                 self.current_checkpoint.completed_files = int(data.get('completed_files', 0))
                 self.current_checkpoint.total_chunks = int(data.get('total_chunks', 0))
+                # current_file field removed for simplicity
                 
                 logger.info(f"Resumed from checkpoint: {self.current_checkpoint.completed_files} files completed")
                 return True
@@ -490,16 +500,17 @@ class ParallelIndexer(DocumentIndexer):
         """Save current progress checkpoint."""
         try:
             checkpoint_key = f"checkpoint:{self.current_checkpoint.source_id}"
-            await self.redis.redis.hset(checkpoint_key, mapping={
+            await self.redis.async_redis.hset(checkpoint_key, mapping={
                 'processed_files': ','.join(self.current_checkpoint.processed_files),
                 'completed_files': self.current_checkpoint.completed_files,
                 'total_files': self.current_checkpoint.total_files,
                 'total_chunks': self.current_checkpoint.total_chunks,
+                # 'current_file': removed for simplicity
                 'last_checkpoint': time.time()
             })
             
             # Set expiration (7 days)
-            await self.redis.redis.expire(checkpoint_key, 7 * 24 * 3600)
+            await self.redis.async_redis.expire(checkpoint_key, 7 * 24 * 3600)
             
             self.current_checkpoint.last_checkpoint = time.time()
             
@@ -510,7 +521,7 @@ class ParallelIndexer(DocumentIndexer):
         """Remove checkpoint after successful completion."""
         try:
             checkpoint_key = f"checkpoint:{self.current_checkpoint.source_id}"
-            await self.redis.redis.delete(checkpoint_key)
+            await self.redis.async_redis.delete(checkpoint_key)
             
         except Exception as e:
             logger.warning(f"Failed to cleanup checkpoint: {e}")

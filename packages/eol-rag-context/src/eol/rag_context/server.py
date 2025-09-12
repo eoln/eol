@@ -541,7 +541,7 @@ class EOLRAGContextServer:
             if not task_info:
                 return {
                     "error": "Task not found",
-                    "task_id": request.task_id,
+                    "task_id": task_id,
                     "message": "No indexing task found with the specified ID"
                 }
             

@@ -790,7 +790,10 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def query_knowledge_graph(
-            request: QueryKnowledgeGraphRequest, ctx: Context
+            query: str,
+            max_depth: int = 2,
+            max_entities: int = 20,
+            ctx: Context = None
         ) -> dict[str, Any]:
             """Query the knowledge graph for entity relationships.
 
@@ -815,13 +818,13 @@ class EOLRAGContextServer:
 
             """
             subgraph = await self.knowledge_graph.query_subgraph(
-                request.query,
-                max_depth=request.max_depth,
-                max_entities=request.max_entities,
+                query,
+                max_depth=max_depth,
+                max_entities=max_entities,
             )
 
             return {
-                "query": request.query,
+                "query": query,
                 "entities": [
                     {
                         "id": entity.id,
@@ -846,7 +849,13 @@ class EOLRAGContextServer:
             }
 
         @self.mcp.tool()
-        async def optimize_context(request: OptimizeContextRequest, ctx: Context) -> dict[str, Any]:
+        async def optimize_context(
+            query: str,
+            current_context: str = None,
+            max_tokens: int = 32000,
+            strategy: str = "hierarchical",
+            ctx: Context = None
+        ) -> dict[str, Any]:
             """Optimize context for LLM consumption following best practices.
 
             Retrieves relevant context and formats it optimally for LLM processing,
@@ -871,11 +880,11 @@ class EOLRAGContextServer:
 
             """
             # Get relevant context
-            query_embedding = await self.embedding_manager.get_embedding(request.query)
+            query_embedding = await self.embedding_manager.get_embedding(query)
 
             # Hierarchical retrieval
             results = await self.redis_store.hierarchical_search(
-                query_embedding, max_chunks=20, strategy=request.strategy
+                query_embedding, max_chunks=20, strategy=strategy
             )
 
             # Build optimized context following best practices
@@ -909,15 +918,15 @@ class EOLRAGContextServer:
 
             # Trim to token limit
             # Simple approximation: ~4 chars per token
-            max_chars = request.max_tokens * 4
+            max_chars = max_tokens * 4
             if len(optimized_context) > max_chars:
                 optimized_context = optimized_context[:max_chars] + "\n\n[Context truncated]"
 
             return {
-                "query": request.query,
+                "query": query,
                 "optimized_context": optimized_context,
                 "total_results": len(results),
-                "strategy": request.strategy,
+                "strategy": strategy,
                 "estimated_tokens": len(optimized_context) // 4,
             }
 

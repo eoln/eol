@@ -245,7 +245,9 @@ class ParallelFileScanner:
         import hashlib
 
         abs_path = str(path.resolve())
-        return hashlib.md5(abs_path.encode("utf-8")).hexdigest()
+        return hashlib.md5(
+            abs_path.encode("utf-8")
+        ).hexdigest()  # nosec B324 - MD5 used for generating IDs, not security
 
 
 class ParallelIndexer(DocumentIndexer):

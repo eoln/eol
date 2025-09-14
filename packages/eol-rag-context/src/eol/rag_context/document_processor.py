@@ -851,7 +851,9 @@ class DocumentProcessor:
 
         # Parse XML
         try:
-            tree = ET.fromstring(content)
+            tree = ET.fromstring(
+                content
+            )  # nosec B314 - Processing local document files, not untrusted external XML
         except ET.ParseError as e:
             logger.warning(f"Failed to parse XML {file_path}: {e}")
             # Fall back to text processing

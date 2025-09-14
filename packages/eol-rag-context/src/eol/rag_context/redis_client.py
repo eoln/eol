@@ -49,10 +49,16 @@ import numpy as np
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
+
     # Legacy FT.SEARCH imports - kept for backward compatibility during migration
-    from redis.commands.search.field import NumericField, TagField, TextField, VectorField
-    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-    from redis.commands.search.query import Query
+    from redis.commands.search.field import (  # noqa: F401
+        NumericField,
+        TagField,
+        TextField,
+        VectorField,
+    )
+    from redis.commands.search.index_definition import IndexDefinition, IndexType  # noqa: F401
+    from redis.commands.search.query import Query  # noqa: F401
 except ImportError as e:
     import sys
 
@@ -132,7 +138,7 @@ class RedisVectorStore:
 
     The store organizes documents in a three-level hierarchy using separate Vector Sets:
     1. Concepts: High-level topics and themes (concept_vectorset)
-    2. Sections: Mid-level document sections (section_vectorset)  
+    2. Sections: Mid-level document sections (section_vectorset)
     3. Chunks: Fine-grained text chunks (chunk_vectorset)
 
     Each level uses optimized Vector Set parameters for different query patterns:
@@ -345,26 +351,26 @@ class RedisVectorStore:
 
         Note:
             - Vector Sets use SVS-VAMANA algorithm automatically
-            - Concepts use M=16, EF_CONSTRUCTION=200 for precision  
+            - Concepts use M=16, EF_CONSTRUCTION=200 for precision
             - Sections use M=24, EF_CONSTRUCTION=300 for balance
             - Chunks use default parameters with Q8 quantization
 
         """
-        
+
         # Store embedding dimension for use in document storage
         self._embedding_dim = embedding_dim
-        
+
         # Vector Set names for each hierarchy level
         vector_sets = {
             "concept": self.index_config.concept_vectorset,
             "section": self.index_config.section_vectorset,
             "chunk": self.index_config.chunk_vectorset,
         }
-        
+
         logger.info(f"Vector Set names prepared for embedding dimension {embedding_dim}:")
         for level, vectorset_name in vector_sets.items():
             logger.info(f"  {level.capitalize()}: {vectorset_name}")
-            
+
         logger.info("Vector Sets will be created automatically on first document storage")
 
     async def store_document(self, doc: VectorDocument) -> None:
@@ -443,7 +449,7 @@ class RedisVectorStore:
 
         # Store document metadata in Redis Hash
         await self.async_redis.hset(key, mapping=data)
-        
+
         # Add vector to appropriate Vector Set
         vectorset_map = {
             1: self.index_config.concept_vectorset,
@@ -451,29 +457,38 @@ class RedisVectorStore:
             3: self.index_config.chunk_vectorset,
         }
         vectorset_name = vectorset_map.get(doc.hierarchy_level, self.index_config.chunk_vectorset)
-        
+
         # Convert embedding to float32 list for VADD command
         embedding_values = doc.embedding.astype(np.float32).tolist()
-        
-        # Use VADD to add vector to Vector Set 
+
+        # Use VADD to add vector to Vector Set
         # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id [options]
         vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
         vadd_args.extend([str(v) for v in embedding_values])
         vadd_args.append(doc.id)
-        
+
         # Add level-specific parameters after element ID
         if doc.hierarchy_level == 1:  # Concept level - high precision
-            vadd_args.extend(["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)])
+            vadd_args.extend(
+                ["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)]
+            )
         elif doc.hierarchy_level == 2:  # Section level - balanced
-            vadd_args.extend(["EF", str(self.index_config.ef_construction + 100), "M", str(self.index_config.m + 8)])
+            vadd_args.extend(
+                [
+                    "EF",
+                    str(self.index_config.ef_construction + 100),
+                    "M",
+                    str(self.index_config.m + 8),
+                ]
+            )
         # Chunk level uses default parameters
-        
+
         # Add quantization
         vadd_args.append(self.index_config.quantization)
-        
+
         # Execute VADD command
         await self.async_redis.execute_command(*vadd_args)
-        
+
         logger.debug(f"Stored document {key} and added to Vector Set {vectorset_name}")
 
     async def vector_search(
@@ -531,12 +546,12 @@ class RedisVectorStore:
 
         # Convert query embedding to list for VSIM command
         query_values = query_embedding.astype(np.float32).tolist()
-        
+
         # Build VSIM command with EF parameter based on hierarchy level
         vsim_args = ["VSIM", vectorset_name, "VALUES", str(len(query_values))]
         vsim_args.extend([str(v) for v in query_values])
         vsim_args.extend(["COUNT", str(k), "WITHSCORES"])
-        
+
         # Add EF parameter for search quality
         if hierarchy_level == 1:  # Concept level - higher quality search
             vsim_args.extend(["EF", str(self.index_config.ef_runtime * 10)])
@@ -550,7 +565,9 @@ class RedisVectorStore:
             vsim_results = await self.async_redis.execute_command(*vsim_args)
         except Exception as e:
             if "VSET does not exist" in str(e):
-                logger.warning(f"Vector Set {vectorset_name} does not exist, returning empty results")
+                logger.warning(
+                    f"Vector Set {vectorset_name} does not exist, returning empty results"
+                )
                 return []
             raise
 
@@ -564,13 +581,13 @@ class RedisVectorStore:
                     parsed_results.append(item.decode())
                 else:
                     parsed_results.append(item)
-            
+
             # Process pairs of (element_id, score)
             for i in range(0, len(parsed_results), 2):
                 if i + 1 < len(parsed_results):
                     element_id = parsed_results[i]
                     score = float(parsed_results[i + 1])
-                    
+
                     # Fetch document metadata from Redis hash
                     prefix_map = {
                         1: self.index_config.concept_prefix,
@@ -579,7 +596,7 @@ class RedisVectorStore:
                     }
                     prefix = prefix_map.get(hierarchy_level, self.index_config.chunk_prefix)
                     doc_key = f"{prefix}{element_id}"
-                    
+
                     doc_data = await self.async_redis.hgetall(doc_key)
                     if doc_data:
                         # Convert bytes keys/values to strings (skip binary embedding data)
@@ -588,7 +605,7 @@ class RedisVectorStore:
                             for k, v in doc_data.items():
                                 key_str = k.decode() if isinstance(k, bytes) else k
                                 # Skip decoding binary embedding data
-                                if key_str == 'embedding':
+                                if key_str == "embedding":
                                     continue  # Skip binary embedding data
                                 try:
                                     val_str = v.decode() if isinstance(v, bytes) else v
@@ -598,15 +615,17 @@ class RedisVectorStore:
                                     continue
                         else:
                             data = {}
-                        
+
                         # Parse stored data
                         processed_data = {
                             "content": data.get("content", ""),
                             "metadata": json.loads(data.get("metadata", "{}")),
                             "parent": data.get("parent"),
-                            "children": data.get("children", "").split(",") if data.get("children") else [],
+                            "children": (
+                                data.get("children", "").split(",") if data.get("children") else []
+                            ),
                         }
-                        
+
                         # Apply filters if provided (application-level filtering)
                         if filters:
                             match = True
@@ -624,7 +643,7 @@ class RedisVectorStore:
                                     break
                             if not match:
                                 continue
-                        
+
                         output.append((element_id, score, processed_data))
 
         return output

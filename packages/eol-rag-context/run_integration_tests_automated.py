@@ -43,9 +43,7 @@ class IntegrationTestRunner:
     def check_docker(self):
         """Check if Docker is available and running."""
         try:
-            result = subprocess.run(
-                ["docker", "info"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
@@ -53,9 +51,7 @@ class IntegrationTestRunner:
     def check_redis_native(self):
         """Check if Redis is installed locally."""
         try:
-            result = subprocess.run(
-                ["redis-server", "--version"], capture_output=True, text=True
-            )
+            result = subprocess.run(["redis-server", "--version"], capture_output=True, text=True)
             return result.returncode == 0
         except FileNotFoundError:
             return False

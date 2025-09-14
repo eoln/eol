@@ -87,7 +87,9 @@ class TestMCPServer:
         # Test the server's API compatibility method directly
         from eol.rag_context.server import StartIndexingRequest
 
-        request = StartIndexingRequest(path="/test/path", recursive=True, max_workers=4, batch_size=16)
+        request = StartIndexingRequest(
+            path="/test/path", recursive=True, max_workers=4, batch_size=16
+        )
 
         # Mock the non-blocking components
         server.task_manager = AsyncMock()

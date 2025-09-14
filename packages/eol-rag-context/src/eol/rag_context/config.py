@@ -241,10 +241,10 @@ class IndexConfig(BaseSettings):
     concept_prefix: str = Field(default="concept:")
     section_prefix: str = Field(default="section:")
     chunk_prefix: str = Field(default="chunk:")
-    
+
     # Vector set names for each hierarchy level
     concept_vectorset: str = Field(default="eol_context_concept")
-    section_vectorset: str = Field(default="eol_context_section")  
+    section_vectorset: str = Field(default="eol_context_section")
     chunk_vectorset: str = Field(default="eol_context_chunk")
 
     # Legacy compatibility - remove once FT.SEARCH migration is complete

@@ -59,9 +59,7 @@ async def get_server() -> EOLRAGContextServer:
 @app.command()
 def index(
     path: Path = typer.Argument(..., help="Path to index"),
-    recursive: bool = typer.Option(
-        True, "--recursive/--no-recursive", help="Index recursively"
-    ),
+    recursive: bool = typer.Option(True, "--recursive/--no-recursive", help="Index recursively"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Watch for changes"),
     patterns: Optional[str] = typer.Option(
         None, "--patterns", "-p", help="File patterns (comma-separated)"
@@ -136,9 +134,7 @@ def search(
     limit: int = typer.Option(5, "--limit", "-l", help="Number of results"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     show_metadata: bool = typer.Option(False, "--metadata", "-m", help="Show metadata"),
-    file_type: Optional[str] = typer.Option(
-        None, "--type", "-t", help="Filter by file type"
-    ),
+    file_type: Optional[str] = typer.Option(None, "--type", "-t", help="Filter by file type"),
 ):
     """Search for context."""
 
@@ -182,9 +178,7 @@ def search(
                 file_type = metadata.get("file_type", "text")
                 if file_type == "code":
                     lang = metadata.get("language", "python")
-                    content_display = Syntax(
-                        content, lang, theme="monokai", line_numbers=True
-                    )
+                    content_display = Syntax(content, lang, theme="monokai", line_numbers=True)
                 else:
                     content_display = content + "..."
 
@@ -320,9 +314,7 @@ def watch(
 
         console.print(f"\n[blue]👁️  Starting file watcher for: {path}[/blue]")
 
-        result = await server.watch_directory(
-            str(path), patterns=pattern_list, ignore=ignore_list
-        )
+        result = await server.watch_directory(str(path), patterns=pattern_list, ignore=ignore_list)
 
         console.print(f"[green]✅ Watching started![/green]")
         console.print(f"   Watch ID: {result['watch_id']}")

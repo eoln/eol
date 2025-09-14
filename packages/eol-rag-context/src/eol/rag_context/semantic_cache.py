@@ -190,7 +190,7 @@ class SemanticCache:
         self.config = cache_config
         self.embeddings = embedding_manager
         self.redis = redis_store
-        
+
         # Initialize Vector Set name for fallback (proper initialization via ensure_cache_index)
         self._cache_vectorset = "semantic_cache"
 
@@ -244,7 +244,7 @@ class SemanticCache:
                 logger.info("Cache Vector Set will be created automatically on first cache entry")
             else:
                 logger.warning(f"Error checking cache Vector Set: {e}")
-        
+
         # Store cache configuration for Vector Set operations
         self._cache_vectorset = "semantic_cache"
         logger.info(f"Cache Vector Set prepared: {self._cache_vectorset}")
@@ -393,13 +393,13 @@ class SemanticCache:
         # Store cache data in Redis Hash
         self.redis.redis.hset(cache_key, mapping=cache_data)
 
-        # Add vector to cache Vector Set  
+        # Add vector to cache Vector Set
         # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id
         embedding_values = query_embedding.astype(np.float32).tolist()
         vadd_args = ["VADD", self._cache_vectorset, "VALUES", str(len(embedding_values))]
         vadd_args.extend([str(v) for v in embedding_values])
         vadd_args.append(cache_id)  # Use cache_id as element identifier
-        
+
         try:
             await self.redis.async_redis.execute_command(*vadd_args)
         except Exception as e:
@@ -435,15 +435,15 @@ class SemanticCache:
         try:
             # Convert query embedding to list for VSIM command
             query_values = query_embedding.astype(np.float32).tolist()
-            
+
             # Build VSIM command
             vsim_args = ["VSIM", self._cache_vectorset, "VALUES", str(len(query_values))]
             vsim_args.extend([str(v) for v in query_values])
             vsim_args.extend(["COUNT", str(k), "WITHSCORES", "EF", "50"])
-            
+
             # Execute VSIM command
             vsim_results = await self.redis.async_redis.execute_command(*vsim_args)
-            
+
             # Parse VSIM results
             output = []
             if vsim_results:
@@ -454,24 +454,24 @@ class SemanticCache:
                         parsed_results.append(item.decode())
                     else:
                         parsed_results.append(item)
-                
+
                 # Process pairs of (element_id, score)
                 for i in range(0, len(parsed_results), 2):
                     if i + 1 < len(parsed_results):
                         cache_id = parsed_results[i]
                         similarity = float(parsed_results[i + 1])
-                        
+
                         # Fetch cache data from Redis hash
                         cache_key = f"cache:{cache_id}"
                         cache_data = await self.redis.async_redis.hgetall(cache_key)
-                        
+
                         if cache_data:
                             # Convert bytes keys/values to strings, skip binary fields
                             data = {}
                             for k, v in cache_data.items():
                                 key_str = k.decode() if isinstance(k, bytes) else k
                                 # Skip binary fields like embeddings
-                                if key_str in ['embedding', 'embedding_bytes']:
+                                if key_str in ["embedding", "embedding_bytes"]:
                                     continue
                                 try:
                                     val_str = v.decode() if isinstance(v, bytes) else v
@@ -479,18 +479,18 @@ class SemanticCache:
                                 except UnicodeDecodeError:
                                     # Skip fields that can't be decoded as UTF-8 (likely binary data)
                                     continue
-                            
+
                             processed_data = {
                                 "query": data.get("query", ""),
                                 "response": data.get("response", ""),
                                 "hit_count": int(data.get("hit_count", 0)),
                                 "timestamp": float(data.get("timestamp", 0)),
                             }
-                            
+
                             output.append((cache_id, similarity, processed_data))
-            
+
             return output
-            
+
         except Exception as e:
             if "VSET does not exist" in str(e):
                 logger.debug("Cache Vector Set does not exist yet, returning empty results")

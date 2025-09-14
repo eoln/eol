@@ -376,13 +376,13 @@ class TestSemanticCacheExtended:
 
         # Mock VSIM command result (element_id, score pairs)
         vsim_result = ["test_123", 0.95]
-        
+
         # Mock HGETALL result for cache data
         cache_data = {
             b"query": b"cached query",
-            b"response": b"cached response", 
+            b"response": b"cached response",
             b"hit_count": b"3",
-            b"timestamp": b"1234567890.0"
+            b"timestamp": b"1234567890.0",
         }
 
         # Mock execute_command for VSIM and hgetall for cache data

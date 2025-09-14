@@ -34,9 +34,7 @@ async def main():
         print("   ✅ Server initialized successfully")
     except Exception as e:
         print(f"   ❌ Failed to initialize: {e}")
-        print(
-            "   Make sure Redis is running: docker run -d -p 6379:6379 redis/redis-stack:latest"
-        )
+        print("   Make sure Redis is running: docker run -d -p 6379:6379 redis/redis-stack:latest")
         return
 
     print()

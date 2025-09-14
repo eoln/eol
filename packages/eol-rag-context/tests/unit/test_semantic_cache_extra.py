@@ -82,15 +82,15 @@ class TestSemanticCacheExtra:
         mock_redis_store.redis = MagicMock()
         mock_redis_store.async_redis = AsyncMock()
 
-        # Mock VSIM command result (element_id, score pairs) 
+        # Mock VSIM command result (element_id, score pairs)
         vsim_result = ["entry1", 0.9]  # High similarity score
 
         # Mock HGETALL result for cache data
         cache_data = {
             b"query": b"test query",
             b"response": b"cached response",
-            b"hit_count": b"1", 
-            b"timestamp": b"1234567890"
+            b"hit_count": b"1",
+            b"timestamp": b"1234567890",
         }
 
         # Mock execute_command for VSIM and hgetall for cache data

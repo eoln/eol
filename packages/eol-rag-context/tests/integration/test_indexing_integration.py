@@ -34,23 +34,23 @@ class TestIndexingIntegration:
         """Test indexing an entire folder via non-blocking API."""
         # Start non-blocking indexing
         result = await server_instance.index_directory(temp_test_directory, recursive=True)
-        
+
         assert result is not None
         assert result["status"] == "started"
         assert "task_id" in result
-        
+
         # Wait for indexing to complete
         task_id = result["task_id"]
         max_wait = 30  # 30 seconds max wait
         wait_time = 0
-        
+
         while wait_time < max_wait:
             status_result = await server_instance.task_manager.get_task_status(task_id)
             if status_result and status_result.status.value in ["completed", "failed"]:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         # Verify indexing completed successfully
         final_status = await server_instance.task_manager.get_task_status(task_id)
         assert final_status is not None
@@ -110,7 +110,7 @@ class TestIndexingIntegration:
         # Start non-blocking indexing
         result = await server_instance.index_directory(temp_test_directory, recursive=True)
         task_id = result["task_id"]
-        
+
         # Wait for completion
         max_wait = 30
         wait_time = 0
@@ -120,7 +120,7 @@ class TestIndexingIntegration:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         # Get the actual source_id from the completed task
         final_status = await server_instance.task_manager.get_task_status(task_id)
         actual_source_id = final_status.source_id
@@ -152,7 +152,7 @@ class TestIndexingIntegration:
     async def test_incremental_indexing(self, server_instance):
         """Test incremental indexing with file changes."""
         import asyncio
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir)
 
@@ -163,7 +163,7 @@ class TestIndexingIntegration:
             # First index
             result1 = await server_instance.index_directory(test_dir, recursive=True)
             task_id1 = result1["task_id"]
-            
+
             # Wait for first indexing to complete
             max_wait = 30
             wait_time = 0
@@ -173,7 +173,7 @@ class TestIndexingIntegration:
                     break
                 await asyncio.sleep(1)
                 wait_time += 1
-            
+
             first_status = await server_instance.task_manager.get_task_status(task_id1)
             initial_chunks = first_status.total_chunks if first_status else 0
 
@@ -184,7 +184,7 @@ class TestIndexingIntegration:
             # Re-index
             result2 = await server_instance.index_directory(test_dir, recursive=True)
             task_id2 = result2["task_id"]
-            
+
             # Wait for second indexing to complete
             wait_time = 0
             while wait_time < max_wait:
@@ -193,7 +193,7 @@ class TestIndexingIntegration:
                     break
                 await asyncio.sleep(1)
                 wait_time += 1
-            
+
             second_status = await server_instance.task_manager.get_task_status(task_id2)
 
             # Should have more chunks
@@ -262,8 +262,7 @@ class TestIndexingIntegration:
         try:
             # Index directories concurrently
             tasks = [
-                server_instance.index_directory(temp_dir, recursive=True) 
-                for temp_dir in temp_dirs
+                server_instance.index_directory(temp_dir, recursive=True) for temp_dir in temp_dirs
             ]
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -275,7 +274,7 @@ class TestIndexingIntegration:
             # Wait for all tasks to complete
             task_ids = [r["task_id"] for r in successful]
             max_wait = 60  # Longer wait for concurrent operations
-            
+
             for task_id in task_ids:
                 wait_time = 0
                 while wait_time < max_wait:
@@ -284,15 +283,16 @@ class TestIndexingIntegration:
                         break
                     await asyncio.sleep(1)
                     wait_time += 1
-                
+
                 final_status = await server_instance.task_manager.get_task_status(task_id)
                 assert final_status is not None
                 assert final_status.status.value == "completed"
                 assert final_status.completed_files > 0
-                
+
         finally:
             # Clean up temporary directories
             import shutil
+
             for temp_dir in temp_dirs:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 

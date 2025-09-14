@@ -9,16 +9,16 @@ from typing import Any
 from fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
 
+from .async_task_manager import AsyncTaskManager, TaskStatus
 from .config import RAGConfig
 from .document_processor import DocumentProcessor
 from .embeddings import EmbeddingManager
 from .file_watcher import FileWatcher
 from .indexer import DocumentIndexer
 from .knowledge_graph import KnowledgeGraphBuilder
+from .parallel_indexer import ParallelIndexer, ParallelIndexingConfig
 from .redis_client import RedisVectorStore
 from .semantic_cache import SemanticCache
-from .async_task_manager import AsyncTaskManager, TaskStatus
-from .parallel_indexer import ParallelIndexer, ParallelIndexingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 # Pydantic models for MCP tools
 class StartIndexingRequest(BaseModel):
     """Request to start asynchronous indexing."""
-    
+
     path: str = Field(description="Directory path to index")
     recursive: bool = Field(default=True, description="Index subdirectories")
     force_reindex: bool = Field(default=False, description="Force reindex of unchanged files")
     watch: bool = Field(default=False, description="Watch for changes after indexing")
-    
+
     # Parallel processing configuration
     max_workers: int = Field(default=16, description="Maximum concurrent workers")
     batch_size: int = Field(default=32, description="Batch size for processing")
@@ -40,20 +40,23 @@ class StartIndexingRequest(BaseModel):
 
 class IndexingStatusRequest(BaseModel):
     """Request to get indexing task status."""
-    
+
     task_id: str = Field(description="Task ID to check status for")
 
 
 class ListTasksRequest(BaseModel):
     """Request to list indexing tasks."""
-    
-    status_filter: str | None = Field(default=None, description="Filter by status (pending, running, completed, failed, cancelled)")
+
+    status_filter: str | None = Field(
+        default=None,
+        description="Filter by status (pending, running, completed, failed, cancelled)",
+    )
     limit: int = Field(default=50, description="Maximum tasks to return")
 
 
 class CancelTaskRequest(BaseModel):
     """Request to cancel an indexing task."""
-    
+
     task_id: str = Field(description="Task ID to cancel")
 
 
@@ -163,7 +166,7 @@ class EOLRAGContextServer:
         self.semantic_cache: SemanticCache | None = None
         self.knowledge_graph: KnowledgeGraphBuilder | None = None
         self.file_watcher: FileWatcher | None = None
-        
+
         # Non-blocking indexing components
         self.task_manager: AsyncTaskManager | None = None
         self.parallel_indexer: ParallelIndexer | None = None
@@ -243,12 +246,9 @@ class EOLRAGContextServer:
         # Initialize non-blocking indexing components
         self.task_manager = AsyncTaskManager(self.redis_store)
         self.parallel_indexer = ParallelIndexer(
-            self.config,
-            self.document_processor,
-            self.embedding_manager,
-            self.redis_store
+            self.config, self.document_processor, self.embedding_manager, self.redis_store
         )
-        
+
         logger.info("Server initialization complete with non-blocking indexing capabilities")
 
     async def shutdown(self) -> None:
@@ -373,7 +373,7 @@ class EOLRAGContextServer:
             # Ensure components are initialized
             if self.indexer is None:
                 await self.initialize()
-                
+
             sources = await self.indexer.list_sources()
             return [
                 {
@@ -403,7 +403,7 @@ class EOLRAGContextServer:
             # Ensure components are initialized
             if self.indexer is None:
                 await self.initialize()
-                
+
             return {
                 "indexer": self.indexer.get_stats(),
                 "cache": self.semantic_cache.get_stats(),
@@ -460,14 +460,14 @@ class EOLRAGContextServer:
             max_workers: int = 16,
             batch_size: int = 32,
             enable_streaming: bool = True,
-            ctx: Context = None
+            ctx: Context = None,
         ) -> dict[str, Any]:
             """Start asynchronous indexing and return task ID immediately.
-            
+
             This tool starts indexing in the background and returns immediately
             with a task ID that can be used to check progress. The AI agent is
             never blocked waiting for indexing to complete.
-            
+
             Args:
                 path: Directory path to index
                 recursive: Index subdirectories (default: True)
@@ -477,7 +477,7 @@ class EOLRAGContextServer:
                 batch_size: Batch size for processing (default: 32)
                 enable_streaming: Enable streaming for large files (default: True)
                 ctx: MCP context for the request
-                
+
             Returns:
                 Dictionary containing:
                 - task_id: Unique identifier for tracking this indexing operation
@@ -489,32 +489,32 @@ class EOLRAGContextServer:
             # Ensure components are initialized
             if not self.task_manager or not self.parallel_indexer:
                 await self.initialize()
-            
+
             path_obj = Path(path).resolve()
             if not path_obj.exists() or not path_obj.is_dir():
                 raise ValueError(f"Directory does not exist: {path_obj}")
-            
+
             # Create parallel config
             parallel_config = ParallelIndexingConfig(
                 max_document_workers=max_workers,
                 max_embedding_workers=max_workers // 2,
                 max_redis_workers=max_workers // 4,
                 batch_size=batch_size,
-                enable_streaming=enable_streaming
+                enable_streaming=enable_streaming,
             )
-            
+
             # Start indexing task
             task_id = await self.task_manager.start_indexing_task(
                 path_obj,
                 self.parallel_indexer,
                 recursive=recursive,
                 force_reindex=force_reindex,
-                parallel_config=parallel_config
+                parallel_config=parallel_config,
             )
-            
+
             # Quick file count estimate
             estimated_files = self._estimate_file_count(path_obj, recursive)
-            
+
             # Start watching if requested (this is immediate and non-blocking)
             if watch:
                 await self.file_watcher.watch(
@@ -522,7 +522,7 @@ class EOLRAGContextServer:
                     recursive=recursive,
                     file_patterns=None,
                 )
-            
+
             return {
                 "task_id": task_id,
                 "status": "pending",
@@ -533,34 +533,34 @@ class EOLRAGContextServer:
                 "parallel_config": {
                     "max_workers": max_workers,
                     "batch_size": batch_size,
-                    "streaming_enabled": enable_streaming
-                }
+                    "streaming_enabled": enable_streaming,
+                },
             }
 
         @self.mcp.tool()
         async def get_indexing_status(task_id: str, ctx: Context) -> dict[str, Any]:
             """Get current status and progress of an indexing task.
-            
+
             Args:
                 task_id: Task ID to check status for
                 ctx: MCP context for the request
-                
+
             Returns:
                 Dictionary containing detailed task status and progress information
             """
             # Ensure components are initialized
             if not self.task_manager:
                 await self.initialize()
-            
+
             task_info = await self.task_manager.get_task_status(task_id)
-            
+
             if not task_info:
                 return {
                     "error": "Task not found",
                     "task_id": task_id,
-                    "message": "No indexing task found with the specified ID"
+                    "message": "No indexing task found with the specified ID",
                 }
-            
+
             result = {
                 "task_id": task_info.task_id,
                 "status": task_info.status.value,
@@ -569,70 +569,73 @@ class EOLRAGContextServer:
                     "completed_files": task_info.completed_files,
                     "total_files": task_info.total_files,
                     "percentage": round(task_info.progress_percentage, 2),
-                    "files_per_second": round(task_info.files_per_second, 2)
+                    "files_per_second": round(task_info.files_per_second, 2),
                 },
                 "timing": {
                     "created_at": datetime.fromtimestamp(task_info.created_at).isoformat(),
-                    "elapsed_time": round(task_info.elapsed_time, 2)
+                    "elapsed_time": round(task_info.elapsed_time, 2),
                 },
                 "results": {
                     "total_chunks": task_info.total_chunks,
                     "indexed_files": task_info.indexed_files,
-                    "failed_files": task_info.failed_files
-                }
+                    "failed_files": task_info.failed_files,
+                },
             }
-            
+
             # Add completion estimate for running tasks
             if task_info.status == TaskStatus.RUNNING and task_info.estimated_completion_time:
-                result["timing"]["estimated_completion_seconds"] = round(task_info.estimated_completion_time, 2)
+                result["timing"]["estimated_completion_seconds"] = round(
+                    task_info.estimated_completion_time, 2
+                )
                 result["timing"]["estimated_completion"] = datetime.fromtimestamp(
                     task_info.created_at + task_info.estimated_completion_time
                 ).isoformat()
-            
+
             # Current file tracking removed for simplicity
-            
+
             # Add error information for failed tasks
             if task_info.status == TaskStatus.FAILED:
                 result["error"] = {
                     "message": task_info.error_message,
-                    "details": task_info.errors[:10] if task_info.errors else []  # Limit error details
+                    "details": (
+                        task_info.errors[:10] if task_info.errors else []
+                    ),  # Limit error details
                 }
-            
+
             # Add result information for completed tasks
             if task_info.status == TaskStatus.COMPLETED and task_info.result:
                 perf = task_info.result.get("metadata", {}).get("performance", {})
                 # Round performance metrics to 2 decimal places
                 if perf:
-                    perf = {
-                        k: round(v, 2) if isinstance(v, float) else v
-                        for k, v in perf.items()
-                    }
+                    perf = {k: round(v, 2) if isinstance(v, float) else v for k, v in perf.items()}
                 result["indexing_result"] = {
                     "source_id": task_info.result.get("source_id"),
                     "indexed_at": datetime.fromtimestamp(
                         task_info.result.get("indexed_at", task_info.completed_at)
                     ).isoformat(),
-                    "performance": perf
+                    "performance": perf,
                 }
-            
+
             return result
 
         @self.mcp.tool()
-        async def list_indexing_tasks(status_filter: str = None, limit: int = 50, ctx: Context = None) -> dict[str, Any]:
+        async def list_indexing_tasks(
+            status_filter: str = None, limit: int = 50, ctx: Context = None
+        ) -> dict[str, Any]:
             """List indexing tasks with optional status filtering.
-            
+
             Args:
                 status_filter: Filter by status (pending, running, completed, failed, cancelled)
                 limit: Maximum tasks to return (default: 50)
                 ctx: MCP context for the request
-                
+
             Returns:
                 Dictionary containing list of tasks and summary statistics
             """
             # Ensure components are initialized
             if not self.task_manager:
                 await self.initialize()
-            
+
             # Convert status filter
             status_filter_enum = None
             if status_filter:
@@ -641,11 +644,11 @@ class EOLRAGContextServer:
                 except ValueError:
                     return {
                         "error": f"Invalid status filter: {status_filter}",
-                        "valid_statuses": [s.value for s in TaskStatus]
+                        "valid_statuses": [s.value for s in TaskStatus],
                     }
-            
+
             tasks = await self.task_manager.list_tasks(status_filter_enum, limit)
-            
+
             # Convert to response format
             task_list = []
             for task_info in tasks:
@@ -657,84 +660,85 @@ class EOLRAGContextServer:
                     "progress_percentage": round(task_info.progress_percentage, 2),
                     "completed_files": task_info.completed_files,
                     "total_files": task_info.total_files,
-                    "elapsed_time": round(task_info.elapsed_time, 2)
+                    "elapsed_time": round(task_info.elapsed_time, 2),
                 }
-                
+
                 if task_info.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
                     task_summary["completed_at"] = datetime.fromtimestamp(
                         task_info.completed_at
                     ).isoformat()
-                
+
                 task_list.append(task_summary)
-            
+
             # Calculate summary statistics
             status_counts = {}
             for task in tasks:
                 status = task.status.value
                 status_counts[status] = status_counts.get(status, 0) + 1
-            
+
             return {
                 "tasks": task_list,
                 "total_tasks": len(task_list),
                 "status_summary": status_counts,
                 "filter_applied": status_filter,
-                "limit_applied": limit
+                "limit_applied": limit,
             }
 
         @self.mcp.tool()
         async def cancel_indexing_task(task_id: str, ctx: Context = None) -> dict[str, Any]:
             """Cancel a running indexing task.
-            
+
             Args:
                 task_id: Task ID to cancel
                 ctx: MCP context for the request
-                
+
             Returns:
                 Dictionary containing cancellation result
             """
             # Ensure components are initialized
             if not self.task_manager:
                 await self.initialize()
-            
+
             success = await self.task_manager.cancel_task(task_id)
-            
+
             return {
                 "task_id": task_id,
                 "cancelled": success,
                 "message": (
-                    "Task cancelled successfully" if success 
+                    "Task cancelled successfully"
+                    if success
                     else "Task not found or not cancellable"
-                )
+                ),
             }
 
         @self.mcp.tool()
         async def cleanup_old_indexing_tasks(ctx: Context) -> dict[str, Any]:
             """Clean up old completed/failed indexing tasks.
-            
+
             Removes old tasks from memory and Redis to free up resources.
             Tasks older than 24 hours are automatically cleaned up.
-            
+
             Args:
                 ctx: MCP context for the request
-                
+
             Returns:
                 Dictionary containing cleanup results
             """
             # Ensure components are initialized
             if not self.task_manager:
                 await self.initialize()
-            
+
             # Clean up both old tasks and stuck tasks
             old_cleaned = await self.task_manager.cleanup_old_tasks()
             stuck_cleaned = await self.task_manager.cleanup_stuck_tasks(timeout_minutes=15)
-            
+
             total_cleaned = old_cleaned + stuck_cleaned
-            
+
             return {
                 "cleaned_tasks": total_cleaned,
                 "old_tasks_cleaned": old_cleaned,
                 "stuck_tasks_cleaned": stuck_cleaned,
-                "message": f"Cleaned up {total_cleaned} tasks ({old_cleaned} old, {stuck_cleaned} stuck)"
+                "message": f"Cleaned up {total_cleaned} tasks ({old_cleaned} old, {stuck_cleaned} stuck)",
             }
 
         @self.mcp.tool()
@@ -744,7 +748,7 @@ class EOLRAGContextServer:
             min_relevance: float = 0.7,
             hierarchy_level: int = None,
             source_filter: str = None,
-            ctx: Context = None
+            ctx: Context = None,
         ) -> list[dict[str, Any]]:
             """Search for relevant context using vector similarity.
 
@@ -777,9 +781,7 @@ class EOLRAGContextServer:
                     query_embedding,
                     hierarchy_level=hierarchy_level,
                     k=max_results,
-                    filters=(
-                        {"source_id": source_filter} if source_filter else None
-                    ),
+                    filters=({"source_id": source_filter} if source_filter else None),
                 )
 
                 return [
@@ -802,10 +804,7 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def query_knowledge_graph(
-            query: str,
-            max_depth: int = 2,
-            max_entities: int = 20,
-            ctx: Context = None
+            query: str, max_depth: int = 2, max_entities: int = 20, ctx: Context = None
         ) -> dict[str, Any]:
             """Query the knowledge graph for entity relationships.
 
@@ -866,7 +865,7 @@ class EOLRAGContextServer:
             current_context: str = None,
             max_tokens: int = 32000,
             strategy: str = "hierarchical",
-            ctx: Context = None
+            ctx: Context = None,
         ) -> dict[str, Any]:
             """Optimize context for LLM consumption following best practices.
 
@@ -944,10 +943,7 @@ class EOLRAGContextServer:
 
         @self.mcp.tool()
         async def watch_directory(
-            path: str,
-            recursive: bool = True,
-            file_patterns: list[str] = None,
-            ctx: Context = None
+            path: str, recursive: bool = True, file_patterns: list[str] = None, ctx: Context = None
         ) -> dict[str, Any]:
             """Start watching a directory for file changes.
 
@@ -1027,7 +1023,7 @@ class EOLRAGContextServer:
 
             """
             results = {}
-            
+
             # Clear semantic cache if available
             try:
                 if self.semantic_cache:
@@ -1230,7 +1226,7 @@ Output Format:
 
         DEPRECATED: This method is provided for backward compatibility only.
         New code should use the start_indexing MCP tool directly for better control.
-        
+
         This method starts indexing in the background and returns a task ID.
         Use get_indexing_status() to check progress.
 
@@ -1265,16 +1261,16 @@ Output Format:
                 max_embedding_workers=max_workers // 2,
                 max_redis_workers=max_workers // 4,
                 batch_size=32,
-                enable_streaming=True
+                enable_streaming=True,
             )
-            
+
             # Start indexing task
             task_id = await self.task_manager.start_indexing_task(
                 Path(path),
                 self.parallel_indexer,
                 recursive=recursive,
                 force_reindex=force_reindex,
-                parallel_config=parallel_config
+                parallel_config=parallel_config,
             )
 
             return {

@@ -160,9 +160,7 @@ class CodeAssistant:
         suggestions = []
 
         # Search for similar patterns
-        similar = await self.server.search_context(
-            code, limit=3, filters={"file_type": "code"}
-        )
+        similar = await self.server.search_context(code, limit=3, filters={"file_type": "code"})
 
         for ctx in similar:
             # Look for better implementations

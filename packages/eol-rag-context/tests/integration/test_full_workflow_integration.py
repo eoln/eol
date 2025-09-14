@@ -22,12 +22,12 @@ class TestFullWorkflowIntegration:
     ):
         """Test complete index and search workflow with non-blocking API."""
         import asyncio
-        
+
         # Step 1: Start non-blocking indexing
         index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
         assert index_result["status"] == "started"
         assert "task_id" in index_result
-        
+
         # Wait for indexing to complete
         task_id = index_result["task_id"]
         max_wait = 30
@@ -38,7 +38,7 @@ class TestFullWorkflowIntegration:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         final_status = await server_instance.task_manager.get_task_status(task_id)
         assert final_status is not None
         assert final_status.status.value == "completed"
@@ -112,7 +112,7 @@ class TestFullWorkflowIntegration:
     ):
         """Test knowledge graph construction workflow."""
         import asyncio
-        
+
         # Debug: check graph type
         print(f"Graph type: {type(knowledge_graph_instance.graph)}")
         print(f"Graph: {knowledge_graph_instance.graph}")
@@ -120,7 +120,7 @@ class TestFullWorkflowIntegration:
         # Step 1: Start non-blocking indexing first (required for knowledge graph)
         index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
         task_id = index_result["task_id"]
-        
+
         # Wait for indexing to complete
         max_wait = 30
         wait_time = 0
@@ -130,7 +130,7 @@ class TestFullWorkflowIntegration:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         final_status = await server_instance.task_manager.get_task_status(task_id)
         assert final_status is not None
         assert final_status.status.value == "completed"
@@ -207,11 +207,11 @@ class TestFullWorkflowIntegration:
     ):
         """Test hierarchical RAG with concepts, sections, and chunks."""
         import asyncio
-        
+
         # Step 1: Start non-blocking indexing with hierarchical structure
         index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
         task_id = index_result["task_id"]
-        
+
         # Wait for indexing to complete
         max_wait = 30
         wait_time = 0
@@ -221,7 +221,7 @@ class TestFullWorkflowIntegration:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         final_status = await server_instance.task_manager.get_task_status(task_id)
         assert final_status is not None
         assert final_status.status.value == "completed"
@@ -314,14 +314,14 @@ class TestFullWorkflowIntegration:
         temp_test_directory,
     ):
         """Test and measure performance metrics."""
-        import time
         import asyncio
+        import time
 
         # Measure indexing speed with non-blocking API
         start_time = time.time()
         index_result = await server_instance.index_directory(temp_test_directory, recursive=True)
         task_id = index_result["task_id"]
-        
+
         # Wait for indexing to complete
         max_wait = 60  # Longer wait for performance test
         wait_time = 0
@@ -331,10 +331,10 @@ class TestFullWorkflowIntegration:
                 break
             await asyncio.sleep(1)
             wait_time += 1
-        
+
         index_time = time.time() - start_time
         final_status = await server_instance.task_manager.get_task_status(task_id)
-        
+
         assert final_status is not None
         assert final_status.status.value == "completed"
 

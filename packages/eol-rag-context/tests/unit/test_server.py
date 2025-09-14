@@ -170,32 +170,30 @@ class TestEOLRAGContextServer:
         """Test start_indexing MCP tool."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Simulate MCP tool call
-        from eol.rag_context.server import StartIndexingRequest
         from fastmcp import Context
-        
+
+        from eol.rag_context.server import StartIndexingRequest
+
         request = StartIndexingRequest(
-            path="/test/path",
-            recursive=True,
-            max_workers=8,
-            batch_size=16
+            path="/test/path", recursive=True, max_workers=8, batch_size=16
         )
         ctx = Context()
-        
+
         # Get the tool function from the server's _setup_tools
         tool_function = None
         for name, method in srv.__class__.__dict__.items():
-            if hasattr(method, '__name__') and 'start_indexing' in method.__name__:
+            if hasattr(method, "__name__") and "start_indexing" in method.__name__:
                 # This is a bit tricky to test since tools are registered as closures
                 # For now, test via the task manager directly
                 break
-                
+
         # Test the underlying functionality
         result = await mock_components["task_manager"].start_indexing_task(
             "/test/path", mock_components["parallel_indexer"]
         )
-        
+
         assert result == "test-task-id-123"
 
     @pytest.mark.asyncio
@@ -203,15 +201,16 @@ class TestEOLRAGContextServer:
         """Test get_indexing_status MCP tool functionality."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Test task not found
         result = await mock_components["task_manager"].get_task_status("nonexistent-task")
         assert result is None
-        
+
         # Test with mock task info
-        from eol.rag_context.async_task_manager import IndexingTaskInfo, TaskStatus
         import time
-        
+
+        from eol.rag_context.async_task_manager import IndexingTaskInfo, TaskStatus
+
         task_info = IndexingTaskInfo(
             task_id="test-task-123",
             status=TaskStatus.RUNNING,
@@ -219,12 +218,12 @@ class TestEOLRAGContextServer:
             source_id="test-source",
             created_at=time.time(),
             total_files=100,
-            completed_files=50
+            completed_files=50,
         )
-        
+
         mock_components["task_manager"].get_task_status.return_value = task_info
         result = await mock_components["task_manager"].get_task_status("test-task-123")
-        
+
         assert result.task_id == "test-task-123"
         assert result.status == TaskStatus.RUNNING
         assert result.progress_percentage == 50.0
@@ -234,18 +233,18 @@ class TestEOLRAGContextServer:
         """Test list_indexing_tasks MCP tool functionality."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Test listing tasks
         result = await mock_components["task_manager"].list_tasks()
         assert result == []
         mock_components["task_manager"].list_tasks.assert_called_once()
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_cancel_indexing_task_tool(self, config, mock_components):
-        """Test cancel_indexing_task MCP tool functionality.""" 
+        """Test cancel_indexing_task MCP tool functionality."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Test cancelling task
         result = await mock_components["task_manager"].cancel_task("test-task-123")
         assert result is True
@@ -256,7 +255,7 @@ class TestEOLRAGContextServer:
         """Test cleanup_old_indexing_tasks MCP tool functionality."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Test cleanup
         result = await mock_components["task_manager"].cleanup_old_tasks()
         assert result == 5  # Mock returns 5 cleaned tasks
@@ -267,11 +266,11 @@ class TestEOLRAGContextServer:
         """Test server initializes non-blocking components correctly."""
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
-        
+
         # Verify non-blocking components are initialized
         assert srv.task_manager is not None
         assert srv.parallel_indexer is not None
-        
+
         # Verify they're the mocked instances
         assert srv.task_manager == mock_components["task_manager"]
         assert srv.parallel_indexer == mock_components["parallel_indexer"]

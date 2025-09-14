@@ -324,7 +324,7 @@ def redis_store() -> Mock:
     store.async_redis.expire = AsyncMock()
     store.async_redis.scan = AsyncMock(side_effect=mock_scan)
     store.async_redis.hincrby = AsyncMock()
-    
+
     # Add Vector Set mocks for Redis 8.2+
     async def mock_execute_command(*args):
         command = args[0].upper() if args else ""
@@ -346,7 +346,7 @@ def redis_store() -> Mock:
         elif command == "VDEL":
             return 1
         return "OK"
-    
+
     store.async_redis.execute_command = AsyncMock(side_effect=mock_execute_command)
 
     # Create sync redis mock
@@ -363,7 +363,7 @@ def redis_store() -> Mock:
     redis_client_mock.expire = Mock()
     redis_client_mock.scan = Mock(side_effect=mock_scan)
     redis_client_mock.hincrby = Mock()
-    
+
     # Add sync Vector Set mocks
     def mock_execute_command_sync(*args):
         command = args[0].upper() if args else ""
@@ -384,7 +384,7 @@ def redis_store() -> Mock:
         elif command == "VDEL":
             return 1
         return "OK"
-    
+
     redis_client_mock.execute_command = Mock(side_effect=mock_execute_command_sync)
 
     store.redis = redis_client_mock

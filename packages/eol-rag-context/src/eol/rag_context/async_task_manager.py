@@ -411,6 +411,7 @@ class AsyncTaskManager:
 
             # Create progress callback
             def progress_callback(checkpoint: IndexingCheckpoint):
+                """Update task progress from indexing checkpoint."""
                 # Update task info with latest progress
                 task_info.total_files = checkpoint.total_files
                 task_info.completed_files = checkpoint.completed_files

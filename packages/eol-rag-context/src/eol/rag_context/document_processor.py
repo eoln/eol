@@ -986,6 +986,7 @@ class DocumentProcessor:
         temporal_metadata = self._extract_temporal_metadata(root)
 
         def process_element(elem, xpath="", parent_context="", depth=0, inherited_temporal=None):
+            """Process XML element recursively to extract structured content."""
             # Build XPath
             tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
             current_xpath = f"{xpath}/{tag_name}" if xpath else tag_name
@@ -1217,6 +1218,7 @@ class DocumentProcessor:
         chunks = []
 
         def extract_config_items(elem, path=""):
+            """Extract configuration items from XML element tree."""
             tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
             current_path = f"{path}.{tag_name}" if path else tag_name
 

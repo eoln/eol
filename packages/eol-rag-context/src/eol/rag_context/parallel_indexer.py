@@ -203,6 +203,7 @@ class ParallelFileScanner:
         """Sort files by processing priority."""
 
         def priority_key(file_path: Path) -> tuple:
+            """Calculate priority key for file sorting based on type and importance."""
             priority = 0
 
             # High priority for documentation and key files

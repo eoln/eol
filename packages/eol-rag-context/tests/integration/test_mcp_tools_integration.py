@@ -11,7 +11,6 @@ import pytest
 
 from eol.rag_context.server import (
     SearchContextRequest,
-    StartIndexingRequest,
     WatchDirectoryRequest,
 )
 

@@ -171,11 +171,6 @@ class TestEOLRAGContextServer:
         srv = server.EOLRAGContextServer(config)
         await srv.initialize()
 
-        # Simulate MCP tool call
-        from fastmcp import Context
-
-        from eol.rag_context.server import StartIndexingRequest
-
         # Testing is done via the task manager directly
         # (MCP tool functions are registered as closures)
         for name, method in srv.__class__.__dict__.items():

@@ -395,11 +395,15 @@ class SemanticCache:
 
         # Add vector to cache Vector Set
         # Format: VADD vectorset_name VALUES num val1 val2 ... element_id
-        embedding_values = query_embedding.astype(np.float32).tolist()
+        # Ensure embedding is 1D array
+        if len(query_embedding.shape) > 1:
+            embedding_values = query_embedding.flatten().astype(np.float32).tolist()
+        else:
+            embedding_values = query_embedding.astype(np.float32).tolist()
         vadd_args = ["VADD", self._cache_vectorset, "VALUES", str(len(embedding_values))]
         # Redis 8.2 expects individual float values as separate arguments
         for v in embedding_values:
-            vadd_args.append(str(float(v)))  # Ensure proper float format
+            vadd_args.append(str(v))  # v is already a float from tolist()
         vadd_args.append(cache_id)  # Use cache_id as element identifier
 
         try:
@@ -436,13 +440,17 @@ class SemanticCache:
         """
         try:
             # Convert query embedding to list for VSIM command
-            query_values = query_embedding.astype(np.float32).tolist()
+            # Ensure embedding is 1D array
+            if len(query_embedding.shape) > 1:
+                query_values = query_embedding.flatten().astype(np.float32).tolist()
+            else:
+                query_values = query_embedding.astype(np.float32).tolist()
 
             # Build VSIM command
             vsim_args = ["VSIM", self._cache_vectorset, "VALUES", str(len(query_values))]
             # Redis 8.2 expects individual float values as separate arguments
             for v in query_values:
-                vsim_args.append(str(float(v)))  # Ensure proper float format
+                vsim_args.append(str(v))  # v is already a float from tolist()
             vsim_args.extend(["COUNT", str(k), "WITHSCORES", "EF", "50"])
 
             # Execute VSIM command

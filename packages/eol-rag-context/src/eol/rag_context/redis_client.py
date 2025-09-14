@@ -459,7 +459,11 @@ class RedisVectorStore:
         vectorset_name = vectorset_map.get(doc.hierarchy_level, self.index_config.chunk_vectorset)
 
         # Convert embedding to float32 list for VADD command
-        embedding_values = doc.embedding.astype(np.float32).tolist()
+        # Ensure embedding is 1D array
+        if len(doc.embedding.shape) > 1:
+            embedding_values = doc.embedding.flatten().astype(np.float32).tolist()
+        else:
+            embedding_values = doc.embedding.astype(np.float32).tolist()
 
         # Use VADD to add vector to Vector Set
         # Format: VADD vectorset_name VALUES num val1 val2 ... element_id [options]
@@ -467,7 +471,7 @@ class RedisVectorStore:
         vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
         # Pass each float value as a separate argument
         for v in embedding_values:
-            vadd_args.append(str(float(v)))  # Ensure proper float format
+            vadd_args.append(str(v))  # v is already a float from tolist()
         vadd_args.append(doc.id)
 
         # Add level-specific parameters after element ID
@@ -548,14 +552,18 @@ class RedisVectorStore:
         vectorset_name = vectorset_map.get(hierarchy_level, self.index_config.chunk_vectorset)
 
         # Convert query embedding to list for VSIM command
-        query_values = query_embedding.astype(np.float32).tolist()
+        # Ensure embedding is 1D array
+        if len(query_embedding.shape) > 1:
+            query_values = query_embedding.flatten().astype(np.float32).tolist()
+        else:
+            query_values = query_embedding.astype(np.float32).tolist()
 
         # Build VSIM command with EF parameter based on hierarchy level
         # Format: VSIM key VALUES num val1 val2 ... [COUNT k] [WITHSCORES]
         vsim_args = ["VSIM", vectorset_name, "VALUES", str(len(query_values))]
         # Pass each float value as a separate argument
         for v in query_values:
-            vsim_args.append(str(float(v)))  # Ensure proper float format
+            vsim_args.append(str(v))  # v is already a float from tolist()
         vsim_args.extend(["COUNT", str(k), "WITHSCORES"])
 
         # Add EF parameter for search quality

@@ -394,10 +394,12 @@ class SemanticCache:
         self.redis.redis.hset(cache_key, mapping=cache_data)
 
         # Add vector to cache Vector Set
-        # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id
+        # Format: VADD vectorset_name VALUES num val1 val2 ... element_id
         embedding_values = query_embedding.astype(np.float32).tolist()
         vadd_args = ["VADD", self._cache_vectorset, "VALUES", str(len(embedding_values))]
-        vadd_args.extend([str(v) for v in embedding_values])
+        # Redis 8.2 expects individual float values as separate arguments
+        for v in embedding_values:
+            vadd_args.append(str(float(v)))  # Ensure proper float format
         vadd_args.append(cache_id)  # Use cache_id as element identifier
 
         try:
@@ -438,7 +440,9 @@ class SemanticCache:
 
             # Build VSIM command
             vsim_args = ["VSIM", self._cache_vectorset, "VALUES", str(len(query_values))]
-            vsim_args.extend([str(v) for v in query_values])
+            # Redis 8.2 expects individual float values as separate arguments
+            for v in query_values:
+                vsim_args.append(str(float(v)))  # Ensure proper float format
             vsim_args.extend(["COUNT", str(k), "WITHSCORES", "EF", "50"])
 
             # Execute VSIM command

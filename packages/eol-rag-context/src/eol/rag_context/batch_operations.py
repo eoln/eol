@@ -216,8 +216,11 @@ class BatchRedisClient:
                     vectorset_name = self._get_vectorset_name(doc.hierarchy_level)
                     embedding_values = doc.embedding.astype(np.float32).tolist()
 
+                    # Redis 8.2 expects individual float values as separate arguments
                     vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
-                    vadd_args.extend([str(v) for v in embedding_values])
+                    # Pass each float value as a separate argument
+                    for v in embedding_values:
+                        vadd_args.append(str(float(v)))  # Ensure proper float format
                     vadd_args.append(doc.id)
 
                     vadd_commands.append(vadd_args)

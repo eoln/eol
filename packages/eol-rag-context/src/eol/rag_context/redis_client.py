@@ -462,9 +462,12 @@ class RedisVectorStore:
         embedding_values = doc.embedding.astype(np.float32).tolist()
 
         # Use VADD to add vector to Vector Set
-        # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id [options]
+        # Format: VADD vectorset_name VALUES num val1 val2 ... element_id [options]
+        # Redis 8.2 expects individual float values as separate arguments
         vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
-        vadd_args.extend([str(v) for v in embedding_values])
+        # Pass each float value as a separate argument
+        for v in embedding_values:
+            vadd_args.append(str(float(v)))  # Ensure proper float format
         vadd_args.append(doc.id)
 
         # Add level-specific parameters after element ID
@@ -548,8 +551,11 @@ class RedisVectorStore:
         query_values = query_embedding.astype(np.float32).tolist()
 
         # Build VSIM command with EF parameter based on hierarchy level
+        # Format: VSIM key VALUES num val1 val2 ... [COUNT k] [WITHSCORES]
         vsim_args = ["VSIM", vectorset_name, "VALUES", str(len(query_values))]
-        vsim_args.extend([str(v) for v in query_values])
+        # Pass each float value as a separate argument
+        for v in query_values:
+            vsim_args.append(str(float(v)))  # Ensure proper float format
         vsim_args.extend(["COUNT", str(k), "WITHSCORES"])
 
         # Add EF parameter for search quality

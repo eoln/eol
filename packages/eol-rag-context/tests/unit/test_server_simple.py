@@ -2,7 +2,6 @@
 Working server tests for achieving coverage on server.py module.
 """
 
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -93,10 +92,7 @@ class TestServerRequestModels:
     def test_index_directory_request(self):
         """Test StartIndexingRequest model."""
         request = server.StartIndexingRequest(
-            path="/test/path",
-            recursive=True,
-            max_workers=8,
-            batch_size=16
+            path="/test/path", recursive=True, max_workers=8, batch_size=16
         )
 
         assert request.path == "/test/path"
@@ -321,14 +317,24 @@ class TestServerMCPEndpoints:
 
     @pytest.mark.asyncio
     async def test_index_directory_error_handling(self):
-        """Test index directory error handling."""
+        """Test index directory error handling when task manager fails."""
         srv = server.EOLRAGContextServer()
-        srv.indexer = None  # Not initialized
 
-        # Should return error dict, not raise exception
-        result = await srv.index_directory("/test/path")
-        assert result["status"] == "error"
-        assert "not initialized" in result["message"]
+        # Mock successful initialization
+        with patch.object(srv, "initialize", new_callable=AsyncMock):
+            # Create mock task manager that raises an error
+            srv.task_manager = MagicMock()
+            srv.task_manager.start_indexing_task = AsyncMock(
+                side_effect=Exception("Task creation failed")
+            )
+            srv.parallel_indexer = MagicMock()  # This needs to exist too
+
+            # This should trigger the error handling in the try block
+            result = await srv.index_directory("/test/path")
+
+            # Should return error dict when task creation fails
+            assert result["status"] == "error"
+            assert "Task creation failed" in result["message"]
 
     @pytest.mark.asyncio
     async def test_run_method_basic(self):

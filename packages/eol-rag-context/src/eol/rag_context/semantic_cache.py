@@ -477,7 +477,8 @@ class SemanticCache:
                                     val_str = v.decode() if isinstance(v, bytes) else v
                                     data[key_str] = val_str
                                 except UnicodeDecodeError:
-                                    # Skip fields that can't be decoded as UTF-8 (likely binary data)
+                                    # Skip fields that can't be decoded
+                                    # as UTF-8 (likely binary data)
                                     continue
 
                             processed_data = {

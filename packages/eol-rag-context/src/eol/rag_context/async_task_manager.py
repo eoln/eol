@@ -36,9 +36,8 @@ import uuid
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from .indexer import IndexedSource
 from .parallel_indexer import IndexingCheckpoint, ParallelIndexer, ParallelIndexingConfig
 from .redis_client import RedisVectorStore
 
@@ -373,7 +372,10 @@ class AsyncTaskManager:
                     # Mark as failed
                     task_info.status = TaskStatus.FAILED
                     task_info.completed_at = current_time
-                    task_info.error_message = f"Task timed out after {round(task_info.elapsed_time, 2)} seconds with no progress"
+                    task_info.error_message = (
+                        f"Task timed out after {round(task_info.elapsed_time, 2)} "
+                        "seconds with no progress"
+                    )
 
                     # Store updated status
                     await self._store_task_info(task_info)

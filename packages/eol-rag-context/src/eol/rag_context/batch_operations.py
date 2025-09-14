@@ -31,7 +31,7 @@ Example:
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -223,7 +223,7 @@ class BatchRedisClient:
                     vadd_commands.append(vadd_args)
 
                 # Execute hash operations
-                pipeline_results = pipeline.execute()
+                pipeline.execute()
 
                 # Execute VADD operations (these need to be done individually for now)
                 for vadd_args in vadd_commands:

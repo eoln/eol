@@ -4,6 +4,7 @@ Tests real indexing workflow with Redis.
 
 """
 
+import asyncio
 import tempfile
 from pathlib import Path
 
@@ -105,7 +106,7 @@ class TestIndexingIntegration:
     async def test_source_management(self, server_instance, indexer_instance, temp_test_directory):
         """Test source management operations."""
         # Index with a specific source ID using non-blocking API
-        source_id = "test_source_mgmt"
+        # source_id variable removed - using non-blocking API
 
         # Start non-blocking indexing
         result = await server_instance.index_directory(temp_test_directory, recursive=True)

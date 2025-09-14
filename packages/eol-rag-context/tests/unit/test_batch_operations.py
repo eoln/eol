@@ -1,6 +1,5 @@
 """Unit tests for batch operations module - high-performance batch processing."""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np

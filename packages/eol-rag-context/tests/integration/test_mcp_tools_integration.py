@@ -10,8 +10,6 @@ from pathlib import Path
 import pytest
 
 from eol.rag_context.server import (
-    OptimizeContextRequest,
-    QueryKnowledgeGraphRequest,
     SearchContextRequest,
     StartIndexingRequest,
     WatchDirectoryRequest,
@@ -35,11 +33,6 @@ def test_function():
     '''Test function for MCP tool testing.'''
     return "Hello from MCP tool test"
 """
-            )
-
-            # Call start_indexing tool directly
-            request = StartIndexingRequest(
-                path=str(test_dir), recursive=True, max_workers=4, batch_size=8
             )
 
             # Simulate tool call

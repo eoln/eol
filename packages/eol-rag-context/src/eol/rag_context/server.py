@@ -738,7 +738,10 @@ class EOLRAGContextServer:
                 "cleaned_tasks": total_cleaned,
                 "old_tasks_cleaned": old_cleaned,
                 "stuck_tasks_cleaned": stuck_cleaned,
-                "message": f"Cleaned up {total_cleaned} tasks ({old_cleaned} old, {stuck_cleaned} stuck)",
+                "message": (
+                    f"Cleaned up {total_cleaned} tasks "
+                    f"({old_cleaned} old, {stuck_cleaned} stuck)"
+                ),
             }
 
         @self.mcp.tool()
@@ -1276,7 +1279,10 @@ Output Format:
             return {
                 "status": "started",  # Changed from "success" to indicate async nature
                 "task_id": task_id,
-                "message": f"Non-blocking indexing started for {path}. Use get_indexing_status(task_id) to track progress.",
+                "message": (
+                    f"Non-blocking indexing started for {path}. "
+                    "Use get_indexing_status(task_id) to track progress."
+                ),
                 "path": path,
             }
         except Exception as e:

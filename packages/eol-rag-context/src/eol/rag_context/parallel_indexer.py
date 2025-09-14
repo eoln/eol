@@ -31,13 +31,13 @@ import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from .config import RAGConfig
-from .document_processor import DocumentProcessor, ProcessedDocument
+from .document_processor import DocumentProcessor
 from .embeddings import EmbeddingManager
-from .indexer import DocumentIndexer, DocumentMetadata, FolderScanner, IndexedSource, IndexResult
-from .redis_client import RedisVectorStore, VectorDocument
+from .indexer import DocumentIndexer, FolderScanner, IndexedSource, IndexResult
+from .redis_client import RedisVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -313,7 +313,8 @@ class ParallelIndexer(DocumentIndexer):
             source_id = self._generate_source_id(folder_path)
 
         logger.info(
-            f"Starting parallel indexing of {folder_path} with {self.parallel_config.max_document_workers} workers"
+            f"Starting parallel indexing of {folder_path} with "
+            f"{self.parallel_config.max_document_workers} workers"
         )
 
         # Initialize checkpoint
@@ -487,7 +488,8 @@ class ParallelIndexer(DocumentIndexer):
                 # current_file field removed for simplicity
 
                 logger.info(
-                    f"Resumed from checkpoint: {self.current_checkpoint.completed_files} files completed"
+                    f"Resumed from checkpoint: "
+                    f"{self.current_checkpoint.completed_files} files completed"
                 )
                 return True
 

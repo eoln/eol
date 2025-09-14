@@ -1,6 +1,5 @@
 """Unit tests for AsyncTaskManager - non-blocking indexing task management."""
 
-import asyncio
 import time
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch

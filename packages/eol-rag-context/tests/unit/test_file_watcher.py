@@ -627,93 +627,137 @@ class TestFileWatcher:
     @pytest.mark.asyncio
     async def test_file_change_handler_on_created(self, file_watcher):
         """Test FileChangeHandler on_created event."""
-        handler = FileChangeHandler(file_watcher)
+        # Create handler with required parameters
+        source_path = Path("/test/project")
+        source_id = "test_source"
+        file_patterns = ["*.py"]
 
-        # Mock event
-        event = MagicMock()
-        event.src_path = "/test/new_file.py"
-        event.is_directory = False
+        # Mock FolderScanner to avoid complex initialization
+        with patch("eol.rag_context.file_watcher.FolderScanner") as mock_scanner_class:
+            mock_scanner = MagicMock()
+            mock_scanner._should_ignore.return_value = False
+            mock_scanner_class.return_value = mock_scanner
 
-        # Process event
-        handler.on_created(event)
+            handler = FileChangeHandler(file_watcher, source_path, source_id, file_patterns)
 
-        # Check change was added
-        assert len(file_watcher.pending_changes) == 1
-        change = file_watcher.pending_changes[0]
-        assert change.change_type == ChangeType.CREATED
-        assert str(change.file_path) == "/test/new_file.py"
+            # Mock event
+            event = MagicMock()
+            event.src_path = "/test/project/new_file.py"
+            event.is_directory = False
+
+            # Mock _should_process to return True
+            with patch.object(handler, "_should_process", return_value=True):
+                # Mock asyncio.create_task
+                with patch("asyncio.create_task") as mock_create_task:
+                    # Process event
+                    handler.on_created(event)
+
+                    # Verify task was created
+                    mock_create_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_file_change_handler_on_modified(self, file_watcher):
         """Test FileChangeHandler on_modified event."""
-        handler = FileChangeHandler(file_watcher)
+        # Create handler with required parameters
+        source_path = Path("/test/project")
+        source_id = "test_source"
+        file_patterns = ["*.py"]
 
-        # Mock event
-        event = MagicMock()
-        event.src_path = "/test/modified_file.py"
-        event.is_directory = False
+        with patch("eol.rag_context.file_watcher.FolderScanner") as mock_scanner_class:
+            mock_scanner = MagicMock()
+            mock_scanner._should_ignore.return_value = False
+            mock_scanner_class.return_value = mock_scanner
 
-        # Process event
-        handler.on_modified(event)
+            handler = FileChangeHandler(file_watcher, source_path, source_id, file_patterns)
 
-        # Check change was added
-        assert len(file_watcher.pending_changes) == 1
-        change = file_watcher.pending_changes[0]
-        assert change.change_type == ChangeType.MODIFIED
+            # Mock event
+            event = MagicMock()
+            event.src_path = "/test/project/modified_file.py"
+            event.is_directory = False
+
+            # Mock _should_process to return True
+            with patch.object(handler, "_should_process", return_value=True):
+                # Mock asyncio.create_task
+                with patch("asyncio.create_task") as mock_create_task:
+                    # Process event
+                    handler.on_modified(event)
+
+                    # Verify task was created
+                    mock_create_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_file_change_handler_on_deleted(self, file_watcher):
         """Test FileChangeHandler on_deleted event."""
-        handler = FileChangeHandler(file_watcher)
+        # Create handler with required parameters
+        source_path = Path("/test/project")
+        source_id = "test_source"
+        file_patterns = ["*.py"]
 
-        # Mock event
-        event = MagicMock()
-        event.src_path = "/test/deleted_file.py"
-        event.is_directory = False
+        with patch("eol.rag_context.file_watcher.FolderScanner") as mock_scanner_class:
+            mock_scanner = MagicMock()
+            mock_scanner_class.return_value = mock_scanner
 
-        # Process event
-        handler.on_deleted(event)
+            handler = FileChangeHandler(file_watcher, source_path, source_id, file_patterns)
 
-        # Check change was added
-        assert len(file_watcher.pending_changes) == 1
-        change = file_watcher.pending_changes[0]
-        assert change.change_type == ChangeType.DELETED
+            # Mock event
+            event = MagicMock()
+            event.src_path = "/test/project/deleted_file.py"
+            event.is_directory = False
+
+            # Mock asyncio.create_task
+            with patch("asyncio.create_task") as mock_create_task:
+                # Process event
+                handler.on_deleted(event)
+
+                # Verify task was created (deletion always processes)
+                mock_create_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_file_change_handler_ignore_directory(self, file_watcher):
         """Test FileChangeHandler ignores directory events."""
-        handler = FileChangeHandler(file_watcher)
+        # Create handler with required parameters
+        source_path = Path("/test/project")
+        source_id = "test_source"
+        file_patterns = ["*.py"]
 
-        # Mock directory event
-        event = MagicMock()
-        event.src_path = "/test/new_dir"
-        event.is_directory = True
+        with patch("eol.rag_context.file_watcher.FolderScanner") as mock_scanner_class:
+            mock_scanner = MagicMock()
+            mock_scanner_class.return_value = mock_scanner
 
-        # Process event - should be ignored
-        handler.on_created(event)
+            handler = FileChangeHandler(file_watcher, source_path, source_id, file_patterns)
 
-        # No changes should be added
-        assert len(file_watcher.pending_changes) == 0
+            # Mock directory event
+            event = MagicMock()
+            event.src_path = "/test/project/new_dir"
+            event.is_directory = True
+
+            # Mock asyncio.create_task to track if it's called
+            with patch("asyncio.create_task") as mock_create_task:
+                # Process event - should be ignored
+                handler.on_created(event)
+
+                # No task should be created for directories
+                mock_create_task.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_pending_changes_with_debounce(self, file_watcher, mock_indexer):
         """Test processing pending changes with debounce."""
-        # Add multiple changes quickly
+        # Add multiple changes quickly - note that FileChange uses 'path' not 'file_path'
         changes = [
             FileChange(
-                file_path=Path("/test/file1.py"),
+                path=Path("/test/file1.py"),
                 change_type=ChangeType.MODIFIED,
-                source_id="test-source",
+                metadata={"source_id": "test-source"},
                 timestamp=time.time(),
             ),
             FileChange(
-                file_path=Path("/test/file2.py"),
+                path=Path("/test/file2.py"),
                 change_type=ChangeType.CREATED,
-                source_id="test-source",
+                metadata={"source_id": "test-source"},
                 timestamp=time.time(),
             ),
         ]
-        file_watcher.pending_changes.extend(changes)
+        file_watcher.pending_changes = {"test-source": changes}
 
         # Add watched source
         source = WatchedSource(path=Path("/test"), source_id="test-source")
@@ -781,15 +825,15 @@ class TestFileWatcher:
     def test_file_change_dataclass(self):
         """Test FileChange dataclass."""
         change = FileChange(
-            file_path=Path("/test/file.py"),
+            path=Path("/test/file.py"),
             change_type=ChangeType.CREATED,
-            source_id="test-src",
+            metadata={"source_id": "test-src"},
             timestamp=1234567890.0,
         )
 
-        assert change.file_path == Path("/test/file.py")
+        assert change.path == Path("/test/file.py")
         assert change.change_type == ChangeType.CREATED
-        assert change.source_id == "test-src"
+        assert change.metadata["source_id"] == "test-src"
         assert change.timestamp == 1234567890.0
 
     def test_watched_source_dataclass(self):

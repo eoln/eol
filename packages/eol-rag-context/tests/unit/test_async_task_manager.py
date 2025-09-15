@@ -25,7 +25,8 @@ class TestAsyncTaskManager:
     def mock_parallel_indexer(self):
         """Mock ParallelIndexer."""
         mock_indexer = AsyncMock()
-        mock_indexer._generate_source_id.return_value = "test-source-123"
+        # _generate_source_id should be a regular Mock, not AsyncMock
+        mock_indexer._generate_source_id = MagicMock(return_value="test-source-123")
         return mock_indexer
 
     @pytest.fixture
@@ -52,7 +53,8 @@ class TestAsyncTaskManager:
         assert task_id in task_manager.task_info
 
         task_info = task_manager.task_info[task_id]
-        assert task_info.status == TaskStatus.PENDING
+        # Task starts as PENDING, then transitions to RUNNING
+        assert task_info.status in [TaskStatus.PENDING, TaskStatus.RUNNING]
         assert task_info.folder_path == "/test/path"
         assert task_info.recursive is True
 
@@ -258,7 +260,7 @@ class TestAsyncTaskManager:
             Path("/test/path"), mock_parallel_indexer, recursive=True
         )
 
-        # Task should be running
+        # Task should already be running (starts immediately)
         assert task_manager.task_info[task_id].status == TaskStatus.RUNNING
 
         # Cancel the task

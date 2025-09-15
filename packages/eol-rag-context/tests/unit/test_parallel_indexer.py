@@ -324,10 +324,10 @@ class TestParallelIndexer:
         # Mock document processing
         mock_doc = MagicMock()
         mock_doc.chunks = [{"content": "chunk1"}, {"content": "chunk2"}]
-        parallel_indexer.document_processor.process_file = AsyncMock(return_value=mock_doc)
+        parallel_indexer.processor.process_file = AsyncMock(return_value=mock_doc)
 
         # Mock embedding generation
-        parallel_indexer.embedding_manager.generate_embeddings = AsyncMock(
+        parallel_indexer.embeddings.generate_embeddings = AsyncMock(
             return_value=[[0.1, 0.2], [0.3, 0.4]]
         )
 
@@ -345,7 +345,7 @@ class TestParallelIndexer:
     async def test_handle_processing_error(self, parallel_indexer):
         """Test error handling during file processing."""
         # Mock document processing to raise an error
-        parallel_indexer.document_processor.process_file = AsyncMock(
+        parallel_indexer.processor.process_file = AsyncMock(
             side_effect=Exception("Processing failed")
         )
 
@@ -387,12 +387,10 @@ class TestParallelIndexer:
             # Mock document processing
             mock_doc = MagicMock()
             mock_doc.chunks = [{"content": "chunk"}]
-            parallel_indexer.document_processor.process_file = AsyncMock(return_value=mock_doc)
+            parallel_indexer.processor.process_file = AsyncMock(return_value=mock_doc)
 
             # Mock embedding generation
-            parallel_indexer.embedding_manager.generate_embeddings = AsyncMock(
-                return_value=[[0.1, 0.2]]
-            )
+            parallel_indexer.embeddings.generate_embeddings = AsyncMock(return_value=[[0.1, 0.2]])
 
             # Mock Redis storage
             parallel_indexer.redis.store_documents = AsyncMock(return_value=1)

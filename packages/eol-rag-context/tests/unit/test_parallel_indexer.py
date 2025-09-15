@@ -13,7 +13,6 @@ from eol.rag_context.parallel_indexer import (
     ParallelIndexer,
     ParallelIndexingConfig,
 )
-from eol.rag_context.config import RAGConfig
 
 
 class TestParallelIndexingConfig:
@@ -142,26 +141,23 @@ class TestParallelFileScanner:
         """Test repository scanning."""
         # Create a real temp directory for testing
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             test_path = Path(tmpdir)
-            
+
             # Create real test files
             file1 = test_path / "file1.py"
             file1.write_text("print('hello')")
-            
+
             file2 = test_path / "file2.md"
             file2.write_text("# README")
-            
+
             batches = []
-            async for batch in scanner.scan_repository(
-                test_path, 
-                ["*.py", "*.md"], 
-                recursive=True
-            ):
+            async for batch in scanner.scan_repository(test_path, ["*.py", "*.md"], recursive=True):
                 batches.append(batch)
-            
+
             # Should create one batch with 2 files
-            assert len(batches) == 1  
+            assert len(batches) == 1
             assert len(batches[0].files) == 2
             # Check that estimated size is the sum of actual file sizes
             assert batches[0].estimated_size == len("print('hello')") + len("# README")
@@ -285,21 +281,23 @@ class TestParallelIndexer:
         )
 
         parallel_indexer.current_checkpoint = checkpoint
-        
+
         # Mock Redis operations
         parallel_indexer.redis.async_redis.hset = AsyncMock()
         parallel_indexer.redis.async_redis.expire = AsyncMock()
-        parallel_indexer.redis.async_redis.hgetall = AsyncMock(return_value={
-            'completed_files': '10',
-            'total_files': '50',
-            'total_chunks': '100',
-            'processed_files': 'file1.py,file2.py'
-        })
-        
+        parallel_indexer.redis.async_redis.hgetall = AsyncMock(
+            return_value={
+                "completed_files": "10",
+                "total_files": "50",
+                "total_chunks": "100",
+                "processed_files": "file1.py,file2.py",
+            }
+        )
+
         # Test save
         await parallel_indexer._save_checkpoint()
         parallel_indexer.redis.async_redis.hset.assert_called_once()
-        
+
         # Test load
         success = await parallel_indexer._load_checkpoint()
         assert success is True
@@ -310,7 +308,7 @@ class TestParallelIndexer:
         checkpoint = IndexingCheckpoint(source_id="test-source", root_path="/test")
         parallel_indexer.current_checkpoint = checkpoint
         parallel_indexer.redis.async_redis.delete = AsyncMock()
-        
+
         await parallel_indexer._cleanup_checkpoint()
         parallel_indexer.redis.async_redis.delete.assert_called_once()
 

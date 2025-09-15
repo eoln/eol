@@ -189,7 +189,7 @@ class TestBatchRedisClient:
         # Should have called pipeline operations
         assert mock_pipeline.hset.call_count == len(sample_documents)
         assert mock_redis_store.async_redis.execute_command.call_count == len(sample_documents)
-        
+
         # Verify VADD command includes quantization parameter
         for call in mock_redis_store.async_redis.execute_command.call_args_list:
             vadd_args = call[0]

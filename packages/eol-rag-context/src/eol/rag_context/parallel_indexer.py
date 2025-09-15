@@ -31,7 +31,6 @@ import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 
 from .config import RAGConfig
 from .document_processor import DocumentProcessor
@@ -69,7 +68,7 @@ class ParallelIndexingConfig:
     checkpoint_interval: int = 100
     memory_limit_mb: int = 2048
     enable_resume: bool = True
-    priority_patterns: List[str] = field(default_factory=lambda: ["*.md", "*.py", "README*"])
+    priority_patterns: list[str] = field(default_factory=lambda: ["*.md", "*.py", "README*"])
 
 
 @dataclass
@@ -81,8 +80,8 @@ class IndexingCheckpoint:
 
     source_id: str
     root_path: str
-    processed_files: Set[str] = field(default_factory=set)
-    failed_files: Dict[str, str] = field(default_factory=dict)  # file -> error
+    processed_files: set[str] = field(default_factory=set)
+    failed_files: dict[str, str] = field(default_factory=dict)  # file -> error
     total_files: int = 0
     completed_files: int = 0
     total_chunks: int = 0
@@ -117,7 +116,7 @@ class IndexingCheckpoint:
 class FileBatch:
     """A batch of files to be processed together."""
 
-    files: List[Path]
+    files: list[Path]
     priority: int = 0  # Higher = process first
     estimated_size: int = 0  # Total estimated bytes
 
@@ -136,7 +135,7 @@ class ParallelFileScanner:
         self.ignore_patterns = self.folder_scanner.ignore_patterns
 
     async def scan_repository(
-        self, root_path: Path, file_patterns: List[str], recursive: bool = True
+        self, root_path: Path, file_patterns: list[str], recursive: bool = True
     ) -> AsyncIterator[FileBatch]:
         """Stream file batches optimized for parallel processing.
 
@@ -199,7 +198,7 @@ class ParallelFileScanner:
         if batch:
             yield FileBatch(files=batch, estimated_size=batch_size)
 
-    def _prioritize_files(self, files: List[Path]) -> List[Path]:
+    def _prioritize_files(self, files: list[Path]) -> list[Path]:
         """Sort files by processing priority."""
 
         def priority_key(file_path: Path) -> tuple:
@@ -268,7 +267,7 @@ class ParallelIndexer(DocumentIndexer):
         processor: DocumentProcessor,
         embeddings: EmbeddingManager,
         redis: RedisVectorStore,
-        parallel_config: Optional[ParallelIndexingConfig] = None,
+        parallel_config: ParallelIndexingConfig | None = None,
     ):
         super().__init__(config, processor, embeddings, redis)
         self.parallel_config = parallel_config or ParallelIndexingConfig()
@@ -280,15 +279,15 @@ class ParallelIndexer(DocumentIndexer):
         self.redis_semaphore = asyncio.Semaphore(self.parallel_config.max_redis_workers)
 
         # State tracking
-        self.current_checkpoint: Optional[IndexingCheckpoint] = None
+        self.current_checkpoint: IndexingCheckpoint | None = None
 
     async def index_folder_parallel(
         self,
         folder_path: Path | str,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
         recursive: bool = True,
         force_reindex: bool = False,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> IndexedSource:
         """Index folder using high-performance parallel processing.
 
@@ -402,7 +401,7 @@ class ParallelIndexer(DocumentIndexer):
 
     async def _process_file_batch(
         self, batch: FileBatch, source_id: str, root_path: Path, force_reindex: bool
-    ) -> List[IndexResult]:
+    ) -> list[IndexResult]:
         """Process a batch of files concurrently."""
         tasks = []
         skipped_files = []

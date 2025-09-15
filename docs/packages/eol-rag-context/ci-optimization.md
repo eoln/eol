@@ -1,31 +1,37 @@
 # CI/CD Pipeline Optimization Guide
 
 ## Overview
+
 This document describes the optimizations implemented to speed up the integration tests in our CI/CD pipeline, reducing test execution time from ~5 minutes to under 2 minutes.
 
 ## Key Optimizations
 
 ### 1. Dependency Caching Strategy
+
 - **Multi-level caching**: pip, uv, and model caches
 - **Cache keys**: Based on requirements files hash
 - **Sentence transformer models**: Pre-cached to avoid download
 
 ### 2. Ultra-fast Package Installation with uv
+
 - Replaces pip with uv for 10-100x faster installation
 - Parallel package resolution and installation
 - Bytecode compilation for faster imports
 
 ### 3. Parallel Test Execution
+
 - pytest-xdist for running tests in parallel
 - Auto-detection of CPU cores (`-n auto`)
 - Max 4 processes to avoid Redis connection issues
 
 ### 4. Docker Image Optimization
+
 - Custom test image with pre-installed dependencies
 - Stored in GitHub Container Registry
 - Reduces dependency installation from 3min to 10s
 
 ### 5. Redis Service Optimization
+
 - Health checks with shorter intervals
 - Immediate readiness verification
 - Pre-flush before tests for clean state
@@ -42,6 +48,7 @@ This document describes the optimizations implemented to speed up the integratio
 ## Files Added/Modified
 
 ### New Files
+
 - `Dockerfile.test`: Optimized test container
 - `docker-compose.ci.yml`: Local CI environment
 - `Makefile.ci`: CI testing utilities
@@ -49,11 +56,13 @@ This document describes the optimizations implemented to speed up the integratio
 - `.github/workflows/eol-rag-context-integration-optimized.yml`: Optimized test workflow
 
 ### Modified Files
+
 - `.github/workflows/eol-rag-context-quality-gate.yml`: Added caching and parallel execution
 
 ## Usage
 
 ### Local CI Testing
+
 ```bash
 # Build optimized test image
 make -f Makefile.ci build-test-image
@@ -66,6 +75,7 @@ make -f Makefile.ci benchmark-ci
 ```
 
 ### Docker Compose Testing
+
 ```bash
 # Start Redis and run tests
 docker-compose -f docker-compose.ci.yml up
@@ -95,6 +105,7 @@ docker-compose -f docker-compose.ci.yml down -v
 ## Monitoring
 
 Track these metrics to ensure optimizations are working:
+
 - Total workflow time
 - Cache hit rates
 - Test execution time per module
@@ -103,16 +114,19 @@ Track these metrics to ensure optimizations are working:
 ## Troubleshooting
 
 ### Slow Dependency Installation
+
 - Check cache hit rate in workflow logs
 - Verify uv is being used (not pip)
 - Ensure cache keys are specific enough
 
 ### Test Failures in Parallel Mode
+
 - Reduce `--maxprocesses` if Redis connection errors
 - Check for test isolation issues
 - Use `--dist loadscope` for better test distribution
 
 ### Docker Image Issues
+
 - Rebuild with `--no-cache` if stale
 - Check GitHub Container Registry permissions
 - Verify image is being pulled correctly

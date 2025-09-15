@@ -31,7 +31,7 @@ Example:
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -52,11 +52,11 @@ class BatchEmbeddingManager:
     def __init__(self, embedding_manager: EmbeddingManager, max_batch_size: int = 32):
         self.embedding_manager = embedding_manager
         self.max_batch_size = max_batch_size
-        self._embedding_cache: Dict[str, np.ndarray] = {}
+        self._embedding_cache: dict[str, np.ndarray] = {}
 
     async def get_embeddings_batch(
-        self, texts: List[str], use_cache: bool = True
-    ) -> List[np.ndarray]:
+        self, texts: list[str], use_cache: bool = True
+    ) -> list[np.ndarray]:
         """Generate embeddings for multiple texts with batching optimization.
 
         Args:
@@ -128,7 +128,7 @@ class BatchEmbeddingManager:
 
             # Update cache
             if use_cache:
-                for text, emb in zip(uncached_texts, new_embeddings):
+                for text, emb in zip(uncached_texts, new_embeddings, strict=False):
                     self._embedding_cache[text] = emb
 
                 # Limit cache size to prevent memory bloat
@@ -140,7 +140,7 @@ class BatchEmbeddingManager:
                         del self._embedding_cache[key]
 
             # Fill in the uncached embeddings
-            for idx, emb in zip(uncached_indices, new_embeddings):
+            for idx, emb in zip(uncached_indices, new_embeddings, strict=False):
                 embeddings[idx] = emb
 
         return embeddings
@@ -149,7 +149,7 @@ class BatchEmbeddingManager:
         """Clear embedding cache to free memory."""
         self._embedding_cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get embedding cache statistics."""
         return {
             "cache_size": len(self._embedding_cache),
@@ -168,7 +168,7 @@ class BatchRedisClient:
         self.redis_store = redis_store
         self.pipeline_size = pipeline_size
 
-    async def store_documents_batch(self, documents: List[VectorDocument]) -> int:
+    async def store_documents_batch(self, documents: list[VectorDocument]) -> int:
         """Store multiple documents using Redis pipelining.
 
         Args:
@@ -214,14 +214,14 @@ class BatchRedisClient:
 
                     # Prepare VADD command for Vector Set
                     vectorset_name = self._get_vectorset_name(doc.hierarchy_level)
-                    
+
                     # Ensure embedding is 1D array
                     embedding_array = doc.embedding
                     if embedding_array.ndim == 2:
                         embedding_array = embedding_array.flatten()
-                    
+
                     embedding_values = embedding_array.astype(np.float32).tolist()
-                    
+
                     # Skip documents with invalid embeddings
                     if not embedding_values or len(embedding_values) == 0:
                         logger.warning(f"Skipping document {doc.id} - empty embedding")
@@ -229,17 +229,17 @@ class BatchRedisClient:
                     if np.any(np.isnan(embedding_array)) or np.any(np.isinf(embedding_array)):
                         logger.warning(f"Skipping document {doc.id} - invalid embedding values")
                         continue
-                    
+
                     vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
                     # Pass each float value as a separate argument
                     for v in embedding_values:
                         vadd_args.append(str(v))  # v is already a float from tolist()
                     vadd_args.append(doc.id)
-                    
+
                     # Add quantization parameter based on configuration
                     quantization = self.redis_store.index_config.get_batch_quantization()
                     vadd_args.append(quantization)
-                    
+
                     vadd_commands.append(vadd_args)
 
                 # Execute hash operations
@@ -252,10 +252,16 @@ class BatchRedisClient:
                         stored_count += 1
                     except Exception as e:
                         logger.error(f"VADD operation failed: {e}")
-                        logger.error(f"  Vector Set: {vadd_args[1] if len(vadd_args) > 1 else 'unknown'}")
-                        logger.error(f"  Expected dimension: {vadd_args[3] if len(vadd_args) > 3 else 'unknown'}")
-                        logger.error(f"  Doc ID: {vadd_args[-2] if len(vadd_args) > 2 else 'unknown'}")
-                
+                        logger.error(
+                            f"  Vector Set: {vadd_args[1] if len(vadd_args) > 1 else 'unknown'}"
+                        )
+                        logger.error(
+                            f"  Expected dimension: {vadd_args[3] if len(vadd_args) > 3 else 'unknown'}"
+                        )
+                        logger.error(
+                            f"  Doc ID: {vadd_args[-2] if len(vadd_args) > 2 else 'unknown'}"
+                        )
+
                 logger.debug(f"Stored batch of {len(batch)} documents")
 
             except Exception as e:
@@ -288,8 +294,8 @@ class BatchRedisClient:
         return level_mapping.get(hierarchy_level, self.redis_store.index_config.vectorset_name)
 
     async def bulk_vector_search(
-        self, queries: List[str], embedding_manager: EmbeddingManager, k: int = 5
-    ) -> List[List[Tuple[str, float, Dict[str, Any]]]]:
+        self, queries: list[str], embedding_manager: EmbeddingManager, k: int = 5
+    ) -> list[list[tuple[str, float, dict[str, Any]]]]:
         """Perform multiple vector searches efficiently.
 
         Args:
@@ -310,7 +316,7 @@ class BatchRedisClient:
         # Execute searches concurrently
         search_tasks = [
             self.redis_store.vector_search(query, embedding_manager, k=k, query_embedding=emb)
-            for query, emb in zip(queries, query_embeddings)
+            for query, emb in zip(queries, query_embeddings, strict=False)
         ]
 
         results = await asyncio.gather(*search_tasks, return_exceptions=True)
@@ -339,7 +345,7 @@ class StreamingProcessor:
 
     async def process_large_file_stream(
         self, file_path: str, processor_func: callable
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Process large file in streaming fashion.
 
         Args:
@@ -352,7 +358,7 @@ class StreamingProcessor:
         results = []
 
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 chunk_buffer = ""
                 chunk_id = 0
 
@@ -392,7 +398,7 @@ class StreamingProcessor:
 
 # Convenience function for backward compatibility
 async def batch_index_documents(
-    documents: List[VectorDocument], redis_store: RedisVectorStore, batch_size: int = 100
+    documents: list[VectorDocument], redis_store: RedisVectorStore, batch_size: int = 100
 ) -> int:
     """Convenience function for batch document indexing."""
     batch_client = BatchRedisClient(redis_store, pipeline_size=batch_size)

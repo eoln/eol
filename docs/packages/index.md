@@ -6,10 +6,11 @@ The EOL Framework is organized as a monorepo with multiple specialized packages,
 
 ### 📦 [EOL RAG Context](eol-rag-context/index.md)
 
-**Status**: ✅ Production Ready  
+**Status**: ✅ Production Ready
 **Version**: 0.3.0
 
 The core RAG implementation providing:
+
 - Document indexing and processing
 - Vector search with Redis
 - Semantic caching
@@ -21,10 +22,11 @@ The core RAG implementation providing:
 
 ### 🛠 [EOL Core](eol-core/index.md)
 
-**Status**: 🚧 In Development  
+**Status**: 🚧 In Development
 **Version**: 0.1.0 (planned)
 
 Shared utilities and base classes:
+
 - Common data structures
 - Utility functions
 - Base classes for extensibility
@@ -34,10 +36,11 @@ Shared utilities and base classes:
 
 ### 💻 [EOL CLI](eol-cli/index.md)
 
-**Status**: 📋 Planned  
+**Status**: 📋 Planned
 **Version**: TBD
 
 Command-line interface for EOL:
+
 - Pipeline management
 - Deployment tools
 - Testing utilities
@@ -47,10 +50,11 @@ Command-line interface for EOL:
 
 ### 🔧 [EOL SDK](eol-sdk/index.md)
 
-**Status**: 📋 Planned  
+**Status**: 📋 Planned
 **Version**: TBD
 
 Python SDK for building applications:
+
 - High-level abstractions
 - Application templates
 - Integration helpers
@@ -65,25 +69,25 @@ graph TD
     subgraph "Application Layer"
         APP[Your Application]
     end
-    
+
     subgraph "SDK Layer"
         SDK[EOL SDK<br/>High-level APIs]
     end
-    
+
     subgraph "Service Layer"
         RAG[EOL RAG Context<br/>MCP Server]
         CLI[EOL CLI<br/>Management Tools]
     end
-    
+
     subgraph "Core Layer"
         CORE[EOL Core<br/>Shared Utilities]
     end
-    
+
     subgraph "Infrastructure"
         REDIS[(Redis<br/>Vector DB)]
         LLM[LLM APIs]
     end
-    
+
     APP --> SDK
     SDK --> RAG
     SDK --> CLI
@@ -91,7 +95,7 @@ graph TD
     CLI --> CORE
     RAG --> REDIS
     RAG --> LLM
-    
+
     style APP fill:#e8f5e9
     style SDK fill:#c8e6c9
     style RAG fill:#a5d6a7
@@ -151,7 +155,7 @@ graph LR
     D[eol-sdk] --> A
     D --> B
     C --> A
-    
+
     style A fill:#4fc3f7
     style B fill:#81c784
     style C fill:#ffb74d
@@ -172,6 +176,7 @@ graph LR
 ### Current Focus
 
 We're currently focusing on:
+
 1. **eol-rag-context**: Enhancing core RAG capabilities
 2. **Test coverage**: Achieving 80%+ coverage
 3. **Documentation**: Comprehensive guides and examples
@@ -180,11 +185,13 @@ We're currently focusing on:
 ### Roadmap
 
 **Q1 2025**
+
 - ✅ eol-rag-context v0.3.0 release
 - 🚧 eol-core initial release
 - 📋 eol-cli development start
 
 **Q2 2025**
+
 - 📋 eol-sdk initial release
 - 📋 Enhanced knowledge graph features
 - 📋 Multi-modal support

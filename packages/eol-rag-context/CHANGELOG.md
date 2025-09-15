@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - **MAJOR**: Native Redis 8.2+ Vector Sets support with VADD/VSIM commands
 - Q8 quantization for memory-efficient vector storage
 - SVS-VAMANA algorithm for high-performance similarity search
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified GitHub workflow (ci-cd.yml) consolidating all CI processes
 
 ### Changed
+
 - **BREAKING**: Migrated from Redis FT.SEARCH to native Redis 8.2+ Vector Sets
 - **BREAKING**: Now requires Redis 8.2+ instead of Redis Stack with RediSearch module
 - **BREAKING**: Updated IndexConfig to use Vector Set parameters (SVS-VAMANA, Q8 quantization)
@@ -32,16 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidated GitHub workflows into single unified ci-cd.yml
 
 ### Removed
+
 - **BREAKING**: Removed dependency on Redis Stack and RediSearch module
 - **BREAKING**: Removed all FT.SEARCH/FT.CREATE legacy code and configurations
 
 ### Fixed
+
 - Prevented redundant wheel cache artifact uploads
 - Improved wheel cache installation for Redis dependencies
 - Addressed quality check and security audit failures in CI/CD workflow
 - Test isolation issues with sys.modules modification at import time
 
 ### Performance
+
 - Removed redundant venv caching to eliminate post-job overhead
 - Optimized CI/CD build times with dependency caching
 - Improved test execution speed with parallel job matrix
@@ -49,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-08-10
 
 ### Added
+
 - Initial release of EOL RAG Context MCP Server
 - Hierarchical indexing with 3-level structure (concepts → sections → chunks)
 - Knowledge graph with automatic entity extraction

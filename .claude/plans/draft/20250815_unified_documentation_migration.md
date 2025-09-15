@@ -1,11 +1,11 @@
 # Unified Documentation Migration Plan
 
-**Plan ID**: 20250815_unified_documentation_migration  
-**Created**: 2025-08-15  
-**Status**: draft  
-**Confidence**: 9/10  
-**Estimated Duration**: 2-3 hours  
-**Branch**: feat/unified-docs  
+**Plan ID**: 20250815_unified_documentation_migration
+**Created**: 2025-08-15
+**Status**: draft
+**Confidence**: 9/10
+**Estimated Duration**: 2-3 hours
+**Branch**: feat/unified-docs
 
 ## Objective
 
@@ -14,6 +14,7 @@ Migrate from package-specific documentation (eol-rag-context) to a unified monor
 ## Current State Analysis
 
 ### Current Structure
+
 ```
 eol/
 ├── packages/
@@ -31,6 +32,7 @@ eol/
 ```
 
 ### Issues with Current Setup
+
 1. Pre-commit hooks fail when run from root directory
 2. Documentation is fragmented across packages
 3. No unified view of the entire EOL framework
@@ -40,6 +42,7 @@ eol/
 ## Proposed Structure
 
 ### Target Structure
+
 ```
 eol/
 ├── mkdocs.yml                   # Root-level unified config
@@ -76,6 +79,7 @@ eol/
 ### Phase 1: Setup Root Documentation Infrastructure
 
 #### Task 1.1: Create Root MkDocs Configuration
+
 ```yaml
 # /mkdocs.yml
 site_name: EOL Framework
@@ -180,6 +184,7 @@ nav:
 ```
 
 #### Task 1.2: Create Root Documentation Structure
+
 ```bash
 # Create directories
 mkdir -p docs/{getting-started,packages,architecture,development,api-reference,overrides}
@@ -194,6 +199,7 @@ cp packages/eol-rag-context/scripts/validate_docs.py scripts/
 ### Phase 2: Migrate Package Documentation
 
 #### Task 2.1: Move eol-rag-context Docs
+
 ```bash
 # Copy existing docs
 cp -r packages/eol-rag-context/docs/* docs/packages/eol-rag-context/
@@ -204,6 +210,7 @@ cp -r packages/eol-rag-context/docs/* docs/packages/eol-rag-context/
 ```
 
 #### Task 2.2: Create Landing Pages
+
 - Main index.md with framework overview
 - Package index pages with navigation
 - Architecture documentation
@@ -212,6 +219,7 @@ cp -r packages/eol-rag-context/docs/* docs/packages/eol-rag-context/
 ### Phase 3: Update Build System
 
 #### Task 3.1: Update Pre-commit Hooks
+
 ```yaml
 # /.pre-commit-config.yaml
 repos:
@@ -223,7 +231,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        
+
       - id: mkdocs-build
         name: Test MkDocs Build
         entry: mkdocs build --strict --quiet
@@ -233,6 +241,7 @@ repos:
 ```
 
 #### Task 3.2: Update GitHub Actions
+
 ```yaml
 # /.github/workflows/docs.yml
 name: Documentation
@@ -258,15 +267,15 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install mkdocs mkdocs-material mkdocstrings[python] \
                       mkdocs-awesome-pages-plugin mike
-      
+
       - name: Build documentation
         run: mkdocs build --strict
-      
+
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
         run: |
@@ -276,6 +285,7 @@ jobs:
 ### Phase 4: Testing and Validation
 
 #### Task 4.1: Test Documentation Build
+
 ```bash
 # Install dependencies
 pip install mkdocs mkdocs-material mkdocstrings[python] mkdocs-awesome-pages-plugin
@@ -291,6 +301,7 @@ pre-commit run --all-files
 ```
 
 #### Task 4.2: Validate Links and Coverage
+
 ```bash
 # Run documentation validator
 python scripts/validate_docs.py
@@ -302,26 +313,31 @@ mkdocs build --strict 2>&1 | grep -E "WARNING|ERROR"
 ## Benefits of Unified Documentation
 
 ### 1. **Improved Developer Experience**
+
 - Single documentation site for entire framework
 - Better navigation between packages
 - Unified search across all documentation
 
 ### 2. **Better Pre-commit Integration**
+
 - Hooks work from any directory
 - Consistent validation across all packages
 - Single source of truth for documentation standards
 
 ### 3. **Easier Maintenance**
+
 - One MkDocs configuration to maintain
 - Shared themes and plugins
 - Centralized documentation scripts
 
 ### 4. **Enhanced CI/CD**
+
 - Single deployment pipeline
 - Versioned documentation with mike
 - Automated API documentation generation
 
 ### 5. **Scalability**
+
 - Easy to add new packages
 - Consistent structure for all packages
 - Shared documentation components
@@ -349,22 +365,26 @@ mkdocs build --strict 2>&1 | grep -E "WARNING|ERROR"
 ## Risk Mitigation
 
 ### Risk 1: Broken Links
+
 **Mitigation**: Use automated link checking in CI/CD
 
 ### Risk 2: Lost Documentation
+
 **Mitigation**: Keep backup of current docs before migration
 
 ### Risk 3: CI/CD Failures
+
 **Mitigation**: Test workflows in feature branch first
 
 ### Risk 4: Pre-commit Hook Issues
+
 **Mitigation**: Test hooks locally before committing
 
 ## Success Criteria
 
 - ✅ Documentation builds without errors
 - ✅ All pre-commit hooks pass from root directory
-- ✅ Documentation is accessible at https://eoln.github.io/eol/
+- ✅ Documentation is accessible at <https://eoln.github.io/eol/>
 - ✅ All internal links work correctly
 - ✅ API documentation generates automatically
 - ✅ Search works across all packages

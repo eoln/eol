@@ -21,6 +21,7 @@ The project now includes an ultra-fast dependency caching system that significan
 ### Status Reporting
 
 The system provides detailed status reporting:
+
 - ⚡ **Ultra-Fast**: Using pre-built wheel cache
 - 📦 **PyPI Cached**: Using PyPI with aggressive caching
 - ⚠️ **Fallback**: Wheel cache corrupted, using PyPI fallback

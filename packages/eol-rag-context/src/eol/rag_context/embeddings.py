@@ -172,22 +172,20 @@ class EmbeddingManager:
             logger.error(f"Invalid embedding type: {type(embedding)}")
             # Return zero vector as fallback
             return np.zeros(self.config.dimension, dtype=np.float32)
-        
+
         # Check for NaN or inf values
         if np.any(np.isnan(embedding)) or np.any(np.isinf(embedding)):
             logger.error(f"Invalid embedding values (NaN or inf) for text: {text[:50]}...")
             # Return zero vector as fallback
             return np.zeros(self.config.dimension, dtype=np.float32)
-        
+
         # Ensure float32 type
         embedding = embedding.astype(np.float32)
 
         # Cache the result
         if use_cache and self.redis:
             cache_key = self._cache_key(text)
-            await self.redis.setex(
-                cache_key, 3600, embedding.tobytes()  # 1 hour TTL
-            )
+            await self.redis.setex(cache_key, 3600, embedding.tobytes())  # 1 hour TTL
 
         return embedding
 
@@ -229,7 +227,7 @@ class EmbeddingManager:
                         embedding = np.zeros(self.config.dimension, dtype=np.float32)
                     else:
                         embedding = embedding.astype(np.float32)
-                    
+
                     cache_key = self._cache_key(text)
                     await self.redis.setex(cache_key, 3600, embedding.tobytes())
 

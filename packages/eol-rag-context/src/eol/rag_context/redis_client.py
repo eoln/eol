@@ -457,52 +457,61 @@ class RedisVectorStore:
             3: self.index_config.chunk_vectorset,
         }
         vectorset_name = vectorset_map.get(doc.hierarchy_level, self.index_config.chunk_vectorset)
-        
+
         # Ensure embedding is 1D array
         embedding_array = doc.embedding
         if embedding_array.ndim == 2:
             # Flatten 2D array to 1D (e.g., [1, 384] -> [384])
             embedding_array = embedding_array.flatten()
-        
+
         # Convert embedding to float32 list for VADD command
         embedding_values = embedding_array.astype(np.float32).tolist()
-        
+
         # Validate embedding values
         if not embedding_values or len(embedding_values) == 0:
             logger.error(f"Empty embedding for document {doc.id}")
             return
-        
+
         # Check for invalid values (NaN, inf)
         if np.any(np.isnan(embedding_array)) or np.any(np.isinf(embedding_array)):
             logger.error(f"Invalid embedding values (NaN or inf) for document {doc.id}")
             return
-        
-        # Use VADD to add vector to Vector Set 
+
+        # Use VADD to add vector to Vector Set
         # Format: VADD key VALUES dim val1 val2 ... element [Q8|NOQUANT|BIN] [EF num] [M num]
         vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
         # Pass each float value as a separate argument
         for v in embedding_values:
             vadd_args.append(str(v))  # v is already a float from tolist()
         vadd_args.append(doc.id)
-        
+
         # Add quantization parameter based on hierarchy level
         quantization = self.index_config.get_quantization_for_level(doc.hierarchy_level)
         if quantization == "Q8":
             vadd_args.append("Q8")
         elif quantization == "NOQUANT":
-            vadd_args.append("NOQUANT")  
+            vadd_args.append("NOQUANT")
         elif quantization == "BIN":
             vadd_args.append("BIN")
         else:
             vadd_args.append("Q8")  # Default fallback
-        
+
         # Add level-specific parameters after quantization
         if doc.hierarchy_level == 1:  # Concept level - high precision
-            vadd_args.extend(["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)])
-        elif doc.hierarchy_level == 2:  # Section level - balanced  
-            vadd_args.extend(["EF", str(self.index_config.ef_construction + 100), "M", str(self.index_config.m + 8)])
+            vadd_args.extend(
+                ["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)]
+            )
+        elif doc.hierarchy_level == 2:  # Section level - balanced
+            vadd_args.extend(
+                [
+                    "EF",
+                    str(self.index_config.ef_construction + 100),
+                    "M",
+                    str(self.index_config.m + 8),
+                ]
+            )
         # Chunk level uses default parameters
-        
+
         # Execute VADD command
         try:
             await self.async_redis.execute_command(*vadd_args)
@@ -606,7 +615,7 @@ class RedisVectorStore:
         if vsim_results:
             # Convert Redis bytes to strings/floats
             parsed_results = []
-            for i, item in enumerate(vsim_results):
+            for _i, item in enumerate(vsim_results):
                 if isinstance(item, bytes):
                     parsed_results.append(item.decode())
                 else:

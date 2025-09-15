@@ -173,7 +173,7 @@ class TestEOLRAGContextServer:
 
         # Testing is done via the task manager directly
         # (MCP tool functions are registered as closures)
-        for name, method in srv.__class__.__dict__.items():
+        for _name, method in srv.__class__.__dict__.items():
             if hasattr(method, "__name__") and "start_indexing" in method.__name__:
                 # This is a bit tricky to test since tools are registered as closures
                 # For now, test via the task manager directly

@@ -1,6 +1,7 @@
 # Consolidated CI/CD Workflow
 
 ## Overview
+
 Single, comprehensive workflow that handles all CI/CD needs for the EOL RAG Context package. Simplified from 5 separate workflows into 1 unified pipeline.
 
 ## Workflow Structure
@@ -25,6 +26,7 @@ graph TB
 ## Jobs Breakdown
 
 ### 1. 🔧 Setup & Dependencies
+
 - **Purpose**: Validates project structure and builds dependency cache
 - **Duration**: 30s (cache hit) / 3min (cache miss)
 - **Outputs**: Cache key and change detection
@@ -35,6 +37,7 @@ graph TB
   - Pre-downloads ML models
 
 ### 2. 📊 Code Quality
+
 - **Purpose**: Runs all code quality checks
 - **Duration**: 30s
 - **Dependencies**: Setup
@@ -46,6 +49,7 @@ graph TB
   - safety (dependency vulnerabilities)
 
 ### 3. 🧪 Unit Tests (Matrix)
+
 - **Purpose**: Runs unit tests across Python versions
 - **Duration**: 2min per version (parallel)
 - **Matrix**: Python 3.11, 3.12, 3.13
@@ -55,6 +59,7 @@ graph TB
   - Individual caching per Python version
 
 ### 4. 🔄 Integration Tests
+
 - **Purpose**: Tests with Redis and full system
 - **Duration**: 3min
 - **Dependencies**: Setup + Unit Tests
@@ -65,6 +70,7 @@ graph TB
   - Coverage collection with append
 
 ### 5. ⚡ Performance Tests
+
 - **Purpose**: Benchmarks critical performance metrics
 - **Duration**: 2min
 - **Dependencies**: Setup + Integration Tests
@@ -74,6 +80,7 @@ graph TB
   - Benchmark result artifacts
 
 ### 6. 📈 Coverage Analysis
+
 - **Purpose**: Merges all coverage and validates threshold
 - **Duration**: 30s
 - **Dependencies**: Unit Tests + Integration Tests
@@ -83,6 +90,7 @@ graph TB
   - Generates coverage badge
 
 ### 7. 🔒 Security Scan
+
 - **Purpose**: Comprehensive security analysis
 - **Duration**: 1min
 - **Dependencies**: Setup
@@ -92,6 +100,7 @@ graph TB
   - SARIF upload to GitHub Security
 
 ### 8. 🚦 Quality Gate
+
 - **Purpose**: Final pass/fail decision
 - **Duration**: 10s
 - **Dependencies**: All previous jobs
@@ -100,6 +109,7 @@ graph TB
 ## Trigger Configuration
 
 ### Push-Only Triggers
+
 ```yaml
 on:
   push:
@@ -112,6 +122,7 @@ on:
 ```
 
 ### Benefits of Push-Only
+
 - **Simpler**: No duplicate runs for PRs
 - **Faster**: Single pipeline execution
 - **Clearer**: One source of truth for CI status
@@ -120,16 +131,19 @@ on:
 ## Performance Optimizations
 
 ### Dependency Caching Strategy
+
 ```yaml
 cache-key: deps-${{ runner.os }}-py${{ python-version }}-${{ hashFiles('requirements') }}
 ```
 
 ### Parallel Execution
+
 - Unit tests run in parallel across Python versions
 - Integration and performance tests run sequentially after unit tests
 - Quality and security scans run in parallel with tests
 
 ### Smart Skip Logic
+
 - Entire workflow skips if no package files changed
 - Individual jobs respect dependencies
 - Coverage analysis runs even if some tests fail
@@ -152,6 +166,7 @@ cache-key: deps-${{ runner.os }}-py${{ python-version }}-${{ hashFiles('requirem
 ## Artifact Management
 
 ### Generated Artifacts
+
 - `unit-test-results-{python-version}` - JUnit XML and coverage
 - `integration-test-results` - Integration test results and coverage
 - `performance-results` - Benchmark JSON data
@@ -159,6 +174,7 @@ cache-key: deps-${{ runner.os }}-py${{ python-version }}-${{ hashFiles('requirem
 - `trivy-results.sarif` - Security scan results
 
 ### Retention Policy
+
 - Test results: 30 days
 - Coverage reports: 30 days
 - Performance data: 7 days
@@ -167,6 +183,7 @@ cache-key: deps-${{ runner.os }}-py${{ python-version }}-${{ hashFiles('requirem
 ## Monitoring and Debugging
 
 ### Workflow Status
+
 ```bash
 # Check workflow status
 gh workflow list
@@ -178,6 +195,7 @@ gh run view <run-id>
 ```
 
 ### Debug Failed Jobs
+
 ```bash
 # View logs for failed job
 gh run view <run-id> --log-failed
@@ -189,21 +207,25 @@ gh run download <run-id>
 ### Common Issues and Solutions
 
 #### Cache Miss
+
 - **Symptom**: Setup job takes 3+ minutes
 - **Cause**: Requirements changed or cache expired
 - **Solution**: Normal behavior, subsequent runs will be fast
 
 #### Unit Test Failures
+
 - **Symptom**: Different results across Python versions
 - **Cause**: Version-specific issues
 - **Solution**: Check specific Python version logs
 
 #### Integration Test Failures
+
 - **Symptom**: Redis connection errors
 - **Cause**: Service not ready or resource limits
 - **Solution**: Check Redis service health, reduce parallelism
 
 #### Coverage Below Threshold
+
 - **Symptom**: Coverage gate fails
 - **Cause**: Insufficient test coverage
 - **Solution**: Add tests or adjust threshold
@@ -211,6 +233,7 @@ gh run download <run-id>
 ## Migration from Multiple Workflows
 
 ### Before (5 Workflows)
+
 - `eol-rag-context-quality-gate.yml` - Main pipeline
 - `eol-rag-context-integration-optimized.yml` - Fast integration
 - `eol-rag-context-quality-gate-optimized.yml` - Optimized pipeline
@@ -218,9 +241,11 @@ gh run download <run-id>
 - `build-test-image.yml` - Docker image building
 
 ### After (1 Workflow)
+
 - `eol-rag-context.yml` - Complete CI/CD pipeline
 
 ### Benefits of Consolidation
+
 1. **Simplicity**: Single workflow to maintain
 2. **Efficiency**: Shared dependency caching
 3. **Clarity**: Clear job dependencies
@@ -230,16 +255,19 @@ gh run download <run-id>
 ## Future Enhancements
 
 ### Conditional Job Execution
+
 - Skip performance tests for documentation changes
 - Skip integration tests for unit-only changes
 - Smart test selection based on file changes
 
 ### Advanced Caching
+
 - Layer-aware dependency caching
 - Cross-workflow cache sharing
 - Incremental test execution
 
 ### Deployment Integration
+
 - Automatic deployment on main branch
 - Environment-specific testing
 - Release automation

@@ -36,7 +36,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .parallel_indexer import IndexingCheckpoint, ParallelIndexer, ParallelIndexingConfig
 from .redis_client import RedisVectorStore
@@ -67,8 +67,8 @@ class IndexingTaskInfo:
     folder_path: str
     source_id: str
     created_at: float
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
+    started_at: float | None = None
+    completed_at: float | None = None
 
     # Progress tracking
     total_files: int = 0
@@ -79,17 +79,17 @@ class IndexingTaskInfo:
     # Results
     total_chunks: int = 0
     indexed_files: int = 0
-    errors: List[str] = None
-    result: Optional[Dict[str, Any]] = None  # IndexedSource as dict
+    errors: list[str] = None
+    result: dict[str, Any] | None = None  # IndexedSource as dict
 
     # Configuration
     recursive: bool = True
     force_reindex: bool = False
-    parallel_config: Optional[Dict[str, Any]] = None
+    parallel_config: dict[str, Any] | None = None
 
     # Error information
-    error_message: Optional[str] = None
-    error_traceback: Optional[str] = None
+    error_message: str | None = None
+    error_traceback: str | None = None
 
     def __post_init__(self):
         if self.errors is None:
@@ -111,7 +111,7 @@ class IndexingTaskInfo:
         return self.completed_files / elapsed if elapsed > 0 else 0.0
 
     @property
-    def estimated_completion_time(self) -> Optional[float]:
+    def estimated_completion_time(self) -> float | None:
         """Estimate completion time in seconds."""
         if (
             self.status != TaskStatus.RUNNING
@@ -131,7 +131,7 @@ class IndexingTaskInfo:
         end_time = self.completed_at or time.time()
         return end_time - self.started_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data["status"] = self.status.value
@@ -154,8 +154,8 @@ class AsyncTaskManager:
 
     def __init__(self, redis_store: RedisVectorStore):
         self.redis_store = redis_store
-        self.running_tasks: Dict[str, asyncio.Task] = {}
-        self.task_info: Dict[str, IndexingTaskInfo] = {}
+        self.running_tasks: dict[str, asyncio.Task] = {}
+        self.task_info: dict[str, IndexingTaskInfo] = {}
 
         # Cleanup settings
         self.max_completed_tasks = 100
@@ -165,10 +165,10 @@ class AsyncTaskManager:
         self,
         folder_path: Path | str,
         indexer: ParallelIndexer,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
         recursive: bool = True,
         force_reindex: bool = False,
-        parallel_config: Optional[ParallelIndexingConfig] = None,
+        parallel_config: ParallelIndexingConfig | None = None,
     ) -> str:
         """Start a new indexing task and return immediately with task ID.
 
@@ -218,7 +218,7 @@ class AsyncTaskManager:
         logger.info(f"Started indexing task {task_id} for {folder_path}")
         return task_id
 
-    async def get_task_status(self, task_id: str) -> Optional[IndexingTaskInfo]:
+    async def get_task_status(self, task_id: str) -> IndexingTaskInfo | None:
         """Get current status and progress of a task.
 
         Args:
@@ -235,8 +235,8 @@ class AsyncTaskManager:
         return await self._load_task_info(task_id)
 
     async def list_tasks(
-        self, status_filter: Optional[TaskStatus] = None, limit: int = 50
-    ) -> List[IndexingTaskInfo]:
+        self, status_filter: TaskStatus | None = None, limit: int = 50
+    ) -> list[IndexingTaskInfo]:
         """List tasks with optional status filtering.
 
         Args:
@@ -398,7 +398,7 @@ class AsyncTaskManager:
         task_id: str,
         folder_path: Path,
         indexer: ParallelIndexer,
-        parallel_config: Optional[ParallelIndexingConfig],
+        parallel_config: ParallelIndexingConfig | None,
     ) -> None:
         """Execute indexing task in background."""
         task_info = self.task_info[task_id]
@@ -490,7 +490,7 @@ class AsyncTaskManager:
             logger.warning(f"Background task info storage failed for {task_info.task_id}: {e}")
             # Continue without Redis storage - memory storage still works
 
-    async def _load_task_info(self, task_id: str) -> Optional[IndexingTaskInfo]:
+    async def _load_task_info(self, task_id: str) -> IndexingTaskInfo | None:
         """Load task info from Redis."""
         try:
             key = f"indexing_task:{task_id}"
@@ -518,7 +518,7 @@ class AsyncTaskManager:
 
         return None
 
-    async def _load_all_task_info(self) -> List[IndexingTaskInfo]:
+    async def _load_all_task_info(self) -> list[IndexingTaskInfo]:
         """Load all task info from Redis."""
         tasks = []
         try:

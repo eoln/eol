@@ -1,11 +1,13 @@
 # Artifact Caching Strategy for CI/CD
 
 ## Overview
+
 This document describes the advanced caching strategy using GitHub Actions artifacts to achieve ultra-fast dependency setup and reduce CI execution time from minutes to seconds.
 
 ## Multi-Layer Caching Strategy
 
 ### Layer 1: Build-Time Dependency Caching
+
 ```mermaid
 graph TB
     A[Code Change] --> B[Dependency Cache Job]
@@ -20,6 +22,7 @@ graph TB
 ```
 
 ### Layer 2: Test-Time Artifact Retrieval
+
 ```mermaid
 graph TB
     K[Test Job Starts] --> L[Download Artifact]
@@ -31,6 +34,7 @@ graph TB
 ## Implementation Details
 
 ### 1. Dependency Cache Builder (`dependency-cache.yml`)
+
 - **Trigger**: Changes to `requirements.txt`, `pyproject.toml`, or weekly schedule
 - **Strategy**: Pre-builds complete virtual environments
 - **Artifacts**: Compressed tarballs containing:
@@ -40,11 +44,13 @@ graph TB
   - ML models (`~/.cache/huggingface`, `~/.cache/torch`)
 
 ### 2. Fast Composite Action (`setup-python-deps-fast`)
+
 - **Primary**: Downloads pre-built artifacts (5-10s)
 - **Fallback**: Regular pip/uv installation (30-60s)
 - **Smart Detection**: Automatically chooses fastest method
 
 ### 3. Optimized Quality Gate (`eol-rag-context-quality-gate-optimized.yml`)
+
 - **Build Once**: Single dependency build job
 - **Use Many**: All test jobs reuse the same dependencies
 - **Parallel Execution**: Tests run in parallel with shared cache
@@ -61,6 +67,7 @@ graph TB
 ## Workflow Architecture
 
 ### Traditional Approach
+
 ```yaml
 jobs:
   unit-tests:
@@ -79,6 +86,7 @@ jobs:
 ```
 
 ### Optimized Approach
+
 ```yaml
 jobs:
   build-deps:
@@ -105,17 +113,20 @@ jobs:
 ## Cache Keys and Invalidation
 
 ### Cache Key Strategy
+
 ```yaml
 key: deps-${{ runner.os }}-py${{ python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
 ```
 
 ### Invalidation Triggers
+
 1. **Requirements Change**: New dependencies or version updates
 2. **Python Version Change**: Different Python version matrix
 3. **OS Change**: Different runner OS (Windows vs Ubuntu)
 4. **Manual**: Weekly scheduled rebuild for freshness
 
 ### Fallback Strategy
+
 ```yaml
 restore-keys: |
   deps-${{ runner.os }}-py${{ python-version }}-  # Same Python version
@@ -126,11 +137,13 @@ restore-keys: |
 ## Artifact Management
 
 ### Storage Optimization
+
 - **Compression**: Use tar.gz with maximum compression
 - **Retention**: 7 days for regular builds, 1 day for PR builds
 - **Size**: Typical artifact ~200MB (vs 500MB+ fresh install)
 
 ### Parallel Downloads
+
 ```yaml
 strategy:
   matrix:
@@ -141,6 +154,7 @@ strategy:
 ## Usage Examples
 
 ### Simple Usage (Existing Action)
+
 ```yaml
 - name: Setup Dependencies
   uses: ./.github/actions/setup-python-deps
@@ -150,6 +164,7 @@ strategy:
 ```
 
 ### Advanced Usage (Fast Action)
+
 ```yaml
 - name: Setup Dependencies (Ultra Fast)
   uses: ./.github/actions/setup-python-deps-fast
@@ -160,6 +175,7 @@ strategy:
 ```
 
 ### Full Optimized Workflow
+
 ```yaml
 jobs:
   build-deps:
@@ -176,14 +192,18 @@ jobs:
 ## Monitoring and Debugging
 
 ### Cache Hit Rate
+
 Monitor logs for:
+
 ```
 ✅ Dependencies loaded from artifact (super fast!)
 📦 Dependencies installed from cache/fresh
 ```
 
 ### Performance Metrics
+
 Track timing in workflow summaries:
+
 ```yaml
 - name: Report timing
   run: |
@@ -194,12 +214,14 @@ Track timing in workflow summaries:
 ### Troubleshooting
 
 #### Artifact Not Found
+
 ```yaml
 - name: Download dependency bundle
   continue-on-error: true  # Graceful fallback
 ```
 
 #### Cache Corruption
+
 - Rebuild cache with `workflow_dispatch`
 - Clear cache keys in repository settings
 - Check artifact size and contents
@@ -207,11 +229,13 @@ Track timing in workflow summaries:
 ## Security Considerations
 
 ### Artifact Integrity
+
 - Artifacts are scoped to repository
 - GitHub manages access control
 - No external dependencies in cache
 
 ### Dependency Scanning
+
 - Security scans run on fresh installs
 - Cached dependencies inherit scan results
 - Weekly rebuilds ensure fresh security checks
@@ -219,6 +243,7 @@ Track timing in workflow summaries:
 ## Future Enhancements
 
 ### 1. Multi-Arch Support
+
 ```yaml
 strategy:
   matrix:
@@ -227,16 +252,19 @@ strategy:
 ```
 
 ### 2. Smart Invalidation
+
 - Detect which dependencies actually changed
 - Partial cache updates for minor changes
 - Dependency graph analysis
 
 ### 3. Cross-Repository Sharing
+
 - Share common dependencies across projects
 - Organization-level artifact registry
 - Base dependency images
 
 ### 4. Local Development
+
 ```bash
 # Download the same artifacts locally
 gh run download <run-id> --name deps-py3.11
@@ -256,11 +284,13 @@ source .venv/bin/activate
 ## Cost Optimization
 
 ### GitHub Actions Minutes
+
 - **Before**: 45 min/month for CI/CD
 - **After**: 15 min/month for CI/CD
 - **Savings**: 67% reduction in billable minutes
 
 ### Developer Productivity
+
 - **Before**: 6-minute feedback loop
 - **After**: 2-minute feedback loop
 - **Impact**: 3x faster development iteration

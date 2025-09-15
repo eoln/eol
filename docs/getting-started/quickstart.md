@@ -5,6 +5,7 @@ Get up and running with EOL Framework in 5 minutes!
 ## Prerequisites
 
 Before starting, ensure you have:
+
 - Python 3.13 or higher installed
 - Redis Stack running (see [Installation](installation.md))
 
@@ -42,10 +43,10 @@ async def main():
     # Initialize components
     redis_store = RedisStore()
     await redis_store.connect_async()
-    
+
     embedding_manager = EmbeddingManager()
     indexer = DocumentIndexer(redis_store, embedding_manager)
-    
+
     # Create sample documents
     documents = [
         {
@@ -54,7 +55,7 @@ async def main():
             "metadata": {"category": "overview"}
         },
         {
-            "id": "doc2", 
+            "id": "doc2",
             "content": "RAG combines retrieval with generation for better AI responses.",
             "metadata": {"category": "concepts"}
         },
@@ -64,18 +65,18 @@ async def main():
             "metadata": {"category": "features"}
         }
     ]
-    
+
     # Index documents
     print("Indexing documents...")
     for doc in documents:
         await indexer.index_document(doc)
-    
+
     # Search for relevant content
     query = "What is EOL framework?"
     print(f"\nSearching for: {query}")
-    
+
     results = await redis_store.search_similar(query, k=2)
-    
+
     # Display results
     print("\nSearch Results:")
     for i, result in enumerate(results, 1):
@@ -94,6 +95,7 @@ python quickstart.py
 ```
 
 Expected output:
+
 ```
 Indexing documents...
 
@@ -166,7 +168,7 @@ cached_response = await cache.get("How to install EOL?")
 if not cached_response:
     # Perform expensive operation (e.g., LLM call)
     response = generate_response(query)
-    
+
     # Cache the response
     await cache.set(query, response)
 ```
@@ -176,16 +178,19 @@ if not cached_response:
 Congratulations! You've built your first RAG pipeline with EOL. Here's what to explore next:
 
 ### Learn More
+
 - [Configuration Guide](configuration.md) - Customize EOL for your needs
 - [User Guide](../packages/eol-rag-context/user-guide/index.md) - Deep dive into features
 - [API Reference](../packages/eol-rag-context/api-reference/index.md) - Complete API documentation
 
 ### Advanced Features
+
 - [Knowledge Graphs](../packages/eol-rag-context/user-guide/advanced-features.md#knowledge-graphs) - Build entity relationships
 - [File Watching](../packages/eol-rag-context/user-guide/advanced-features.md#file-watching) - Real-time document updates
 - [MCP Server](../packages/eol-rag-context/user-guide/integrations.md#mcp-server) - Integrate with MCP clients
 
 ### Examples
+
 - [Chat Application](../packages/eol-rag-context/examples/advanced-usage.md#chat-application)
 - [Document Q&A](../packages/eol-rag-context/examples/basic-usage.md#document-qa)
 - [Code Assistant](../packages/eol-rag-context/examples/advanced-usage.md#code-assistant)
@@ -193,6 +198,7 @@ Congratulations! You've built your first RAG pipeline with EOL. Here's what to e
 ## Common Issues
 
 ### Redis Connection Error
+
 ```bash
 # Ensure Redis is running
 docker ps | grep redis-stack
@@ -202,12 +208,14 @@ docker start redis-stack
 ```
 
 ### Import Error
+
 ```bash
 # Ensure EOL is installed in your current environment
 python -c "import eol.rag_context; print(eol.rag_context.__version__)"
 ```
 
 ### Performance Issues
+
 - Reduce `chunk_size` for better granularity
 - Increase `batch_size` for faster indexing
 - Use `async` operations for better concurrency

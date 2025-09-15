@@ -73,7 +73,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        
+
       - id: mkdocs-build
         name: Test MkDocs Build
         entry: bash -c 'mkdocs build --strict --quiet'

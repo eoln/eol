@@ -1,6 +1,6 @@
 # EOL Core
 
-**Status**: 🚧 In Development  
+**Status**: 🚧 In Development
 **Planned Release**: Q1 2025
 
 ## Overview
@@ -10,22 +10,26 @@ EOL Core will provide shared utilities and base classes used across all EOL pack
 ## Planned Features
 
 ### Data Structures
+
 - Common data models
 - Serialization utilities
 - Validation helpers
 
 ### Base Classes
+
 - Abstract base classes for extensibility
 - Plugin interfaces
 - Event system
 
 ### Utilities
+
 - Logging configuration
 - Performance monitoring
 - Error handling
 - Retry mechanisms
 
 ### Configuration
+
 - Unified configuration management
 - Environment variable handling
 - Settings validation

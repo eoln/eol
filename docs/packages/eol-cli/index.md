@@ -1,6 +1,6 @@
 # EOL CLI
 
-**Status**: 📋 Planned  
+**Status**: 📋 Planned
 **Target Release**: Q2 2025
 
 ## Overview
@@ -10,24 +10,28 @@ EOL CLI will provide a powerful command-line interface for managing RAG pipeline
 ## Planned Features
 
 ### Pipeline Management
+
 - Create and manage RAG pipelines
 - Index documents from CLI
 - Search and query interfaces
 - Pipeline monitoring
 
 ### Deployment Tools
+
 - Docker deployment helpers
 - Kubernetes manifests generation
 - Configuration management
 - Health checks
 
 ### Development Tools
+
 - Project scaffolding
 - Testing utilities
 - Performance benchmarking
 - Debug tools
 
 ### Monitoring
+
 - Real-time metrics
 - Log aggregation
 - Performance dashboards

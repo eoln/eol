@@ -7,18 +7,21 @@ EOL RAG Context supports configurable vector quantization to optimize the trade-
 ## Quantization Modes
 
 ### Q8 (8-bit Integer Quantization) - Default
+
 - **Memory Usage**: 384 bytes per vector (75% reduction from float32)
 - **Accuracy**: ~98-99% of original precision
 - **Use Case**: Balanced choice for most applications
 - **Performance**: Fast similarity computations
 
 ### NOQUANT (No Quantization)
+
 - **Memory Usage**: 1,536 bytes per vector (full float32)
 - **Accuracy**: 100% - no precision loss
 - **Use Case**: Critical applications requiring maximum accuracy
 - **Performance**: Highest quality results but more memory intensive
 
 ### BIN (Binary Quantization)
+
 - **Memory Usage**: 48 bytes per vector (97% reduction)
 - **Accuracy**: ~85-90% of original precision
 - **Use Case**: Large-scale deployments where memory is critical
@@ -46,7 +49,7 @@ Optimize quantization for each document hierarchy level:
 config = IndexConfig(
     # Global default
     quantization="Q8",
-    
+
     # Hierarchy-specific settings
     concept_quantization="NOQUANT",  # High precision for concepts
     section_quantization="Q8",       # Balanced for sections
@@ -61,10 +64,10 @@ Configure quantization for specific features:
 ```python
 config = IndexConfig(
     quantization="Q8",
-    
+
     # Semantic cache - optimize for space
     cache_quantization="BIN",
-    
+
     # Batch operations - optimize for throughput
     batch_quantization="Q8"
 )
@@ -106,10 +109,10 @@ Different document levels have different accuracy requirements:
 config = IndexConfig(
     # Concepts: Fewer documents, need high precision
     concept_quantization="NOQUANT",
-    
+
     # Sections: Moderate count, balanced needs
     section_quantization="Q8",
-    
+
     # Chunks: Many documents, optimize for space
     chunk_quantization="BIN"
 )
@@ -118,6 +121,7 @@ config = IndexConfig(
 ### 2. Use Case Optimization
 
 #### High-Accuracy Search Applications
+
 ```python
 config = IndexConfig(
     quantization="NOQUANT",
@@ -126,6 +130,7 @@ config = IndexConfig(
 ```
 
 #### Large-Scale Document Collections
+
 ```python
 config = IndexConfig(
     quantization="Q8",
@@ -135,6 +140,7 @@ config = IndexConfig(
 ```
 
 #### Balanced Performance
+
 ```python
 config = IndexConfig(
     quantization="Q8"  # Use default for everything
@@ -157,26 +163,26 @@ async def test_quantization_impact():
         ("Q8", IndexConfig(quantization="Q8")),
         ("BIN", IndexConfig(quantization="BIN"))
     ]
-    
+
     for name, config in configs:
         server = EOLRAGContextServer(index_config=config)
-        
+
         # Index test documents
         start = time.time()
         await server.index_folder("./test_docs")
         index_time = time.time() - start
-        
+
         # Perform searches
         queries = ["test query 1", "test query 2", "test query 3"]
         search_times = []
         results_quality = []
-        
+
         for query in queries:
             start = time.time()
             results = await server.search(query)
             search_times.append(time.time() - start)
             results_quality.append(len(results))
-        
+
         print(f"\n{name} Quantization:")
         print(f"  Index Time: {index_time:.2f}s")
         print(f"  Avg Search Time: {np.mean(search_times):.3f}s")
@@ -210,16 +216,19 @@ await server.index_folder("./documents")
 ## Performance Considerations
 
 ### Q8 Quantization (Recommended)
+
 - **Pros**: 75% memory savings, minimal accuracy loss
 - **Cons**: Slight precision reduction
 - **Best For**: Most production applications
 
 ### NOQUANT
+
 - **Pros**: Maximum accuracy, no precision loss
 - **Cons**: 4x memory usage vs Q8
 - **Best For**: Financial data, medical records, legal documents
 
 ### BIN Quantization
+
 - **Pros**: 97% memory savings, very fast
 - **Cons**: Noticeable accuracy reduction
 - **Best For**: Large-scale consumer applications, preliminary filtering
@@ -227,16 +236,21 @@ await server.index_folder("./documents")
 ## Troubleshooting
 
 ### Issue: Reduced Search Quality with BIN
+
 **Solution**: Use BIN only for chunks, keep concepts at Q8 or NOQUANT
 
 ### Issue: High Memory Usage
+
 **Solution**: Enable quantization progressively:
+
 1. Start with Q8 globally
 2. Move chunks to BIN
 3. Keep critical levels at Q8/NOQUANT
 
 ### Issue: Slow Indexing
+
 **Solution**: Use Q8 for batch operations:
+
 ```python
 config = IndexConfig(
     batch_quantization="Q8"  # Optimize batch indexing
@@ -250,7 +264,7 @@ config = IndexConfig(
 ```python
 class AdaptiveQuantizationStrategy:
     """Dynamically adjust quantization based on document importance."""
-    
+
     def get_quantization_for_document(self, doc):
         if doc.metadata.get("priority") == "high":
             return "NOQUANT"

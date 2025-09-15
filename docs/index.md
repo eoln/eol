@@ -6,7 +6,7 @@ Welcome to the EOL Framework documentation - a production-ready infrastructure f
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } **Quick Start**
+- :material-rocket-launch:{ .lg .middle } **Quick Start**
 
     ---
 
@@ -14,7 +14,7 @@ Welcome to the EOL Framework documentation - a production-ready infrastructure f
 
     [:octicons-arrow-right-24: Getting started](getting-started/quickstart.md)
 
--   :material-package-variant:{ .lg .middle } **Packages**
+- :material-package-variant:{ .lg .middle } **Packages**
 
     ---
 
@@ -22,7 +22,7 @@ Welcome to the EOL Framework documentation - a production-ready infrastructure f
 
     [:octicons-arrow-right-24: Package overview](packages/index.md)
 
--   :material-book-open-variant:{ .lg .middle } **User Guide**
+- :material-book-open-variant:{ .lg .middle } **User Guide**
 
     ---
 
@@ -30,7 +30,7 @@ Welcome to the EOL Framework documentation - a production-ready infrastructure f
 
     [:octicons-arrow-right-24: Documentation](packages/eol-rag-context/user-guide/index.md)
 
--   :material-api:{ .lg .middle } **API Reference**
+- :material-api:{ .lg .middle } **API Reference**
 
     ---
 
@@ -56,15 +56,19 @@ EOL (End-of-Line) is a comprehensive AI framework designed to simplify the devel
 The EOL Framework consists of several modular packages:
 
 ### [EOL RAG Context](packages/eol-rag-context/index.md)
+
 Core RAG implementation with MCP server capabilities. Provides document indexing, vector search, and semantic caching.
 
 ### [EOL Core](packages/eol-core/index.md) *(Coming Soon)*
+
 Shared utilities and base classes used across all EOL packages.
 
 ### [EOL CLI](packages/eol-cli/index.md) *(Coming Soon)*
+
 Command-line interface for managing RAG pipelines and deployments.
 
 ### [EOL SDK](packages/eol-sdk/index.md) *(Coming Soon)*
+
 Python SDK for building RAG-powered applications.
 
 ## Key Features
@@ -124,7 +128,7 @@ for doc in results:
     ```bash
     # Install uv if not already installed
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    
+
     # Install EOL RAG Context
     uv pip install eol-rag-context
     ```
@@ -157,7 +161,7 @@ graph TB
         F --> G
         G --> H[Client Applications]
     end
-    
+
     style A fill:#e1f5fe
     style B fill:#b3e5fc
     style C fill:#81d4fa

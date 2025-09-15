@@ -1,6 +1,6 @@
 # EOL SDK
 
-**Status**: 📋 Planned  
+**Status**: 📋 Planned
 **Target Release**: Q2 2025
 
 ## Overview
@@ -10,24 +10,28 @@ EOL SDK will provide high-level Python APIs for building RAG-powered application
 ## Planned Features
 
 ### High-Level APIs
+
 - Simple interfaces for common tasks
 - Chainable operations
 - Async and sync support
 - Type-safe throughout
 
 ### Application Templates
+
 - Chat applications
 - Document Q&A systems
 - Code assistants
 - Knowledge bases
 
 ### Integration Helpers
+
 - LangChain integration
 - LlamaIndex compatibility
 - FastAPI utilities
 - Streamlit components
 
 ### Advanced Features
+
 - Custom pipelines
 - Plugin system
 - Middleware support
@@ -75,6 +79,7 @@ results = pipeline.run("complex query")
 ## Use Cases
 
 ### Document Q&A System
+
 ```python
 from eol_sdk import DocumentQA
 
@@ -84,6 +89,7 @@ answer = qa.answer("What is the process?")
 ```
 
 ### Conversational AI
+
 ```python
 from eol_sdk import ConversationalRAG
 
@@ -93,6 +99,7 @@ response = bot.chat("Tell me about pricing")
 ```
 
 ### Code Assistant
+
 ```python
 from eol_sdk import CodeAssistant
 

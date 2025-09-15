@@ -120,9 +120,11 @@ tests/
 ### Phase 1: Fix Failing Tests (Days 1-2)
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Standardize on Python 3.13 across project and CI**
 =======
 - [x] **Standardize on Python 3.13 across project and CI**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```bash
@@ -146,9 +148,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Update GitHub Actions workflow for Python 3.13 matrix**
 =======
 - [x] **Update GitHub Actions workflow for Python 3.13 matrix**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```yaml
@@ -160,9 +164,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Reorganize test structure with proper fixture separation**
 =======
 - [x] **Reorganize test structure with proper fixture separation**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```bash
@@ -175,9 +181,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Fix file_watcher fixture issues**
 =======
 - [x] **Fix file_watcher fixture issues**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
@@ -192,9 +200,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Fix MCP server async mock issues**
 =======
 - [x] **Fix MCP server async mock issues**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
@@ -208,9 +218,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Fix semantic cache Redis mocks**
 =======
 - [x] **Fix semantic cache Redis mocks**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python
@@ -225,9 +237,11 @@ tests/
   ```
 
 <<<<<<< HEAD:.claude/plans/draft/20250813_test-coverage-80-percent.md
+
 - [ ] **Create dedicated unit test fixtures directory**
 =======
 - [x] **Create dedicated unit test fixtures directory**
+
 >>>>>>> feat/test-coverage-80:.claude/plans/pending/20250813_test-coverage-80-percent.md
 
   ```python

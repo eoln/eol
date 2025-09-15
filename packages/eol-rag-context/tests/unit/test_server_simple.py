@@ -319,9 +319,9 @@ class TestServerMCPEndpoints:
     async def test_index_directory_error_handling(self):
         """Test index directory error handling when task manager fails."""
         srv = server.EOLRAGContextServer()
-        
+
         # Mock initialize to raise an exception
-        with patch.object(srv, 'initialize', side_effect=Exception("Initialization failed")):
+        with patch.object(srv, "initialize", side_effect=Exception("Initialization failed")):
             # Should return error dict when initialization fails
             result = await srv.index_directory("/test/path")
             assert result["status"] == "error"

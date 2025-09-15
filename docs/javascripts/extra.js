@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         curve: 'basis'
       }
     });
-    
+
     // Render any mermaid diagrams already on the page
     mermaid.contentLoaded();
   }

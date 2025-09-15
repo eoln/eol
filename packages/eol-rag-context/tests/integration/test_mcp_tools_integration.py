@@ -9,10 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from eol.rag_context.server import (
-    SearchContextRequest,
-    WatchDirectoryRequest,
-)
+from eol.rag_context.server import SearchContextRequest, WatchDirectoryRequest
 
 
 @pytest.mark.integration

@@ -1,14 +1,14 @@
 """Unit tests for quantization configuration functionality."""
 
 import os
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
 
-from eol.rag_context.config import IndexConfig
-from eol.rag_context.redis_client import RedisVectorStore, VectorDocument
 from eol.rag_context.batch_operations import BatchRedisClient
+from eol.rag_context.config import IndexConfig
+from eol.rag_context.redis_client import VectorDocument
 from eol.rag_context.semantic_cache import SemanticCache
 
 
@@ -45,7 +45,7 @@ class TestQuantizationConfiguration:
             quantization="Q8",  # Global default
             concept_quantization="NOQUANT",  # High precision for concepts
             section_quantization="Q8",  # Balanced for sections
-            chunk_quantization="BIN"  # Space-efficient for chunks
+            chunk_quantization="BIN",  # Space-efficient for chunks
         )
 
         assert config.get_quantization_for_level(1) == "NOQUANT"
@@ -59,10 +59,7 @@ class TestQuantizationConfiguration:
         assert config1.get_cache_quantization() == "Q8"
 
         # Override for cache
-        config2 = IndexConfig(
-            quantization="Q8",
-            cache_quantization="NOQUANT"
-        )
+        config2 = IndexConfig(quantization="Q8", cache_quantization="NOQUANT")
         assert config2.get_cache_quantization() == "NOQUANT"
 
     def test_get_batch_quantization(self):
@@ -72,10 +69,7 @@ class TestQuantizationConfiguration:
         assert config1.get_batch_quantization() == "NOQUANT"
 
         # Override for batch
-        config2 = IndexConfig(
-            quantization="Q8",
-            batch_quantization="BIN"
-        )
+        config2 = IndexConfig(quantization="Q8", batch_quantization="BIN")
         assert config2.get_batch_quantization() == "BIN"
 
     def test_environment_variable_override(self):
@@ -115,9 +109,7 @@ class TestRedisClientQuantization:
         """Test that IndexConfig provides correct quantization per level."""
         # Create config with different quantization per level
         index_config = IndexConfig(
-            concept_quantization="NOQUANT",
-            section_quantization="Q8",
-            chunk_quantization="BIN"
+            concept_quantization="NOQUANT", section_quantization="Q8", chunk_quantization="BIN"
         )
 
         # Test the get_quantization_for_level method returns correct values
@@ -142,8 +134,7 @@ class TestBatchOperationsQuantization:
 
         # Create config with batch quantization
         store.index_config = IndexConfig(
-            quantization="Q8",
-            batch_quantization="NOQUANT"  # Override for batch ops
+            quantization="Q8", batch_quantization="NOQUANT"  # Override for batch ops
         )
 
         # Add vector set names
@@ -164,7 +155,7 @@ class TestBatchOperationsQuantization:
             id="doc_1",
             content="Test content",
             embedding=np.random.rand(384).astype(np.float32),
-            hierarchy_level=2
+            hierarchy_level=2,
         )
 
         # Mock pipeline execution
@@ -194,8 +185,7 @@ class TestSemanticCacheQuantization:
 
         # Create config with cache quantization
         store.index_config = IndexConfig(
-            quantization="Q8",
-            cache_quantization="BIN"  # Space-efficient for cache
+            quantization="Q8", cache_quantization="BIN"  # Space-efficient for cache
         )
 
         return store
@@ -211,16 +201,11 @@ class TestSemanticCacheQuantization:
         cache_config = CacheConfig()
 
         cache = SemanticCache(
-            cache_config=cache_config,
-            embedding_manager=mock_embedder,
-            redis_store=mock_redis_store
+            cache_config=cache_config, embedding_manager=mock_embedder, redis_store=mock_redis_store
         )
 
         # Store a cache entry using the set method
-        await cache.set(
-            query="test query",
-            response="test response"
-        )
+        await cache.set(query="test query", response="test response")
 
         # Check VADD command uses cache quantization (BIN)
         vadd_call = mock_redis_store.async_redis.execute_command.call_args[0]

@@ -1,6 +1,7 @@
 # Dependency Installation Matrix
 
 ## Overview
+
 This document shows the unified dependency installation strategy across all test types in CI/CD.
 
 ## Dependency Matrix
@@ -29,6 +30,7 @@ This document shows the unified dependency installation strategy across all test
 ## Installation Method
 
 All test jobs now use the same installation method:
+
 1. **Package Manager**: `uv` (ultra-fast, parallel installation)
 2. **Compilation**: `--compile-bytecode` for faster imports
 3. **System Install**: `--system` flag for CI environment
@@ -36,16 +38,19 @@ All test jobs now use the same installation method:
 ## Caching Strategy
 
 ### Unified Cache Keys
+
 ```yaml
 key: ${{ runner.os }}-${{ python-version }}-pip-${{ test-type }}-${{ hash }}
 ```
 
 ### Cache Layers
+
 1. **Primary**: Test-type specific cache
 2. **Fallback 1**: Python version specific cache
 3. **Fallback 2**: OS-level pip cache
 
 ### What's Cached
+
 - `~/.cache/pip` - pip download cache
 - `~/.cache/uv` - uv package cache
 - `~/.local/share/uv` - uv metadata

@@ -38,7 +38,7 @@ processing:
   chunk_size: 500
   chunk_overlap: 50
   chunk_strategy: semantic
-  
+
 cache:
   enabled: true
   ttl: 3600
@@ -121,12 +121,12 @@ performance:
     batch_size: 100
     max_workers: 4
     queue_size: 1000
-  
+
   search:
     timeout: 30
     max_results: 100
     min_score: 0.5
-  
+
   cache:
     max_size: 10000
     eviction_policy: lru

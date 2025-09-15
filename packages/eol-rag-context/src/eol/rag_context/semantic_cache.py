@@ -393,7 +393,7 @@ class SemanticCache:
         # Store cache data in Redis Hash
         self.redis.redis.hset(cache_key, mapping=cache_data)
 
-        # Add vector to cache Vector Set  
+        # Add vector to cache Vector Set
         # Format: VADD vectorset_name VALUES dim val1 val2 ... element_id [Q8|NOQUANT|BIN]
         embedding_values = query_embedding.astype(np.float32).tolist()
         vadd_args = ["VADD", self._cache_vectorset, "VALUES", str(len(embedding_values))]
@@ -401,11 +401,11 @@ class SemanticCache:
         for v in embedding_values:
             vadd_args.append(str(v))  # v is already a float from tolist()
         vadd_args.append(cache_id)  # Use cache_id as element identifier
-        
+
         # Use cache-specific quantization from configuration
         quantization = self.redis.index_config.get_cache_quantization()
         vadd_args.append(quantization)
-        
+
         try:
             await self.redis.async_redis.execute_command(*vadd_args)
         except Exception as e:

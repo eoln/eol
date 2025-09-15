@@ -50,15 +50,20 @@ try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
 
-    # Legacy FT.SEARCH imports - kept for backward compatibility during migration
-    from redis.commands.search.field import (  # noqa: F401
-        NumericField,
-        TagField,
-        TextField,
-        VectorField,
-    )
-    from redis.commands.search.index_definition import IndexDefinition, IndexType  # noqa: F401
-    from redis.commands.search.query import Query  # noqa: F401
+    # Try to import legacy FT.SEARCH for backward compatibility
+    # These are not actually used in Vector Sets implementation
+    try:
+        from redis.commands.search.field import (  # noqa: F401
+            NumericField,
+            TagField,
+            TextField,
+            VectorField,
+        )
+        from redis.commands.search.index_definition import IndexDefinition, IndexType  # noqa: F401
+        from redis.commands.search.query import Query  # noqa: F401
+    except (ImportError, ModuleNotFoundError):
+        # These imports are optional - Vector Sets don't need them
+        pass
 except ImportError as e:
     import sys
 

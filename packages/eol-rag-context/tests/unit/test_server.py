@@ -283,6 +283,23 @@ class TestEOLRAGContextServer:
         # Prompts are set up in __init__ via _setup_prompts
         assert srv.mcp is not None
 
+    # Additional test case for error handling
+
+    @pytest.mark.asyncio
+    async def test_index_file_error(self, config, mock_components):
+        """Test indexing file with error."""
+        srv = server.EOLRAGContextServer(config)
+        await srv.initialize()
+
+        # Setup error condition
+        mock_components["idx"].index_file = AsyncMock(side_effect=Exception("File not found"))
+
+        result = await srv.index_file("/test/file.txt")
+
+        # Should handle error gracefully
+        assert result is not None
+        assert result.get("status") == "error" or result.get("error") is not None
+
 
 class TestServerRequestModels:
     """Test server request models."""
@@ -324,6 +341,3 @@ class TestServerRequestModels:
         assert req.path == "/test"
         assert req.file_patterns == ["*.py", "*.md"]
         assert req.recursive is True
-
-
-# Removed TestServerAdditional class - tests were too implementation-specific

@@ -967,3 +967,403 @@ environments:
         assert len(chunks) == 1
         assert chunks[0]["type"] == "value"
         assert chunks[0]["content"] == "just a string"
+
+
+class TestDocumentProcessorCoverage:
+    """Tests to improve DocumentProcessor coverage."""
+
+    @pytest.fixture
+    def chunking_config(self):
+        """Create test chunking configuration."""
+        return ChunkingConfig(
+            max_chunk_size=500,
+            min_chunk_size=100,
+            chunk_overlap=50,
+            use_semantic_chunking=True,
+            semantic_threshold=0.7,
+            code_chunk_by_function=True,
+            code_max_lines=100,
+            respect_document_structure=True,
+            markdown_split_headers=True,
+        )
+
+    @pytest.fixture
+    def document_config(self):
+        """Create test document configuration."""
+        return DocumentConfig(
+            file_patterns=["*.txt", "*.md", "*.py", "*.json", "*.xml", "*.yaml"],
+            max_file_size_mb=10,
+            extract_metadata=True,
+            detect_language=True,
+            parse_code_structure=True,
+            skip_binary_files=True,
+        )
+
+    @pytest.fixture
+    def processor(self, document_config, chunking_config):
+        """Create DocumentProcessor instance."""
+        return DocumentProcessor(document_config, chunking_config)
+
+    @pytest.mark.asyncio
+    async def test_process_text_file(self, processor, tmp_path):
+        """Test processing a text file."""
+        # Create a test file
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("This is a test document.\n" * 20)
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.file_path == test_file
+        assert doc.content
+        assert doc.doc_type == "text"
+        assert doc.chunks
+
+    @pytest.mark.asyncio
+    async def test_process_markdown_file(self, processor, tmp_path):
+        """Test processing a markdown file."""
+        # Create a test markdown file
+        test_file = tmp_path / "test.md"
+        test_file.write_text(
+            """# Header 1
+
+This is some content under header 1.
+
+## Header 2
+
+More content here.
+
+### Header 3
+
+Even more detailed content.
+"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "markdown"
+        assert doc.chunks
+        assert len(doc.chunks) > 0
+
+    @pytest.mark.asyncio
+    async def test_process_python_file(self, processor, tmp_path):
+        """Test processing a Python file."""
+        # Create a test Python file
+        test_file = tmp_path / "test.py"
+        test_file.write_text(
+            '''"""Module docstring."""
+
+def function1():
+    """Function docstring."""
+    return "test"
+
+class TestClass:
+    """Class docstring."""
+
+    def method(self):
+        """Method docstring."""
+        pass
+'''
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "code"
+        assert doc.language == "python"
+        assert doc.chunks
+
+    @pytest.mark.asyncio
+    async def test_process_json_file(self, processor, tmp_path):
+        """Test processing a JSON file."""
+        # Create a test JSON file
+        test_file = tmp_path / "test.json"
+        test_file.write_text(
+            """{
+    "name": "test",
+    "version": "1.0.0",
+    "dependencies": {
+        "package1": "1.0.0",
+        "package2": "2.0.0"
+    },
+    "config": {
+        "setting1": true,
+        "setting2": "value"
+    }
+}"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "structured"
+        assert doc.chunks
+
+    @pytest.mark.asyncio
+    async def test_process_yaml_file(self, processor, tmp_path):
+        """Test processing a YAML file."""
+        # Create a test YAML file
+        test_file = tmp_path / "test.yaml"
+        test_file.write_text(
+            """name: test
+version: 1.0.0
+dependencies:
+  package1: 1.0.0
+  package2: 2.0.0
+config:
+  setting1: true
+  setting2: value
+nested:
+  level1:
+    level2:
+      value: deep
+"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "structured"
+        assert doc.chunks
+
+    @pytest.mark.asyncio
+    async def test_process_xml_file(self, processor, tmp_path):
+        """Test processing an XML file."""
+        # Create a test XML file
+        test_file = tmp_path / "test.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<root>
+    <section id="1">
+        <title>Section 1</title>
+        <content>This is section 1 content.</content>
+    </section>
+    <section id="2">
+        <title>Section 2</title>
+        <content>This is section 2 content.</content>
+    </section>
+    <config>
+        <setting name="test">value</setting>
+    </config>
+</root>
+"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "config"  # XML with <config> tag is detected as config type
+        assert doc.chunks
+
+    @pytest.mark.asyncio
+    async def test_process_unsupported_file(self, processor, tmp_path):
+        """Test processing an unsupported file type."""
+        # Create a test file with unsupported extension
+        test_file = tmp_path / "test.xyz"
+        test_file.write_text("Some content")
+
+        # Process unsupported files as text
+        doc = await processor.process_file(test_file)
+        assert doc is not None
+        assert doc.doc_type == "text"  # Falls back to text processing
+
+    @pytest.mark.asyncio
+    async def test_process_large_file(self, processor, tmp_path):
+        """Test processing a file that exceeds max size."""
+        # Create a large file
+        test_file = tmp_path / "large.txt"
+        # Write more than max_file_size_mb (convert to bytes)
+        max_bytes = processor.doc_config.max_file_size_mb * 1024 * 1024
+        test_file.write_text("x" * (max_bytes + 1))
+
+        # Process should handle large files
+        doc = await processor.process_file(test_file)
+        # Should return None for files exceeding size limit
+        assert doc is None
+
+    @pytest.mark.asyncio
+    async def test_chunk_by_semantic(self, processor):
+        """Test semantic chunking strategy."""
+        processor.chunk_config.use_semantic_chunking = True
+
+        text = """This is the first paragraph. It contains some information.
+
+This is the second paragraph. It has different information.
+
+This is the third paragraph. More content here.
+
+This is the fourth paragraph. Even more content.
+"""
+
+        # Test semantic chunking through process_file
+        # Create a test file to process
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(text)
+            f.flush()
+            doc = await processor.process_file(Path(f.name))
+            Path(f.name).unlink()
+
+        assert doc is not None
+        assert len(doc.chunks) > 0
+
+    @pytest.mark.asyncio
+    async def test_chunk_by_headers(self, processor):
+        """Test markdown header-based chunking."""
+        text = """# Main Header
+
+Content under main header.
+
+## Sub Header 1
+
+Content under first sub header.
+
+## Sub Header 2
+
+Content under second sub header.
+
+### Sub Sub Header
+
+Nested content here.
+"""
+
+        # Test header chunking through process_file
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+            f.write(text)
+            f.flush()
+            doc = await processor.process_file(Path(f.name))
+            Path(f.name).unlink()
+
+        assert doc is not None
+        assert len(doc.chunks) > 0
+
+    @pytest.mark.asyncio
+    async def test_extract_metadata(self, processor):
+        """Test metadata extraction."""
+        # Test with Python file
+        python_content = '''"""
+Module for testing.
+
+Author: Test Author
+Version: 1.0.0
+"""
+
+def main():
+    pass
+'''
+        # Test metadata extraction through process_file
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(python_content)
+            f.flush()
+            doc = await processor.process_file(Path(f.name))
+            Path(f.name).unlink()
+
+        assert doc is not None
+        assert doc.doc_type == "code"
+        assert doc.language == "python"
+        assert doc.metadata
+
+    @pytest.mark.asyncio
+    async def test_process_empty_file(self, processor, tmp_path):
+        """Test processing an empty file."""
+        # Create an empty file
+        test_file = tmp_path / "empty.txt"
+        test_file.write_text("")
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Should handle empty files gracefully
+        assert doc is None or doc.content == ""
+
+    @pytest.mark.asyncio
+    async def test_process_binary_file(self, processor, tmp_path):
+        """Test processing a binary file."""
+        # Create a binary file
+        test_file = tmp_path / "binary.bin"
+        test_file.write_bytes(b"\x00\x01\x02\x03\x04")
+
+        # Process should handle binary files
+        doc = await processor.process_file(test_file)
+        assert doc is None
+
+    @pytest.mark.asyncio
+    async def test_chunking_with_overlap(self, processor):
+        """Test chunking with overlap."""
+        text = "word " * 200  # Create text with 200 words
+
+        # Test fixed chunking through process_file
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(text)
+            f.flush()
+            doc = await processor.process_file(Path(f.name))
+            chunks = doc.chunks if doc else []
+            Path(f.name).unlink()
+
+        # Check that chunks have overlap
+        assert len(chunks) > 1
+        # With semantic chunking, overlap behavior may vary
+        # Just verify we have multiple chunks
+
+    @pytest.mark.asyncio
+    async def test_code_ast_chunking(self, processor):
+        """Test AST-based code chunking."""
+        code = '''
+def function1():
+    """First function."""
+    return 1
+
+def function2():
+    """Second function."""
+    return 2
+
+class MyClass:
+    """A test class."""
+
+    def method1(self):
+        return "method1"
+
+    def method2(self):
+        return "method2"
+'''
+
+        # Test AST chunking through process_file
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            f.flush()
+            doc = await processor.process_file(Path(f.name))
+            Path(f.name).unlink()
+
+        assert doc is not None
+        assert len(doc.chunks) > 0
+        # Should have chunks for functions and class
+        chunk_contents = [chunk.get("content", "") for chunk in doc.chunks]
+        assert any("function1" in content for content in chunk_contents)
+        assert any("MyClass" in content for content in chunk_contents)

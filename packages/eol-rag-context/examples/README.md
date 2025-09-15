@@ -1,131 +1,83 @@
 # EOL RAG Context Examples
 
-This directory contains example scripts demonstrating how to use the EOL RAG Context MCP server.
+Example scripts demonstrating the EOL RAG Context MCP server with Claude Code.
 
-## Prerequisites
-
-Before running the examples, make sure you have:
-
-1. **Redis Running**:
-
-```bash
-docker run -d -p 6379:6379 redis/redis-stack:latest
-```
-
-2. **Dependencies Installed**:
-
-```bash
-pip install -r ../requirements.txt
-```
-
-## Examples
+## Available Examples
 
 ### 1. Quick Start (`quick_start.py`)
 
-A simple introduction to basic RAG operations.
+Basic introduction to RAG operations - indexing and searching documents.
 
 ```bash
-python quick_start.py
+# Run directly
+uv run python examples/quick_start.py
+
+# Or use with Claude Code
+claude "Run the quick_start.py example and explain what it's doing"
 ```
-
-**Features demonstrated:**
-
-- Server initialization
-- Directory indexing
-- Context search
-- Statistics retrieval
 
 ### 2. Code Assistant (`code_assistant.py`)
 
-An interactive AI code assistant that can answer questions about your codebase.
+Interactive AI assistant that answers questions about your codebase.
 
 ```bash
 # Analyze current directory
-python code_assistant.py
+uv run python examples/code_assistant.py
 
 # Analyze specific project
-python code_assistant.py /path/to/project
+uv run python examples/code_assistant.py /path/to/project
+
+# Use with Claude Code
+claude "Use the code assistant to analyze the src directory"
 ```
 
-**Features demonstrated:**
+### 3. RAG CLI (`rag_cli.py`)
 
-- Project indexing with filters
-- Interactive Q&A
-- Code implementation search
-- Improvement suggestions
-- Knowledge graph queries
-
-**Commands:**
-
-- `help` - Show available commands
-- `stats` - Display indexing statistics
-- `find <name>` - Find implementations
-- `improve <code>` - Get improvement suggestions
-- Ask any question about the codebase
-
-### 3. Documentation Search (`doc_search.py`)
-
-Search and retrieve documentation efficiently.
+Command-line interface for RAG operations.
 
 ```bash
-python doc_search.py "authentication" /path/to/docs
+# Index files
+uv run python examples/rag_cli.py index /path/to/docs
+
+# Search
+uv run python examples/rag_cli.py search "authentication"
+
+# Get stats
+uv run python examples/rag_cli.py stats
 ```
 
-**Features demonstrated:**
+## Using with Claude Code
 
-- Markdown-specific indexing
-- Hierarchical search
-- Result grouping
-- Snippet extraction
-
-### 4. Real-time Monitor (`realtime_monitor.py`)
-
-Monitor a directory and maintain up-to-date context.
+The best way to use these examples is through Claude Code:
 
 ```bash
-python realtime_monitor.py /path/to/watch
+# Ask Claude to run examples
+claude "Run the quick_start.py example"
+
+# Get help understanding the code
+claude "Explain how the code_assistant.py example works"
+
+# Modify examples for your needs
+claude "Modify the rag_cli.py to index only Python files"
 ```
 
-**Features demonstrated:**
+## Prerequisites
 
-- File watching
-- Automatic re-indexing
-- Change detection
-- Live updates
-
-### 5. API Server (`api_server.py`)
-
-REST API wrapper for the RAG context server.
+1. **Redis 8.2+** running:
 
 ```bash
-python api_server.py
+docker run -d -p 6379:6379 redis:8.2-alpine
 ```
 
-**Endpoints:**
-
-- `POST /index` - Index a directory
-- `GET /search?q=query` - Search for context
-- `GET /stats` - Get statistics
-- `POST /watch` - Start watching directory
-
-### 6. Benchmark (`benchmark.py`)
-
-Performance testing and optimization.
+2. **Dependencies installed**:
 
 ```bash
-python benchmark.py /path/to/test
+uv sync
 ```
-
-**Tests:**
-
-- Indexing speed
-- Search latency
-- Cache performance
-- Memory usage
 
 ## Common Patterns
 
-### Initialize Server
+### Initialize the Server
 
 ```python
 from eol.rag_context import EOLRAGContextServer
@@ -134,86 +86,49 @@ server = EOLRAGContextServer()
 await server.initialize()
 ```
 
-### Index Files
+### Index Documents
 
 ```python
-result = await server.index_directory(
+result = await server.start_indexing(
     "/path/to/project",
-    patterns=["*.py", "*.md"],
-    ignore=["__pycache__", ".git"]
+    file_patterns=["*.py", "*.md"]
 )
 ```
 
-### Search Context
+### Search for Context
 
 ```python
 results = await server.search_context(
-    "your query",
-    limit=5
-)
-
-for result in results:
-    print(f"Score: {result['score']}")
-    print(f"Content: {result['content']}")
-```
-
-### Watch for Changes
-
-```python
-watch_id = await server.watch_directory(
-    "/path/to/watch",
-    auto_index=True
+    "your query here",
+    top_k=5
 )
 ```
 
 ## Tips
 
-1. **Start Small**: Begin with `quick_start.py` to understand basics
-2. **Use Filters**: Improve search accuracy with file type filters
-3. **Adjust Chunk Size**: Smaller chunks for code, larger for docs
-4. **Enable Caching**: Improves performance for repeated queries
-5. **Monitor Stats**: Use statistics to optimize configuration
+- Start with `quick_start.py` to understand basics
+- Use Claude Code to explore and modify examples
+- Enable verbose logging with `--verbose` flag
+- Check Redis connection if you encounter errors
 
 ## Troubleshooting
 
 ### Redis Connection Error
 
 ```bash
-# Check if Redis is running
+# Check Redis is running
 redis-cli ping
 
 # If not, start Redis
-docker run -d -p 6379:6379 redis/redis-stack:latest
+docker run -d -p 6379:6379 redis:8.2-alpine
 ```
 
-### Import Error
+### Module Import Error
 
 ```bash
-# Install from parent directory
-cd ..
-pip install -e .
+# Ensure you're in the right directory
+cd eol/packages/eol-rag-context
+
+# Install in development mode
+uv sync
 ```
-
-### Slow Performance
-
-- Reduce chunk size for faster indexing
-- Enable semantic caching
-- Use batch operations
-- Consider using a faster embedding model
-
-## Advanced Usage
-
-For more advanced usage patterns, see:
-
-- [TUTORIAL.md](../TUTORIAL.md) - Complete tutorial
-- [API Documentation](../docs/api.md) - API reference
-- [Configuration Guide](../docs/configuration.md) - Configuration options
-
-## Contributing
-
-Feel free to add your own examples! Please follow the existing pattern:
-
-1. Clear documentation in the script
-2. Error handling
-3. Help text for CLI scripts
-4. README entry explaining the example

@@ -1,421 +1,147 @@
-# EOL RAG Context MCP Server
+# EOL RAG Context - Intelligent Memory for Claude Code
 
-An intelligent RAG-based context management MCP server for the EOL Framework. Replaces static context files with dynamic, Redis 8.2+ Vector Sets retrieval system.
+## What is This?
 
-## Features
+Hello! 👋 This is an MCP (Model Context Protocol) server that gives Claude Code intelligent memory and document understanding capabilities. If you're new to RAG (Retrieval-Augmented Generation), think of it as giving AI the ability to remember and search through your documents intelligently - like having a super-smart assistant who never forgets what you've shown them.
 
-- 🔍 **Hierarchical Indexing**: 3-level structure (concepts → sections → chunks)
-- 🧠 **Knowledge Graph**: Automatic entity extraction and relationship discovery
-- ⚡ **Real-time Updates**: File watcher with automatic reindexing
-- 💾 **Semantic Caching**: 31% hit rate optimization with adaptive threshold
-- 📁 **Multi-format Support**: Markdown, PDF, DOCX, JSON/YAML, source code
-- 🎯 **Precise Localization**: Track exact line/char positions in source files
-- 🔄 **MCP Protocol**: Full Model Context Protocol implementation
+### What's RAG?
 
-## Installation
+RAG combines the power of AI with your specific documents and code. Instead of relying only on general knowledge, Claude can search through YOUR files and give you answers based on YOUR content.
 
-### Quick Install with uv (Recommended - Ultra Fast)
+### What's MCP?
 
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install eol-rag-context
-uv pip install eol-rag-context
-```
-
-### Alternative: Install with pip
-
-```bash
-pip install eol-rag-context
-```
-
-### Dependencies
-
-- Redis 8.2+ (with native Vector Sets support)
-- Python 3.13+
-
-## Testing
-
-The project includes comprehensive unit and integration tests with 80% coverage target.
-
-### Quick Test
-
-```bash
-# Run all tests automatically (starts/stops Redis)
-./test_all.sh
-```
-
-### Manual Testing
-
-```bash
-# Start Redis
-docker run -d -p 6379:6379 redis/redis-stack:latest
-
-# Run tests with coverage
-pytest tests/ --cov=eol.rag_context --cov-report=term
-
-# Stop Redis
-docker stop $(docker ps -q --filter ancestor=redis/redis-stack:latest)
-```
-
-### Coverage Status
-
-- **Current**: 80% ✅
-- **Unit Tests**: 43%
-- **Integration Tests**: +37%
-
-See `.claude/context/testing.md` for detailed testing documentation.
+MCP (Model Context Protocol) is how Claude Code communicates with external tools. This server acts as a bridge, allowing Claude to index your documents and search through them when answering your questions.
 
 ## Quick Start
 
-### 1. Start Redis
+### Prerequisites
+
+- Python 3.13+
+- Redis 8.2+ (with native Vector Sets support)
+- uv package manager
+
+### Installation
 
 ```bash
-# Using Docker (recommended)
-docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Or use local Redis Stack
-redis-stack-server
+# Clone and install
+git clone https://github.com/yourusername/eol.git
+cd eol/packages/eol-rag-context
+uv venv
+uv sync
 ```
 
-### 2. Run the Server
+### Setting up with Claude Code
+
+1. Edit your Claude Code configuration:
 
 ```bash
-# With default configuration
-eol-rag-context
+# Open Claude Code config
+claude config edit
 
-# With custom configuration
-eol-rag-context config.yaml
+# Or directly edit:
+~/.config/claude-code/config.json
 ```
 
-### 3. Use with Claude Desktop
-
-Add to your Claude Desktop configuration:
+2. Add the EOL RAG Context server:
 
 ```json
 {
   "mcpServers": {
     "eol-rag-context": {
-      "command": "eol-rag-context",
-      "env": {
-        "REDIS_HOST": "localhost",
-        "REDIS_PORT": "6379"
-      }
+      "command": "uv",
+      "args": ["run", "eol-rag-mcp"],
+      "cwd": "/path/to/eol/packages/eol-rag-context"
     }
   }
 }
 ```
 
+3. Test it's working:
+
+```bash
+claude "What tools are available from the eol-rag-context server?"
+```
+
+## What Can It Do?
+
+Once set up, you can ask Claude Code things like:
+
+- "Index all Python files in my project"
+- "Search for authentication implementations in the codebase"
+- "What does the document processor do?"
+- "Find all references to Redis configuration"
+- "Build a knowledge graph of my documentation"
+
+### Available Tools
+
+The server provides 12 MCP tools:
+
+- **search_context** - Search through indexed documents
+- **start_indexing** - Begin indexing files or directories
+- **get_indexing_status** - Check indexing progress
+- **get_indexing_stats** - View indexing statistics
+- **list_indexed_sources** - See what's been indexed
+- **remove_indexed_source** - Remove indexed content
+- **optimize_index** - Improve search performance
+- **get_cache_stats** - View semantic cache performance
+- **clear_cache** - Clear the semantic cache
+- **query_knowledge_graph** - Query entity relationships
+- **visualize_knowledge_graph** - Generate graph visualizations
+- **watch_directory** - Auto-index file changes
+
+## Basic Usage Examples
+
+```bash
+# Index your project
+claude "Please index all Python files in the current directory"
+
+# Search for specific concepts
+claude "Search for all database connection code in the indexed files"
+
+# Get insights
+claude "What are the main components of this system based on the indexed code?"
+
+# Monitor changes
+claude "Watch the src directory for changes and auto-index them"
+```
+
 ## Configuration
 
-### Environment Variables
+Configuration is simple and flexible. See [configuration.md](configuration.md) for details.
 
-```bash
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=secret
-REDIS_DB=0
+Default configuration location: `~/.config/eol-rag/config.yaml`
 
-# Embedding Configuration
-EMBEDDING_PROVIDER=sentence-transformers  # or openai
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-OPENAI_API_KEY=sk-...  # If using OpenAI
+## Examples
 
-# Cache Configuration
-CACHE_ENABLED=true
-CACHE_TTL=3600
-CACHE_SIMILARITY_THRESHOLD=0.97
+Check out the [examples/](examples/) directory for:
 
-# Context Configuration
-MAX_CONTEXT_TOKENS=32000
-DEFAULT_TOP_K=10
-MIN_RELEVANCE_SCORE=0.7
-```
-
-### Configuration File
-
-```yaml
-# config.yaml
-redis:
-  host: localhost
-  port: 6379
-  db: 0
-
-embedding:
-  provider: sentence-transformers
-  model_name: all-mpnet-base-v2
-  dimension: 768
-
-cache:
-  enabled: true
-  ttl_seconds: 3600
-  similarity_threshold: 0.97
-  target_hit_rate: 0.31
-
-context:
-  max_context_tokens: 32000
-  default_top_k: 10
-  use_hierarchical_retrieval: true
-
-document:
-  file_patterns:
-    - "*.md"
-    - "*.py"
-    - "*.js"
-    - "*.ts"
-    - "*.pdf"
-    - "*.docx"
-```
-
-## MCP Tools
-
-### Index Directory
-
-Index a directory of documents with hierarchical structure:
-
-```typescript
-{
-  "tool": "index_folder",
-  "params": {
-    "folder_path": "/path/to/docs",
-    "recursive": true,
-    "file_patterns": ["*.md", "*.py"],
-    "source_id": "optional_source_id"
-  }
-}
-```
-
-### Search Context
-
-Search for relevant context using vector similarity:
-
-```typescript
-{
-  "tool": "vector_search",
-  "params": {
-    "query": "How does authentication work?",
-    "hierarchy_level": 3,
-    "k": 10,
-    "min_score": 0.7
-  }
-}
-```
-
-### Query Knowledge Graph
-
-Explore entity relationships:
-
-```typescript
-{
-  "tool": "query_subgraph",
-  "params": {
-    "query": "authentication system",
-    "max_depth": 2,
-    "include_relationships": true
-  }
-}
-```
-
-### Watch Directory
-
-Monitor a directory for changes:
-
-```typescript
-{
-  "tool": "watch_folder",
-  "params": {
-    "folder_path": "/path/to/project",
-    "recursive": true,
-    "file_patterns": ["*.py", "*.md"],
-    "debounce_seconds": 2
-  }
-}
-```
-
-## MCP Resources
-
-### Get Context
-
-Retrieve optimized context for a query:
-
-```
-GET context://search/{query}
-```
-
-### List Sources
-
-List all indexed sources:
-
-```
-GET sources://list
-```
-
-### Get Statistics
-
-Get server statistics:
-
-```
-GET stats://server
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│           MCP Interface Layer            │
-│  (Tools, Resources, Prompts)             │
-└─────────────────────────────────────────┘
-                    │
-┌─────────────────────────────────────────┐
-│          Context Engine Layer            │
-│  (Hierarchical Organization, Synthesis)  │
-└─────────────────────────────────────────┘
-                    │
-┌─────────────────────────────────────────┐
-│         Document Processing Layer        │
-│  (Multi-format, Chunking, Metadata)      │
-└─────────────────────────────────────────┘
-                    │
-┌─────────────────────────────────────────┐
-│           Redis 8 Storage Layer          │
-│  (HNSW Vectors, Semantic Cache, KG)      │
-└─────────────────────────────────────────┘
-```
-
-## Testing
-
-### Run Tests
-
-```bash
-# Unit tests only
-./run_tests.sh
-
-# With Redis integration
-./run_tests.sh --redis
-
-# All tests
-./run_tests.sh --all
-```
-
-### Docker Test Environment
-
-```bash
-# Start test Redis
-docker-compose -f docker-compose.test.yml up -d
-
-# Run tests
-pytest --redis
-
-# Stop test Redis
-docker-compose -f docker-compose.test.yml down
-```
-
-See [TESTING.md](TESTING.md) for comprehensive testing documentation.
-
-## Advanced Features
-
-### Hierarchical Indexing
-
-Documents are indexed at three levels:
-
-1. **Concepts**: High-level abstractions
-2. **Sections**: Grouped related content
-3. **Chunks**: Fine-grained retrievable units
-
-### Knowledge Graph
-
-Automatically extracts:
-
-- **Entities**: Functions, classes, topics, technologies
-- **Relationships**: Dependencies, references, similarities
-- **Patterns**: Common structures, hubs, communities
-
-### Semantic Caching
-
-- Targets 31% hit rate based on research
-- Adaptive threshold adjustment
-- Similarity-based retrieval
-- LRU eviction policy
-
-### File Watching
-
-- Real-time monitoring with watchdog
-- Debouncing for rapid changes
-- Batch processing for efficiency
-- Fallback polling mode
-
-## Performance
-
-- **Indexing**: ~1000 documents/minute
-- **Search**: <100ms latency (cached)
-- **Cache Hit Rate**: 31% (optimized)
-- **Memory**: ~1GB per million chunks
+- `quick_start.py` - Basic indexing and search
+- `code_assistant.py` - Code analysis helper
+- `rag_cli.py` - Command-line RAG interface
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-# Clone repository
-git clone https://github.com/eoln/eol.git
-cd eol/packages/eol-rag-context
+# Run tests
+uv run pytest
 
-# Using uv (recommended - ultra fast)
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e ".[dev]"
-
-# Alternative: Using standard pip
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+# Run with verbose logging
+uv run eol-rag-mcp --verbose
 ```
-
-### Project Structure
-
-```
-eol-rag-context/
-├── src/eol/rag_context/
-│   ├── server.py           # MCP server implementation
-│   ├── config.py           # Configuration management
-│   ├── redis_client.py     # Redis vector operations
-│   ├── document_processor.py # Multi-format processing
-│   ├── indexer.py          # Document indexing
-│   ├── embeddings.py       # Embedding management
-│   ├── semantic_cache.py   # Caching layer
-│   ├── knowledge_graph.py  # Graph construction
-│   └── file_watcher.py     # Real-time monitoring
-├── tests/
-│   ├── test_*.py           # Test files
-│   └── conftest.py         # Test fixtures
-├── docker-compose.test.yml # Test environment
-└── run_tests.sh            # Test runner
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for new features
-4. Ensure all tests pass
-5. Submit a pull request
 
 ## License
 
-GPL-3.0 - See [LICENSE](../../LICENSE) file
+GPL-3.0 - See LICENSE file for details.
 
-## Support
+## Need Help?
 
-- [GitHub Issues](https://github.com/eoln/eol/issues)
-- [Documentation](https://github.com/eoln/eol/wiki)
+- Check the [examples/](examples/) for working code
+- Configuration options in [configuration.md](configuration.md)
+- Open an issue on GitHub for bugs or questions
 
-## Acknowledgments
+---
 
-Built with:
-
-- [FastMCP](https://github.com/fastmcp/fastmcp) - MCP framework
-- [Redis Stack](https://redis.io/docs/stack/) - Vector database
-- [Sentence Transformers](https://www.sbert.net/) - Embeddings
-- Research on optimal LLM context structures (2024)
+*Built with ❤️ for the Claude Code community*

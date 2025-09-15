@@ -167,11 +167,26 @@ class EmbeddingManager:
         if isinstance(embedding, np.ndarray) and embedding.ndim == 2:
             embedding = embedding[0]  # Get first embedding if batch result
 
+        # Validate embedding
+        if not isinstance(embedding, np.ndarray):
+            logger.error(f"Invalid embedding type: {type(embedding)}")
+            # Return zero vector as fallback
+            return np.zeros(self.config.dimension, dtype=np.float32)
+        
+        # Check for NaN or inf values
+        if np.any(np.isnan(embedding)) or np.any(np.isinf(embedding)):
+            logger.error(f"Invalid embedding values (NaN or inf) for text: {text[:50]}...")
+            # Return zero vector as fallback
+            return np.zeros(self.config.dimension, dtype=np.float32)
+        
+        # Ensure float32 type
+        embedding = embedding.astype(np.float32)
+
         # Cache the result
         if use_cache and self.redis:
             cache_key = self._cache_key(text)
             await self.redis.setex(
-                cache_key, 3600, embedding.astype(np.float32).tobytes()  # 1 hour TTL
+                cache_key, 3600, embedding.tobytes()  # 1 hour TTL
             )
 
         return embedding
@@ -205,14 +220,26 @@ class EmbeddingManager:
         if uncached_texts:
             new_embeddings = await self.provider.embed_batch(uncached_texts)
 
-            # Cache the new embeddings
+            # Validate and cache the new embeddings
             if use_cache and self.redis:
                 for text, embedding in zip(uncached_texts, new_embeddings, strict=False):
+                    # Validate embedding
+                    if np.any(np.isnan(embedding)) or np.any(np.isinf(embedding)):
+                        logger.warning(f"Invalid embedding for text: {text[:50]}..., using zeros")
+                        embedding = np.zeros(self.config.dimension, dtype=np.float32)
+                    else:
+                        embedding = embedding.astype(np.float32)
+                    
                     cache_key = self._cache_key(text)
-                    await self.redis.setex(cache_key, 3600, embedding.astype(np.float32).tobytes())
+                    await self.redis.setex(cache_key, 3600, embedding.tobytes())
 
             # Add to results
             for idx, embedding in zip(uncached_indices, new_embeddings, strict=False):
+                # Validate embedding before adding
+                if np.any(np.isnan(embedding)) or np.any(np.isinf(embedding)):
+                    embedding = np.zeros(self.config.dimension, dtype=np.float32)
+                else:
+                    embedding = embedding.astype(np.float32)
                 embeddings.append((idx, embedding))
 
         # Sort by original index and extract embeddings

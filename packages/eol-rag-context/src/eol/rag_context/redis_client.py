@@ -457,46 +457,62 @@ class RedisVectorStore:
             3: self.index_config.chunk_vectorset,
         }
         vectorset_name = vectorset_map.get(doc.hierarchy_level, self.index_config.chunk_vectorset)
-
-        # Convert embedding to float32 list for VADD command
+        
         # Ensure embedding is 1D array
-        if len(doc.embedding.shape) > 1:
-            embedding_values = doc.embedding.flatten().astype(np.float32).tolist()
-        else:
-            embedding_values = doc.embedding.astype(np.float32).tolist()
-
-        # Use VADD to add vector to Vector Set
-        # Format: VADD vectorset_name VALUES num val1 val2 ... element_id [options]
-        # Redis 8.2 expects individual float values as separate arguments
+        embedding_array = doc.embedding
+        if embedding_array.ndim == 2:
+            # Flatten 2D array to 1D (e.g., [1, 384] -> [384])
+            embedding_array = embedding_array.flatten()
+        
+        # Convert embedding to float32 list for VADD command
+        embedding_values = embedding_array.astype(np.float32).tolist()
+        
+        # Validate embedding values
+        if not embedding_values or len(embedding_values) == 0:
+            logger.error(f"Empty embedding for document {doc.id}")
+            return
+        
+        # Check for invalid values (NaN, inf)
+        if np.any(np.isnan(embedding_array)) or np.any(np.isinf(embedding_array)):
+            logger.error(f"Invalid embedding values (NaN or inf) for document {doc.id}")
+            return
+        
+        # Use VADD to add vector to Vector Set 
+        # Format: VADD key VALUES dim val1 val2 ... element [Q8|NOQUANT|BIN] [EF num] [M num]
         vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
         # Pass each float value as a separate argument
         for v in embedding_values:
             vadd_args.append(str(v))  # v is already a float from tolist()
         vadd_args.append(doc.id)
-
-        # Add level-specific parameters after element ID
+        
+        # Add quantization parameter based on hierarchy level
+        quantization = self.index_config.get_quantization_for_level(doc.hierarchy_level)
+        if quantization == "Q8":
+            vadd_args.append("Q8")
+        elif quantization == "NOQUANT":
+            vadd_args.append("NOQUANT")  
+        elif quantization == "BIN":
+            vadd_args.append("BIN")
+        else:
+            vadd_args.append("Q8")  # Default fallback
+        
+        # Add level-specific parameters after quantization
         if doc.hierarchy_level == 1:  # Concept level - high precision
-            vadd_args.extend(
-                ["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)]
-            )
-        elif doc.hierarchy_level == 2:  # Section level - balanced
-            vadd_args.extend(
-                [
-                    "EF",
-                    str(self.index_config.ef_construction + 100),
-                    "M",
-                    str(self.index_config.m + 8),
-                ]
-            )
+            vadd_args.extend(["EF", str(self.index_config.ef_construction), "M", str(self.index_config.m)])
+        elif doc.hierarchy_level == 2:  # Section level - balanced  
+            vadd_args.extend(["EF", str(self.index_config.ef_construction + 100), "M", str(self.index_config.m + 8)])
         # Chunk level uses default parameters
-
-        # Add quantization
-        vadd_args.append(self.index_config.quantization)
-
+        
         # Execute VADD command
-        await self.async_redis.execute_command(*vadd_args)
-
-        logger.debug(f"Stored document {key} and added to Vector Set {vectorset_name}")
+        try:
+            await self.async_redis.execute_command(*vadd_args)
+            logger.debug(f"Stored document {key} and added to Vector Set {vectorset_name}")
+        except Exception as e:
+            logger.error(f"VADD failed for doc {doc.id} in {vectorset_name}")
+            logger.error(f"  Embedding shape: {embedding_array.shape}")
+            logger.error(f"  List dimension: {len(embedding_values)}")
+            logger.error(f"  Error: {e}")
+            raise
 
     async def vector_search(
         self,

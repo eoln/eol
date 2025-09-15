@@ -140,6 +140,8 @@ class TestBatchRedisClient:
         store.index_config.section_vectorset = "sections"
         store.index_config.chunk_vectorset = "chunks"
         store.index_config.vectorset_name = "default"
+        # Add quantization method for new configuration
+        store.index_config.get_batch_quantization = MagicMock(return_value="Q8")
         return store
 
     @pytest.fixture
@@ -187,6 +189,12 @@ class TestBatchRedisClient:
         # Should have called pipeline operations
         assert mock_pipeline.hset.call_count == len(sample_documents)
         assert mock_redis_store.async_redis.execute_command.call_count == len(sample_documents)
+        
+        # Verify VADD command includes quantization parameter
+        for call in mock_redis_store.async_redis.execute_command.call_args_list:
+            vadd_args = call[0]
+            assert "VADD" in vadd_args
+            assert "Q8" in vadd_args  # Should use the configured quantization
 
     @pytest.mark.asyncio
     async def test_store_documents_batch_vadd_failure(

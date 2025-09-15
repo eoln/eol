@@ -214,19 +214,32 @@ class BatchRedisClient:
 
                     # Prepare VADD command for Vector Set
                     vectorset_name = self._get_vectorset_name(doc.hierarchy_level)
+                    
                     # Ensure embedding is 1D array
-                    if len(doc.embedding.shape) > 1:
-                        embedding_values = doc.embedding.flatten().astype(np.float32).tolist()
-                    else:
-                        embedding_values = doc.embedding.astype(np.float32).tolist()
-
-                    # Redis 8.2 expects individual float values as separate arguments
+                    embedding_array = doc.embedding
+                    if embedding_array.ndim == 2:
+                        embedding_array = embedding_array.flatten()
+                    
+                    embedding_values = embedding_array.astype(np.float32).tolist()
+                    
+                    # Skip documents with invalid embeddings
+                    if not embedding_values or len(embedding_values) == 0:
+                        logger.warning(f"Skipping document {doc.id} - empty embedding")
+                        continue
+                    if np.any(np.isnan(embedding_array)) or np.any(np.isinf(embedding_array)):
+                        logger.warning(f"Skipping document {doc.id} - invalid embedding values")
+                        continue
+                    
                     vadd_args = ["VADD", vectorset_name, "VALUES", str(len(embedding_values))]
                     # Pass each float value as a separate argument
                     for v in embedding_values:
                         vadd_args.append(str(v))  # v is already a float from tolist()
                     vadd_args.append(doc.id)
-
+                    
+                    # Add quantization parameter based on configuration
+                    quantization = self.redis_store.index_config.get_batch_quantization()
+                    vadd_args.append(quantization)
+                    
                     vadd_commands.append(vadd_args)
 
                 # Execute hash operations
@@ -239,7 +252,10 @@ class BatchRedisClient:
                         stored_count += 1
                     except Exception as e:
                         logger.error(f"VADD operation failed: {e}")
-
+                        logger.error(f"  Vector Set: {vadd_args[1] if len(vadd_args) > 1 else 'unknown'}")
+                        logger.error(f"  Expected dimension: {vadd_args[3] if len(vadd_args) > 3 else 'unknown'}")
+                        logger.error(f"  Doc ID: {vadd_args[-2] if len(vadd_args) > 2 else 'unknown'}")
+                
                 logger.debug(f"Stored batch of {len(batch)} documents")
 
             except Exception as e:

@@ -13,6 +13,7 @@ from eol.rag_context.parallel_indexer import (
     ParallelIndexer,
     ParallelIndexingConfig,
 )
+from eol.rag_context.config import RAGConfig
 
 
 class TestParallelIndexingConfig:
@@ -139,50 +140,31 @@ class TestParallelFileScanner:
     @pytest.mark.asyncio
     async def test_scan_repository(self, scanner):
         """Test repository scanning."""
-        # Create mock Path objects with proper methods
-        mock_file1 = MagicMock(spec=Path)
-        mock_file1.name = "file1.py"
-        mock_file1.is_file.return_value = True
-        mock_file1.is_dir.return_value = False
-        mock_file1.stat.return_value.st_size = 1024
-        mock_file1.stat.return_value.st_mode = 33188  # Regular file mode
-        mock_file1.__str__.return_value = "/tmp/test_repo/file1.py"
-
-        mock_file2 = MagicMock(spec=Path)
-        mock_file2.name = "file2.md"
-        mock_file2.is_file.return_value = True
-        mock_file2.is_dir.return_value = False
-        mock_file2.stat.return_value.st_size = 1024
-        mock_file2.stat.return_value.st_mode = 33188  # Regular file mode
-        mock_file2.__str__.return_value = "/tmp/test_repo/file2.md"
-
-        test_path = MagicMock(spec=Path)
-        test_path.is_dir.return_value = True
-        test_path.exists.return_value = True
-
-        # Mock glob results - need to be more careful about how patterns are handled
-        def mock_rglob_side_effect(pattern):
-            if pattern == "*.py":
-                return [mock_file1]
-            elif pattern == "*.md":
-                return [mock_file2]
-            else:
-                return []
-
-        test_path.rglob.side_effect = mock_rglob_side_effect
-        test_path.glob.side_effect = lambda p: []
-
-        # Mock the folder_scanner._should_ignore method to not filter out our files
-        scanner.folder_scanner._should_ignore = MagicMock(return_value=False)
-
-        batches = []
-        async for batch in scanner.scan_repository(test_path, ["*.py", "*.md"], recursive=True):
-            batches.append(batch)
-
-        # Should create one batch with 2 files
-        assert len(batches) == 1
-        assert len(batches[0].files) == 2
-        assert batches[0].estimated_size == 2048  # 2 files * 1024 bytes
+        # Create a real temp directory for testing
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_path = Path(tmpdir)
+            
+            # Create real test files
+            file1 = test_path / "file1.py"
+            file1.write_text("print('hello')")
+            
+            file2 = test_path / "file2.md"
+            file2.write_text("# README")
+            
+            batches = []
+            async for batch in scanner.scan_repository(
+                test_path, 
+                ["*.py", "*.md"], 
+                recursive=True
+            ):
+                batches.append(batch)
+            
+            # Should create one batch with 2 files
+            assert len(batches) == 1  
+            assert len(batches[0].files) == 2
+            # Check that estimated size is the sum of actual file sizes
+            assert batches[0].estimated_size == len("print('hello')") + len("# README")
 
 
 class TestParallelIndexer:
@@ -209,7 +191,9 @@ class TestParallelIndexer:
     @pytest.fixture
     def mock_redis(self):
         """Mock RedisVectorStore."""
-        return AsyncMock()
+        mock = MagicMock()
+        mock.async_redis = AsyncMock()
+        return mock
 
     @pytest.fixture
     def parallel_indexer(self, mock_config, mock_processor, mock_embeddings, mock_redis):
@@ -301,23 +285,21 @@ class TestParallelIndexer:
         )
 
         parallel_indexer.current_checkpoint = checkpoint
-
-        # Mock Redis async operations
+        
+        # Mock Redis operations
         parallel_indexer.redis.async_redis.hset = AsyncMock()
         parallel_indexer.redis.async_redis.expire = AsyncMock()
-        parallel_indexer.redis.async_redis.hgetall = AsyncMock(
-            return_value={
-                "completed_files": "10",
-                "total_files": "50",
-                "total_chunks": "100",
-                "processed_files": "file1.py,file2.py",
-            }
-        )
-
+        parallel_indexer.redis.async_redis.hgetall = AsyncMock(return_value={
+            'completed_files': '10',
+            'total_files': '50',
+            'total_chunks': '100',
+            'processed_files': 'file1.py,file2.py'
+        })
+        
         # Test save
         await parallel_indexer._save_checkpoint()
         parallel_indexer.redis.async_redis.hset.assert_called_once()
-
+        
         # Test load
         success = await parallel_indexer._load_checkpoint()
         assert success is True
@@ -328,7 +310,7 @@ class TestParallelIndexer:
         checkpoint = IndexingCheckpoint(source_id="test-source", root_path="/test")
         parallel_indexer.current_checkpoint = checkpoint
         parallel_indexer.redis.async_redis.delete = AsyncMock()
-
+        
         await parallel_indexer._cleanup_checkpoint()
         parallel_indexer.redis.async_redis.delete.assert_called_once()
 

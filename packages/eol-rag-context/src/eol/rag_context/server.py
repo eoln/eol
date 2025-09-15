@@ -1248,16 +1248,15 @@ Output Format:
             - path: Directory path being indexed
 
         """
-        # Ensure components are initialized
-        if not self.task_manager or not self.parallel_indexer:
-            await self.initialize()
-
-        # Extract parameters
-        recursive = kwargs.get("recursive", True)
-        force_reindex = kwargs.get("force_reindex", False)
-        max_workers = kwargs.get("max_workers", 16)
-
         try:
+            # Ensure components are initialized
+            if not self.task_manager or not self.parallel_indexer:
+                await self.initialize()
+
+            # Extract parameters
+            recursive = kwargs.get("recursive", True)
+            force_reindex = kwargs.get("force_reindex", False)
+            max_workers = kwargs.get("max_workers", 16)
             # Create parallel config
             parallel_config = ParallelIndexingConfig(
                 max_document_workers=max_workers,

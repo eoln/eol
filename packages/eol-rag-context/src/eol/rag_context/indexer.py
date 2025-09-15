@@ -310,6 +310,10 @@ class FolderScanner:
             "**/.vscode/**",
             "**/coverage/**",
             "**/.coverage",
+            "**/.uv-cache/**",
+            "**/target/**",
+            "**/.cargo/**",
+            "**/Cargo.lock",
         }
 
     def _should_ignore(self, path: Path, gitignore_matcher=None) -> bool:
@@ -339,10 +343,26 @@ class FolderScanner:
         if gitignore_matcher and gitignore_matcher(path_str):
             return True
 
-        # Check default patterns
+        # Check default patterns against full path
         for pattern in self.ignore_patterns:
-            if path.match(pattern):
-                return True
+            # Check if any part of the path matches the exclusion pattern
+            # For patterns like **/.venv/**, check if .venv is in the path
+            if pattern.startswith('**/') and pattern.endswith('/**'):
+                # Extract the directory name to check
+                dir_name = pattern[3:-3]  # Remove **/ and /**
+                # Check if this directory appears anywhere in the path
+                for part in path.parts:
+                    if part == dir_name:
+                        return True
+            elif pattern.startswith('**/'):
+                # Pattern like **/*.pyc
+                pattern_suffix = pattern[3:]  # Remove **/ prefix
+                if path.name == pattern_suffix or path.match(pattern_suffix):
+                    return True
+            else:
+                # Direct pattern match
+                if path.match(pattern):
+                    return True
 
         # Check file size
         if path.is_file():
@@ -500,6 +520,11 @@ class FolderScanner:
                 gitignore_matcher = gitignore_parser.parse_gitignore(gitignore_path)
 
         files_to_index = []
+        
+        # Get list of directories to exclude
+        excluded_dirs = {".venv", ".uv-cache", ".git", "__pycache__", "node_modules", 
+                        ".pytest_cache", "venv", "env", ".env", "dist", "build",
+                        ".idea", ".vscode", "coverage", ".coverage", "target", ".cargo"}
 
         # Scan for matching files
         for pattern in file_patterns:
@@ -509,6 +534,16 @@ class FolderScanner:
                 paths = folder_path.glob(pattern)
 
             for path in paths:
+                # Skip if any parent directory is in excluded list
+                should_skip = False
+                for parent in path.parents:
+                    if parent.name in excluded_dirs:
+                        should_skip = True
+                        break
+                
+                if should_skip:
+                    continue
+                    
                 if path.is_file() and not self._should_ignore(path, gitignore_matcher):
                     files_to_index.append(path)
 

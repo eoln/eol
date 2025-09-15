@@ -231,7 +231,22 @@ class IndexConfig(BaseSettings):
 
     # Vector set algorithm and quantization
     algorithm: str = Field(default="SVS-VAMANA")
+    
+    # Global quantization default (can be overridden per feature)
     quantization: str = Field(default="Q8")  # Q8, NOQUANT, or BIN
+    
+    # Feature-specific quantization settings
+    # Hierarchy levels can have different quantization for optimal memory/accuracy trade-off
+    concept_quantization: str | None = Field(default=None)  # Defaults to global quantization
+    section_quantization: str | None = Field(default=None)  # Defaults to global quantization  
+    chunk_quantization: str | None = Field(default=None)    # Defaults to global quantization
+    
+    # Semantic cache quantization (for cached query/response pairs)
+    cache_quantization: str | None = Field(default=None)    # Defaults to global quantization
+    
+    # Batch operations quantization (for bulk indexing)
+    batch_quantization: str | None = Field(default=None)    # Defaults to global quantization
+    
     m: int = Field(default=16)  # Number of bi-directional links
     ef_construction: int = Field(default=200)
     ef_runtime: int = Field(default=10)
@@ -251,6 +266,31 @@ class IndexConfig(BaseSettings):
     index_name: str = Field(default="eol_context")  # Deprecated: use vectorset_name
     distance_metric: str = Field(default="COSINE")  # Deprecated: Vector Sets use cosine
     initial_cap: int = Field(default=10000)  # Deprecated: not used in Vector Sets
+    
+    def get_quantization_for_level(self, hierarchy_level: int) -> str:
+        """Get the appropriate quantization setting for a hierarchy level.
+        
+        Args:
+            hierarchy_level: 1 for concepts, 2 for sections, 3 for chunks
+            
+        Returns:
+            Quantization type (Q8, NOQUANT, or BIN)
+        """
+        if hierarchy_level == 1 and self.concept_quantization:
+            return self.concept_quantization
+        elif hierarchy_level == 2 and self.section_quantization:
+            return self.section_quantization
+        elif hierarchy_level == 3 and self.chunk_quantization:
+            return self.chunk_quantization
+        return self.quantization  # Fall back to global default
+    
+    def get_cache_quantization(self) -> str:
+        """Get quantization setting for semantic cache."""
+        return self.cache_quantization or self.quantization
+    
+    def get_batch_quantization(self) -> str:
+        """Get quantization setting for batch operations."""
+        return self.batch_quantization or self.quantization
 
 
 class ChunkingConfig(BaseSettings):

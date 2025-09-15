@@ -1958,6 +1958,509 @@ fn main() {
         assert "impl Config" in doc.content
 
     @pytest.mark.asyncio
+    async def test_process_xml_parse_error(self, processor, tmp_path):
+        """Test XML processing with parse error."""
+        # Create a malformed XML file
+        test_file = tmp_path / "broken.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<root>
+    <item>Unclosed tag
+    <another>Missing close
+</root>"""
+        )
+
+        # Process should fall back to text processing
+        doc = await processor.process_file(test_file)
+
+        # Verify it fell back to text processing
+        assert doc is not None
+        assert doc.doc_type == "text"  # Should fall back to text
+        assert "Unclosed tag" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_xml_with_namespaces(self, processor, tmp_path):
+        """Test XML processing with namespaces."""
+        test_file = tmp_path / "namespaced.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<root xmlns:custom="http://example.com/custom" xmlns:data="http://example.com/data">
+    <custom:element>Custom namespace content</custom:element>
+    <data:item id="1">Data namespace item</data:item>
+    <regular>Regular element</regular>
+</root>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify namespace extraction
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert "namespaces" in doc.metadata
+        assert "http://example.com/custom" in doc.metadata["namespaces"]
+        assert "http://example.com/data" in doc.metadata["namespaces"]
+        assert "Custom namespace content" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_config_xml(self, processor, tmp_path):
+        """Test processing configuration XML."""
+        test_file = tmp_path / "config.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<configuration>
+    <appSettings>
+        <add key="DatabaseConnection" value="Server=localhost;Database=mydb" />
+        <add key="MaxRetries" value="3" />
+    </appSettings>
+    <system.web>
+        <compilation debug="true" targetFramework="4.5" />
+        <httpRuntime maxRequestLength="4096" />
+    </system.web>
+</configuration>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify config detection
+        assert doc is not None
+        assert doc.doc_type == "config"
+        # Config XML may have empty content if values are in attributes
+        assert doc.chunks is not None
+        assert len(doc.chunks) > 0
+        # At least verify the configuration tag was detected
+        assert doc.metadata["root_tag"] == "configuration"
+
+    @pytest.mark.asyncio
+    async def test_process_xml_with_temporal_metadata(self, processor, tmp_path):
+        """Test XML temporal metadata extraction."""
+        test_file = tmp_path / "temporal.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<event>
+    <title>Meeting</title>
+    <date>2024-01-15</date>
+    <time>14:30:00</time>
+    <datetime>2024-01-15T14:30:00Z</datetime>
+    <schedule when="weekly">Every Monday</schedule>
+    <calendar type="business">Q1 Planning</calendar>
+</event>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify temporal detection
+        assert doc is not None
+        assert doc.doc_type == "event"
+        assert "2024-01-15" in doc.content
+        assert "14:30:00" in doc.content
+        assert doc.chunks is not None
+        # Check that temporal metadata was extracted
+        if doc.chunks:
+            # At least one chunk should have temporal info
+            assert any(
+                "date" in str(chunk.get("metadata", {}))
+                or "temporal" in str(chunk.get("metadata", {}))
+                for chunk in doc.chunks
+            )
+
+    @pytest.mark.asyncio
+    async def test_process_atom_feed_extended(self, processor, tmp_path):
+        """Test processing Atom feed XML with multiple entries."""
+        test_file = tmp_path / "feed.atom"
+        test_file.write_text(
+            """<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Example Feed</title>
+    <link href="http://example.org/"/>
+    <updated>2024-01-15T12:00:00Z</updated>
+    <author>
+        <name>John Doe</name>
+    </author>
+    <entry>
+        <title>First Entry</title>
+        <link href="http://example.org/2024/01/15/first"/>
+        <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+        <updated>2024-01-15T12:00:00Z</updated>
+        <summary>This is the first entry summary.</summary>
+    </entry>
+    <entry>
+        <title>Second Entry</title>
+        <link href="http://example.org/2024/01/16/second"/>
+        <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6b</id>
+        <updated>2024-01-16T12:00:00Z</updated>
+        <summary>This is the second entry summary.</summary>
+    </entry>
+</feed>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify Atom feed detection
+        assert doc is not None
+        assert doc.doc_type == "feed"
+        assert "First Entry" in doc.content
+        assert "Second Entry" in doc.content
+        assert doc.chunks is not None
+        assert len(doc.chunks) >= 2
+
+    @pytest.mark.asyncio
+    async def test_process_svg_with_text(self, processor, tmp_path):
+        """Test processing SVG with text elements."""
+        test_file = tmp_path / "diagram.svg"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+    <title>Sample Diagram</title>
+    <desc>A sample SVG diagram with text</desc>
+    <text x="10" y="30">Hello World</text>
+    <text x="10" y="60">SVG Text Element</text>
+    <g id="group1">
+        <text x="10" y="90">Grouped Text</text>
+        <circle cx="100" cy="100" r="30" fill="blue"/>
+    </g>
+</svg>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify SVG detection
+        assert doc is not None
+        assert doc.doc_type == "svg"
+        assert "Sample Diagram" in doc.content
+        assert "Hello World" in doc.content
+        assert "SVG Text Element" in doc.content
+        assert doc.chunks is not None
+
+    @pytest.mark.asyncio
+    async def test_process_xml_with_temporal_attributes(self, processor, tmp_path):
+        """Test XML with temporal information in attributes."""
+        test_file = tmp_path / "scheduled.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<tasks>
+    <task id="1" date="2024-01-15" time="09:00:00">
+        <name>Morning Meeting</name>
+        <description>Daily standup</description>
+    </task>
+    <task id="2" datetime="2024-01-15T14:30:00Z" when="afternoon">
+        <name>Code Review</name>
+        <description>Review pull requests</description>
+    </task>
+    <reminder schedule="2024-01-16T10:00:00Z">
+        <message>Project deadline tomorrow</message>
+    </reminder>
+</tasks>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify temporal attribute extraction
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert "Morning Meeting" in doc.content
+        assert "Code Review" in doc.content
+        # Temporal data should be in metadata or chunks
+        assert doc.chunks is not None
+
+    @pytest.mark.asyncio
+    async def test_process_xml_settings_file(self, processor, tmp_path):
+        """Test processing settings XML (alternative config format)."""
+        test_file = tmp_path / "settings.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<settings>
+    <database>
+        <host>localhost</host>
+        <port>5432</port>
+        <name>myapp</name>
+    </database>
+    <cache>
+        <enabled>true</enabled>
+        <ttl>3600</ttl>
+    </cache>
+    <logging level="INFO">
+        <file>/var/log/app.log</file>
+    </logging>
+</settings>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify settings/config detection
+        assert doc is not None
+        assert doc.doc_type == "config"
+        # Settings XML should have text content
+        assert "localhost" in doc.content
+        assert "5432" in doc.content
+        assert doc.chunks is not None
+        assert len(doc.chunks) > 0
+
+    @pytest.mark.asyncio
+    async def test_process_calendar_xml(self, processor, tmp_path):
+        """Test processing calendar/event XML."""
+        test_file = tmp_path / "calendar.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<calendar>
+    <event id="evt1">
+        <title>Team Meeting</title>
+        <date>2024-01-15</date>
+        <time>10:00</time>
+        <duration>PT1H</duration>
+        <location>Conference Room A</location>
+    </event>
+    <event id="evt2">
+        <title>Project Review</title>
+        <date>2024-01-16</date>
+        <time>14:00</time>
+        <duration>PT2H</duration>
+        <attendees>
+            <person>Alice</person>
+            <person>Bob</person>
+        </attendees>
+    </event>
+</calendar>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify calendar/event detection
+        assert doc is not None
+        assert doc.doc_type == "event"
+        assert "Team Meeting" in doc.content
+        assert "Project Review" in doc.content
+        assert "Conference Room A" in doc.content
+        assert doc.chunks is not None
+
+    @pytest.mark.asyncio
+    async def test_process_empty_xml(self, processor, tmp_path):
+        """Test processing empty XML."""
+        test_file = tmp_path / "empty.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<root></root>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify handling of empty XML
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert doc.content == ""  # Empty content
+        # Even empty XML should have metadata
+        assert doc.metadata["element_count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_process_xml_with_cdata(self, processor, tmp_path):
+        """Test processing XML with CDATA sections."""
+        test_file = tmp_path / "cdata.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<document>
+    <code><![CDATA[
+        function example() {
+            return "Hello <World>";
+        }
+    ]]></code>
+    <description>This contains code samples</description>
+</document>"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify CDATA content is preserved
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert "function example()" in doc.content
+        assert "Hello <World>" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_large_xml_document(self, processor, tmp_path):
+        """Test processing large XML document to trigger chunking."""
+        # Create a large XML with many elements
+        test_file = tmp_path / "large.xml"
+
+        xml_content = '<?xml version="1.0"?>\n<root>\n'
+        for i in range(50):  # Reduced to 50 items
+            xml_content += f'  <item id="{i}">\n'
+            xml_content += f"    <title>Item {i} Title</title>\n"
+            # Simplified content without long descriptions
+            xml_content += f"    <description>Description for item {i}</description>\n"
+            xml_content += f"    <metadata>Meta {i}</metadata>\n"
+            xml_content += "  </item>\n"
+        xml_content += "</root>"
+
+        test_file.write_text(xml_content)
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert "Item 0 Title" in doc.content
+        assert "Item 49 Title" in doc.content
+        assert doc.chunks is not None
+        # Large XML should have chunks
+        assert len(doc.chunks) >= 1
+
+    @pytest.mark.asyncio
+    async def test_process_java_file(self, processor, tmp_path):
+        """Test processing Java files."""
+        test_file = tmp_path / "Main.java"
+        test_file.write_text(
+            """package com.example;
+
+import java.util.*;
+
+public class Main {
+    private String name;
+
+    public Main(String name) {
+        this.name = name;
+    }
+
+    public void doSomething() {
+        System.out.println("Hello, " + name);
+    }
+
+    public static void main(String[] args) {
+        Main app = new Main("World");
+        app.doSomething();
+    }
+}"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "code"
+        assert doc.language == "java"
+        assert "public class Main" in doc.content
+        assert "doSomething" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_cpp_file(self, processor, tmp_path):
+        """Test processing C++ files."""
+        test_file = tmp_path / "main.cpp"
+        test_file.write_text(
+            """#include <iostream>
+#include <string>
+
+class Calculator {
+private:
+    int result;
+
+public:
+    Calculator() : result(0) {}
+
+    void add(int value) {
+        result += value;
+    }
+
+    int getResult() const {
+        return result;
+    }
+};
+
+int main() {
+    Calculator calc;
+    calc.add(5);
+    calc.add(10);
+    std::cout << "Result: " << calc.getResult() << std::endl;
+    return 0;
+}"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        assert doc.doc_type == "code"
+        assert doc.language == "cpp"
+        assert "class Calculator" in doc.content
+        assert "getResult" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_xml_with_comments(self, processor, tmp_path):
+        """Test processing XML with comments."""
+        test_file = tmp_path / "commented.xml"
+        test_file.write_text(
+            """<?xml version="1.0"?>
+<!-- This is a comment at the top -->
+<root>
+    <!-- Comment before element -->
+    <element1>Value 1</element1>
+    <!-- Comment between elements -->
+    <element2>Value 2</element2>
+    <!-- Multi-line
+         comment here -->
+    <element3>Value 3</element3>
+</root>
+<!-- Final comment -->"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify - comments are typically ignored in XML parsing
+        assert doc is not None
+        assert doc.doc_type == "xml"
+        assert "Value 1" in doc.content
+        assert "Value 2" in doc.content
+        assert "Value 3" in doc.content
+
+    @pytest.mark.asyncio
+    async def test_process_shell_script(self, processor, tmp_path):
+        """Test processing shell script files."""
+        test_file = tmp_path / "script.sh"
+        test_file.write_text(
+            """#!/bin/bash
+
+# Function to greet
+greet() {
+    local name=$1
+    echo "Hello, $name!"
+}
+
+# Main execution
+main() {
+    greet "World"
+    echo "Current directory: $(pwd)"
+    echo "Date: $(date)"
+}
+
+# Run main function
+main "$@"
+"""
+        )
+
+        # Process the file
+        doc = await processor.process_file(test_file)
+
+        # Verify
+        assert doc is not None
+        # Shell scripts may be detected as text or code depending on config
+        assert doc.doc_type in ["code", "text"]
+        if doc.doc_type == "code":
+            assert doc.language == "bash"
+        assert "greet()" in doc.content
+        assert "main()" in doc.content
+
+    @pytest.mark.asyncio
     async def test_process_go_file(self, processor, tmp_path):
         """Test processing Go files."""
         test_file = tmp_path / "main.go"

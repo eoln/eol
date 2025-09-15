@@ -40,7 +40,7 @@ async def test_file_exclusion():
         for f in excluded_found[:5]:  # Show first 5
             print(f"   - {f}")
     else:
-        print(f"✅ No files from excluded directories found")
+        print("✅ No files from excluded directories found")
 
     print(f"Total files to index: {len(files)}")
 
@@ -56,7 +56,7 @@ async def test_vector_storage():
     """Test vector storage with proper dimensions."""
     import numpy as np
 
-    from eol.rag_context.config import IndexConfig, RAGConfig, RedisConfig
+    from eol.rag_context.config import RAGConfig
     from eol.rag_context.redis_client import RedisVectorStore, VectorDocument
 
     print("\n=== Testing Vector Storage ===")
@@ -78,7 +78,7 @@ async def test_vector_storage():
 
     try:
         await redis_store.store_document(test_doc)
-        print(f"✅ Successfully stored test document")
+        print("✅ Successfully stored test document")
         return True
     except Exception as e:
         print(f"❌ Failed to store test document: {e}")
@@ -103,7 +103,7 @@ async def test_embedding_generation():
         print(f"  Embedding dtype: {embedding.dtype}")
 
         if embedding.shape == (384,) or embedding.shape == (1, 384):
-            print(f"✅ Embedding has correct dimensions")
+            print("✅ Embedding has correct dimensions")
             return True
         else:
             print(f"❌ Unexpected embedding dimensions: {embedding.shape}")

@@ -11,8 +11,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "packages/eol-rag-context/src"))
 
-from eol.rag_context.config import RAGConfig
-from eol.rag_context.server import EOLRAGContextServer
+from eol.rag_context.config import RAGConfig  # noqa: E402
+from eol.rag_context.server import EOLRAGContextServer  # noqa: E402
 
 
 async def test_server_initialization():
@@ -90,7 +90,8 @@ async def test_indexing_workflow():
                 task_info = await server.task_manager.get_task_status(task_id)
                 if task_info:
                     print(
-                        f"📊 Progress: {task_info.progress_percentage}% ({task_info.completed_files}/{task_info.total_files} files)"
+                        f"📊 Progress: {task_info.progress_percentage}% "
+                        f"({task_info.completed_files}/{task_info.total_files} files)"
                     )
                     if task_info.status.value == "completed":
                         print("✅ Indexing completed successfully")

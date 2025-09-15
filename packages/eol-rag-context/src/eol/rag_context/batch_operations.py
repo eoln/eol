@@ -255,9 +255,8 @@ class BatchRedisClient:
                         logger.error(
                             f"  Vector Set: {vadd_args[1] if len(vadd_args) > 1 else 'unknown'}"
                         )
-                        logger.error(
-                            f"  Expected dimension: {vadd_args[3] if len(vadd_args) > 3 else 'unknown'}"
-                        )
+                        expected_dim = vadd_args[3] if len(vadd_args) > 3 else "unknown"
+                        logger.error(f"  Expected dimension: {expected_dim}")
                         logger.error(
                             f"  Doc ID: {vadd_args[-2] if len(vadd_args) > 2 else 'unknown'}"
                         )

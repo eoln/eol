@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """
 Fix for file exclusion issue - implements two-level exclusion strategy.
-This script shows the complete implementation that should replace the current broken scan_folder method.
+This script shows the complete implementation that should replace the current
+broken scan_folder method.
 """
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Set
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +229,8 @@ class ImprovedFolderScanner:
             for parent in file_path.parents:
                 if parent.name in self.excluded_dirs:
                     logger.error(
-                        f"File {file_path} is in excluded directory {parent} - this should not happen!"
+                        f"File {file_path} is in excluded directory {parent} - "
+                        "this should not happen!"
                     )
                     return True
 
@@ -285,7 +287,8 @@ class ImprovedFolderScanner:
 
         # Log exclusion statistics
         logger.info(
-            f"Exclusion stats: {dirs_excluded} directories excluded, {files_excluded} files excluded"
+            f"Exclusion stats: {dirs_excluded} directories excluded, "
+            f"{files_excluded} files excluded"
         )
 
         # Remove duplicates and sort
@@ -295,7 +298,6 @@ class ImprovedFolderScanner:
 # Test the implementation
 async def test_exclusion():
     """Test that the two-level exclusion works correctly"""
-    import asyncio
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:

@@ -9,13 +9,10 @@ standards are met across all packages.
 
 import argparse
 import ast
-import importlib.util
-import inspect
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
-from rich import print as rprint
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table

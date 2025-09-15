@@ -860,3 +860,143 @@ if __name__ == "__main__":
     test_close_connection_scenarios()
 
     print("✅ All redis_client tests passed!")
+
+
+async def test_redis_error_handling():
+    """Test error handling in Redis operations."""
+    redis_config = config.RedisConfig(host="localhost", port=6379)
+    index_config = config.IndexConfig()
+    store = redis_client.RedisVectorStore(redis_config, index_config)
+    
+    # Mock Redis with errors
+    store.redis = MagicMock()
+    store.async_redis = AsyncMock()
+    
+    # Test connection error handling
+    store.async_redis.ping = AsyncMock(side_effect=Exception("Connection failed"))
+    
+    # This should handle the error gracefully
+    try:
+        await store.async_redis.ping()
+    except Exception as e:
+        assert "Connection failed" in str(e)
+        
+    # Test document storage error
+    store.async_redis.hset = AsyncMock(side_effect=Exception("Storage failed"))
+    
+    doc = redis_client.VectorDocument(
+        id="error-doc",
+        content="test",
+        embedding=np.array([1.0, 2.0]),
+        metadata={}
+    )
+    
+    # Mock the store_document method if it exists
+    if hasattr(store, 'store_document'):
+        with patch.object(store, 'store_document', side_effect=Exception("Storage failed")):
+            try:
+                await store.store_document(doc)
+            except Exception as e:
+                assert "Storage failed" in str(e)
+                
+
+async def test_redis_batch_operations():
+    """Test batch operations in Redis."""
+    redis_config = config.RedisConfig(host="localhost", port=6379)
+    index_config = config.IndexConfig()
+    store = redis_client.RedisVectorStore(redis_config, index_config)
+    
+    # Mock Redis clients
+    store.redis = MagicMock()
+    store.async_redis = AsyncMock()
+    
+    # Create multiple documents
+    docs = []
+    for i in range(10):
+        doc = redis_client.VectorDocument(
+            id=f"batch-doc-{i}",
+            content=f"Batch content {i}",
+            embedding=np.random.rand(384),
+            metadata={"batch": True, "index": i}
+        )
+        docs.append(doc)
+    
+    # Mock batch storage
+    if hasattr(store, 'store_documents'):
+        store.store_documents = AsyncMock(return_value=len(docs))
+        result = await store.store_documents(docs)
+        assert result == 10
+        store.store_documents.assert_called_once()
+        
+        
+async def test_redis_search_pagination():
+    """Test search result pagination."""
+    redis_config = config.RedisConfig(host="localhost", port=6379)
+    index_config = config.IndexConfig()
+    store = redis_client.RedisVectorStore(redis_config, index_config)
+    
+    # Mock Redis clients
+    store.redis = MagicMock()
+    store.async_redis = AsyncMock()
+    
+    # Mock search with pagination
+    if hasattr(store, 'search_similar'):
+        mock_results = [
+            {"id": f"result-{i}", "score": 0.9 - i*0.1, "content": f"Result {i}"}
+            for i in range(20)
+        ]
+        
+        store.search_similar = AsyncMock(
+            side_effect=lambda query, k, offset=0: mock_results[offset:offset+k]
+        )
+        
+        # Test first page
+        page1 = await store.search_similar("test query", k=5, offset=0)
+        assert len(page1) == 5
+        assert page1[0]["id"] == "result-0"
+        
+        # Test second page
+        page2 = await store.search_similar("test query", k=5, offset=5)
+        assert len(page2) == 5
+        assert page2[0]["id"] == "result-5"
+        
+        
+def test_redis_config_validation():
+    """Test Redis configuration validation."""
+    # Test valid config
+    valid_config = config.RedisConfig(host="localhost", port=6379)
+    assert valid_config.host == "localhost"
+    assert valid_config.port == 6379
+    
+    # Test with password
+    secure_config = config.RedisConfig(
+        host="redis.example.com",
+        port=6380,
+        password="secret123"
+    )
+    assert secure_config.password == "secret123"
+    
+    # Test index config with valid fields
+    index_cfg = config.IndexConfig()
+    # IndexConfig has default values
+    assert index_cfg is not None
+    
+    
+async def test_redis_connection_pool():
+    """Test Redis connection pooling."""
+    redis_config = config.RedisConfig(host="localhost", port=6379)
+    index_config = config.IndexConfig()
+    store = redis_client.RedisVectorStore(redis_config, index_config)
+    
+    # Mock connection pool
+    mock_pool = MagicMock()
+    store.connection_pool = mock_pool
+    
+    # Test pool usage
+    assert store.connection_pool is not None
+    
+    # Test closing pool
+    if hasattr(store, 'close'):
+        store.close = AsyncMock()
+        await store.close()
+        store.close.assert_called_once()

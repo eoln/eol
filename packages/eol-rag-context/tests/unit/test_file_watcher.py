@@ -623,3 +623,191 @@ class TestFileWatcher:
         assert result["sources_scanned"] == 0
         assert result["files_indexed"] == 0
         assert result["chunks_created"] == 0
+
+    @pytest.mark.asyncio
+    async def test_file_change_handler_on_created(self, file_watcher):
+        """Test FileChangeHandler on_created event."""
+        handler = FileChangeHandler(file_watcher)
+        
+        # Mock event
+        event = MagicMock()
+        event.src_path = "/test/new_file.py"
+        event.is_directory = False
+        
+        # Process event
+        handler.on_created(event)
+        
+        # Check change was added
+        assert len(file_watcher.pending_changes) == 1
+        change = file_watcher.pending_changes[0]
+        assert change.change_type == ChangeType.CREATED
+        assert str(change.file_path) == "/test/new_file.py"
+        
+    @pytest.mark.asyncio
+    async def test_file_change_handler_on_modified(self, file_watcher):
+        """Test FileChangeHandler on_modified event."""
+        handler = FileChangeHandler(file_watcher)
+        
+        # Mock event
+        event = MagicMock()
+        event.src_path = "/test/modified_file.py"
+        event.is_directory = False
+        
+        # Process event
+        handler.on_modified(event)
+        
+        # Check change was added
+        assert len(file_watcher.pending_changes) == 1
+        change = file_watcher.pending_changes[0]
+        assert change.change_type == ChangeType.MODIFIED
+        
+    @pytest.mark.asyncio
+    async def test_file_change_handler_on_deleted(self, file_watcher):
+        """Test FileChangeHandler on_deleted event."""
+        handler = FileChangeHandler(file_watcher)
+        
+        # Mock event
+        event = MagicMock()
+        event.src_path = "/test/deleted_file.py"
+        event.is_directory = False
+        
+        # Process event
+        handler.on_deleted(event)
+        
+        # Check change was added
+        assert len(file_watcher.pending_changes) == 1
+        change = file_watcher.pending_changes[0]
+        assert change.change_type == ChangeType.DELETED
+        
+    @pytest.mark.asyncio
+    async def test_file_change_handler_ignore_directory(self, file_watcher):
+        """Test FileChangeHandler ignores directory events."""
+        handler = FileChangeHandler(file_watcher)
+        
+        # Mock directory event
+        event = MagicMock()
+        event.src_path = "/test/new_dir"
+        event.is_directory = True
+        
+        # Process event - should be ignored
+        handler.on_created(event)
+        
+        # No changes should be added
+        assert len(file_watcher.pending_changes) == 0
+        
+    @pytest.mark.asyncio
+    async def test_process_pending_changes_with_debounce(self, file_watcher, mock_indexer):
+        """Test processing pending changes with debounce."""
+        # Add multiple changes quickly
+        changes = [
+            FileChange(
+                file_path=Path("/test/file1.py"),
+                change_type=ChangeType.MODIFIED,
+                source_id="test-source",
+                timestamp=time.time()
+            ),
+            FileChange(
+                file_path=Path("/test/file2.py"),
+                change_type=ChangeType.CREATED,
+                source_id="test-source",
+                timestamp=time.time()
+            ),
+        ]
+        file_watcher.pending_changes.extend(changes)
+        
+        # Add watched source
+        source = WatchedSource(path=Path("/test"), source_id="test-source")
+        file_watcher.watched_sources = {"test-source": source}
+        
+        # Mock indexing
+        mock_result = MagicMock()
+        mock_result.file_count = 2
+        mock_indexer.index_file = AsyncMock(return_value=mock_result)
+        
+        # Process changes
+        processed = await file_watcher._process_pending_changes()
+        
+        # Should process both files
+        assert processed == 2
+        assert len(file_watcher.pending_changes) == 0
+        
+    @pytest.mark.asyncio
+    async def test_should_process_file_with_patterns(self, file_watcher):
+        """Test file pattern matching."""
+        # Add watched source with patterns
+        source = WatchedSource(
+            path=Path("/test"),
+            source_id="test-source",
+            file_patterns=["*.py", "*.md"]
+        )
+        file_watcher.watched_sources = {"test-source": source}
+        
+        # Test matching files
+        assert file_watcher._should_process_file(Path("/test/script.py"), source) is True
+        assert file_watcher._should_process_file(Path("/test/readme.md"), source) is True
+        
+        # Test non-matching files
+        assert file_watcher._should_process_file(Path("/test/data.json"), source) is False
+        assert file_watcher._should_process_file(Path("/test/image.png"), source) is False
+        
+    @pytest.mark.asyncio
+    async def test_should_process_file_without_patterns(self, file_watcher):
+        """Test file processing without specific patterns."""
+        # Add watched source without patterns
+        source = WatchedSource(
+            path=Path("/test"),
+            source_id="test-source"
+        )
+        file_watcher.watched_sources = {"test-source": source}
+        
+        # Should process all files when no patterns specified
+        assert file_watcher._should_process_file(Path("/test/any_file.txt"), source) is True
+        assert file_watcher._should_process_file(Path("/test/data.json"), source) is True
+        
+    @pytest.mark.asyncio 
+    async def test_cleanup_watchers(self, file_watcher):
+        """Test cleanup of file watchers."""
+        # Mock observer
+        mock_observer = MagicMock()
+        mock_observer.is_alive.return_value = True
+        mock_observer.stop = MagicMock()
+        mock_observer.join = MagicMock()
+        
+        # Add to watchers
+        file_watcher.observers["test-source"] = mock_observer
+        
+        # Run cleanup
+        await file_watcher.cleanup()
+        
+        # Verify observer was stopped
+        mock_observer.stop.assert_called_once()
+        mock_observer.join.assert_called_once()
+        
+    def test_file_change_dataclass(self):
+        """Test FileChange dataclass."""
+        change = FileChange(
+            file_path=Path("/test/file.py"),
+            change_type=ChangeType.CREATED,
+            source_id="test-src",
+            timestamp=1234567890.0
+        )
+        
+        assert change.file_path == Path("/test/file.py")
+        assert change.change_type == ChangeType.CREATED
+        assert change.source_id == "test-src"
+        assert change.timestamp == 1234567890.0
+        
+    def test_watched_source_dataclass(self):
+        """Test WatchedSource dataclass."""
+        source = WatchedSource(
+            path=Path("/project"),
+            source_id="proj-123",
+            recursive=True,
+            file_patterns=["*.py", "*.md"]
+        )
+        
+        assert source.path == Path("/project")
+        assert source.source_id == "proj-123"
+        assert source.recursive is True
+        assert len(source.file_patterns) == 2
+        assert "*.py" in source.file_patterns

@@ -317,3 +317,120 @@ class TestParallelIndexer:
         # The method was moved to the server class, test it there if needed
         # For now, just test that the parallel indexer doesn't have this method
         assert not hasattr(parallel_indexer, "_estimate_file_count")
+
+    @pytest.mark.asyncio
+    async def test_index_single_file(self, parallel_indexer):
+        """Test indexing a single file."""
+        # Mock document processing
+        mock_doc = MagicMock()
+        mock_doc.chunks = [{"content": "chunk1"}, {"content": "chunk2"}]
+        parallel_indexer.document_processor.process_file = AsyncMock(return_value=mock_doc)
+        
+        # Mock embedding generation
+        parallel_indexer.embedding_manager.generate_embeddings = AsyncMock(
+            return_value=[[0.1, 0.2], [0.3, 0.4]]
+        )
+        
+        # Mock Redis storage
+        parallel_indexer.redis.store_documents = AsyncMock(return_value=2)
+        
+        # Index a single file
+        result = await parallel_indexer.index_file(Path("/test/file.py"))
+        
+        # Verify processing
+        assert result is not None
+        assert result.file_count == 1
+        
+    @pytest.mark.asyncio
+    async def test_handle_processing_error(self, parallel_indexer):
+        """Test error handling during file processing."""
+        # Mock document processing to raise an error
+        parallel_indexer.document_processor.process_file = AsyncMock(
+            side_effect=Exception("Processing failed")
+        )
+        
+        # Try to index a file - should handle error gracefully
+        result = await parallel_indexer.index_file(Path("/test/error_file.py"))
+        
+        # Verify error was handled (result might be None or have 0 files)
+        if result:
+            assert result.file_count == 0 or result.error_count > 0
+        
+    @pytest.mark.asyncio
+    async def test_parallel_indexing_with_checkpoint_resume(self, parallel_indexer):
+        """Test resuming indexing from checkpoint."""
+        # Set up checkpoint data
+        checkpoint_data = {
+            "completed_files": "5",
+            "total_files": "10",
+            "total_chunks": "20",
+            "processed_files": "file1.py,file2.py,file3.py,file4.py,file5.py"
+        }
+        
+        parallel_indexer.redis.async_redis.hgetall = AsyncMock(return_value=checkpoint_data)
+        
+        # Load checkpoint
+        success = await parallel_indexer._load_checkpoint()
+        assert success is True
+        assert parallel_indexer.current_checkpoint.completed_files == 5
+        
+        # Mock file scanning to return remaining files
+        with patch.object(ParallelFileScanner, 'scan_directory') as mock_scan:
+            mock_scan.return_value = [
+                Path("/test/file6.py"),
+                Path("/test/file7.py"),
+                Path("/test/file8.py"),
+                Path("/test/file9.py"),
+                Path("/test/file10.py"),
+            ]
+            
+            # Mock document processing
+            mock_doc = MagicMock()
+            mock_doc.chunks = [{"content": "chunk"}]
+            parallel_indexer.document_processor.process_file = AsyncMock(return_value=mock_doc)
+            
+            # Mock embedding generation
+            parallel_indexer.embedding_manager.generate_embeddings = AsyncMock(
+                return_value=[[0.1, 0.2]]
+            )
+            
+            # Mock Redis storage
+            parallel_indexer.redis.store_documents = AsyncMock(return_value=1)
+            
+            # Run indexing (should only process remaining files)
+            result = await parallel_indexer.index_folder_parallel(
+                Path("/test"),
+                force_reindex=False
+            )
+            
+            # Verify only unprocessed files were indexed
+            assert result.indexed_files == 5  # Only the remaining 5 files
+            
+    def test_file_batch_creation(self):
+        """Test FileBatch dataclass."""
+        files = [Path("/test/a.py"), Path("/test/b.py")]
+        batch = FileBatch(files=files, batch_index=5)
+        
+        assert len(batch.files) == 2
+        assert batch.batch_index == 5
+        assert batch.files[0].name == "a.py"
+        
+    def test_indexing_checkpoint_progress(self):
+        """Test IndexingCheckpoint progress tracking."""
+        checkpoint = IndexingCheckpoint(
+            source_id="test",
+            root_path="/test",
+            completed_files=25,
+            total_files=100
+        )
+        
+        # Test progress calculation
+        progress = (checkpoint.completed_files / checkpoint.total_files) * 100
+        assert progress == 25.0
+        
+        # Update checkpoint
+        checkpoint.completed_files += 10
+        checkpoint.total_chunks += 20
+        
+        assert checkpoint.completed_files == 35
+        assert checkpoint.total_chunks == 20

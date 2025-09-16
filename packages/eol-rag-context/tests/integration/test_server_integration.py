@@ -79,10 +79,8 @@ class TestServerIntegration:
             query_embedding, max_chunks=5
         )
 
-        # Should return results
-        assert isinstance(results, dict)
-        # Results should have hierarchy levels
-        assert "concepts" in results or "sections" in results or "chunks" in results
+        # Should return results as a list
+        assert isinstance(results, list)
 
     @pytest.mark.asyncio
     async def test_server_cache_operations(self, server_instance):

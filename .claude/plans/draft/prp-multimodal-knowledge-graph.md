@@ -10,9 +10,11 @@ Implementation of an advanced multimodal knowledge graph system for discovering 
 **Estimated Duration**: 2-3 weeks
 **Scope**: Enhanced knowledge graph with multimodal support, AST-based code analysis, and cross-file relationship discovery
 
-## Implementation Confidence Score: 9/10
+## Implementation Confidence Score: 8/10
 
-*Based on existing knowledge graph foundation, clear architectural patterns, and proven technologies*
+*Based on existing knowledge graph foundation, clear architectural patterns, and proven technologies. Adjusted for dependency requirements and realistic performance targets.*
+
+**Last Review**: 2025-09-16 - Minor adjustments needed for production readiness
 
 ## Research Summary
 
@@ -27,10 +29,22 @@ Implementation of an advanced multimodal knowledge graph system for discovering 
 
 ### Key Dependencies Identified
 
+**Core Dependencies (Already Present)**:
 - **Python Packages**: `networkx`, `tree-sitter`, `numpy`, `redis[vector]`
-- **External Libraries**: `python-louvain` (community detection), `BeautifulSoup4` (parsing)
+- **Parsing Libraries**: `BeautifulSoup4`, `lxml`, `markdown`
 - **Redis Features**: Vector search, hash storage, persistent graph storage
 - **LLM Integration**: Embedding generation for semantic similarity
+
+**Additional Multimodal Dependencies (To Add)**:
+```toml
+multimodal = [
+    "pillow>=10.0.0",        # Image processing
+    "pytesseract>=0.3.10",   # OCR capabilities
+    "pandas>=2.0.0",         # Data/CSV processing
+    "scikit-learn>=1.3.0",   # Clustering algorithms
+    "python-louvain>=0.16",  # Community detection
+]
+```
 
 ### 2024 Research Insights
 
@@ -719,10 +733,11 @@ pytest tests/integration/test_graph_fusion.py
 
 ### Performance Validation
 
-- Graph building: > 100 files/second
+**Adjusted Realistic Targets**:
+- Graph building: 20-50 files/second (multimodal content)
 - Relationship discovery: < 100ms for 1000 entities
-- Query latency: < 50ms for 10k node graph
-- Memory usage: < 500MB for 100k entities
+- Query latency: < 100ms for 10k node graph (doubled for complexity)
+- Memory usage: < 1GB for 100k entities (includes embeddings)
 
 ## Success Metrics
 
@@ -746,11 +761,18 @@ pytest tests/integration/test_graph_fusion.py
 
 ## Implementation Order
 
-1. **Week 1**: Code analyzer with AST parsing, dependency tracking
-2. **Week 1-2**: Multimodal extractors for images, CSV, JSON
+**Phased Approach for Risk Mitigation**:
+
+1. **Week 1**: Core AST analysis with Python's `ast` module, basic dependency tracking
+2. **Week 1-2**: Data extractors (CSV, JSON) with pandas, Tree-sitter for JS/TS
 3. **Week 2**: Relationship discovery and cross-modal matching
 4. **Week 2-3**: Graph fusion and pattern detection
-5. **Week 3**: Integration, testing, and performance optimization
+5. **Week 3**: Image processing (optional), integration, testing, and optimization
+
+**Feature Flags for Progressive Rollout**:
+- `enable_ocr`: False by default (requires pytesseract)
+- `enable_clustering`: False by default (requires scikit-learn)
+- `max_graph_size`: Configurable limit for memory management
 
 ## References
 

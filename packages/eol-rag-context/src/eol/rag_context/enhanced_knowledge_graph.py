@@ -98,8 +98,8 @@ class EnhancedKnowledgeGraphBuilder(KnowledgeGraphBuilder):
                 if entity.signature:
                     node_data["signature"] = entity.signature
 
-                # Add node to graph
-                await self.add_node(entity.id, node_data)
+                # Add node to graph using NetworkX directly
+                self.graph.add_node(entity.id, **node_data)
                 stats["entities"] += 1
 
                 # Generate embedding for the entity
@@ -108,12 +108,13 @@ class EnhancedKnowledgeGraphBuilder(KnowledgeGraphBuilder):
                     embedding = await self.embedding_manager.get_embedding(text_for_embedding)
                     await self.store_entity_embedding(entity.id, embedding, entity.to_dict())
 
-            # Add relationships to graph
+            # Add relationships to graph using NetworkX directly
             for relation in relations:
-                await self.add_edge(
+                self.graph.add_edge(
                     relation.source_id,
                     relation.target_id,
-                    {"type": relation.type.value, "metadata": relation.metadata},
+                    type=relation.type.value,
+                    metadata=relation.metadata,
                 )
                 stats["relationships"] += 1
 
@@ -156,9 +157,9 @@ class EnhancedKnowledgeGraphBuilder(KnowledgeGraphBuilder):
             # Extract entities and relationships from data
             entities, relations = await self.data_extractor.extract_from_file(file_path)
 
-            # Add to graph
+            # Add to graph using NetworkX directly
             for entity in entities:
-                await self.add_node(entity["id"], entity)
+                self.graph.add_node(entity["id"], **entity)
                 stats["entities"] += 1
 
                 # Generate embeddings if configured
@@ -167,8 +168,8 @@ class EnhancedKnowledgeGraphBuilder(KnowledgeGraphBuilder):
                     await self.store_entity_embedding(entity["id"], embedding, entity)
 
             for relation in relations:
-                await self.add_edge(
-                    relation["source"], relation["target"], relation.get("metadata", {})
+                self.graph.add_edge(
+                    relation["source"], relation["target"], **relation.get("metadata", {})
                 )
                 stats["relationships"] += 1
 

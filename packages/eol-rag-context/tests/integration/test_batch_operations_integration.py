@@ -101,8 +101,8 @@ class TestBatchOperationsIntegration:
             processor = StreamingProcessor(chunk_size=1024)  # Process 1KB at a time
 
             # Process the large file with a simple processor function
-            def simple_processor(chunk):
-                return {"processed": chunk}  # Return processed chunk
+            async def simple_processor(chunk, chunk_id):
+                return {"processed": chunk, "id": chunk_id}  # Return processed chunk with ID
 
             results = await processor.process_large_file_stream(str(temp_file), simple_processor)
 

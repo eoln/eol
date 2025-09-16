@@ -75,7 +75,9 @@ class TestServerIntegration:
         query_embedding = await server_instance.embedding_manager.get_embedding(query)
 
         # Retrieve context from redis store
-        results = await server_instance.redis_store.hierarchical_search(query_embedding, k=5)
+        results = await server_instance.redis_store.hierarchical_search(
+            query_embedding, max_chunks=5
+        )
 
         # Should return results
         assert isinstance(results, dict)

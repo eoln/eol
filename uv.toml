@@ -1,0 +1,18 @@
+# UV Configuration File
+# https://docs.astral.sh/uv/configuration/
+
+# Use system Python if available
+python-preference = "system"
+
+# Package index configuration
+index-url = "https://pypi.org/simple"
+
+# Cache configuration
+cache-dir = ".uv-cache"
+
+# Compile Python files
+compile-bytecode = true
+
+# Resolution strategy
+resolution = "highest"  # Use highest compatible version
+prerelease = "disallow"  # Don't allow prerelease versions

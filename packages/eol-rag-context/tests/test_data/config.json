@@ -1,0 +1,17 @@
+{
+    "name": "test-project",
+    "version": "1.0.0",
+    "settings": {
+        "debug": true,
+        "timeout": 30,
+        "features": {
+            "rag": true,
+            "cache": true,
+            "graph": true
+        }
+    },
+    "dependencies": {
+        "redis": "^8.0.0",
+        "fastmcp": "^0.1.0"
+    }
+}

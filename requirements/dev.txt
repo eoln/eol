@@ -1,0 +1,38 @@
+# Development dependencies shared across all packages
+# Install with: pip install -r requirements/dev.txt
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-timeout>=2.1.0
+pytest-mock>=3.11.0
+
+# Code quality
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+ruff>=0.1.0
+mypy>=1.5.0
+
+# Type stubs
+types-redis
+types-pyyaml
+types-markdown
+types-aiofiles
+
+# Development tools
+ipython>=8.0.0
+
+# Documentation
+mkdocs>=1.6.0
+mkdocs-material>=9.6.0
+mkdocstrings[python]>=0.30.0
+mike>=2.0.0
+pydocstyle>=6.3.0
+docformatter>=1.7.0
+
+# Security scanning
+pip-audit>=2.6.0
+# safety>=3.0.0  # Commented out - conflicts with pydantic>=2.11.7 required by fastmcp
+bandit>=1.7.0

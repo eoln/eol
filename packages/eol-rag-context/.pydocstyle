@@ -1,0 +1,7 @@
+[pydocstyle]
+# Google-style docstring configuration
+convention = google
+
+# Include only source files
+match = '^(?!test_).*\.py$'
+match_dir = '^(?!tests|site|\.venv|__pycache__).*'

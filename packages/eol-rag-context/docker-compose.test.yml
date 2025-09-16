@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:8.2-alpine
+    container_name: eol-test-redis
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_ARGS=--save 60 1 --loglevel warning
+    volumes:
+      - redis-test-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - eol-test-network
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: eol-test-runner
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHONPATH=/app/src
+      - PYTEST_ARGS=${PYTEST_ARGS:---cov=eol.rag_context --cov-report=term --cov-report=html}
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./coverage:/app/coverage
+    networks:
+      - eol-test-network
+    command: >
+      sh -c "
+        echo 'Waiting for Redis to be ready...' &&
+        sleep 5 &&
+        echo 'Running integration tests...' &&
+        python -m pytest tests/integration/ -xvs $$PYTEST_ARGS
+      "
+
+volumes:
+  redis-test-data:
+
+networks:
+  eol-test-network:
+    driver: bridge

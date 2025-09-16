@@ -1,0 +1,82 @@
+# Pre-commit hooks for EOL project
+# Install with: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        name: Format Python code with Black
+        language_version: python3
+        args: [--line-length=100]
+        files: \.py$
+        exclude: ^(\.venv|build|dist)/
+
+  # isort - Python import sorter
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Sort Python imports
+        args: [--profile=black, --line-length=100]
+        files: \.py$
+        exclude: ^(\.venv|build|dist)/
+
+  # Flake8 - Python linter
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        name: Lint Python code with flake8
+        args: [--max-line-length=100, --extend-ignore=E203]
+        files: \.py$
+        exclude: ^(\.venv|build|dist)/
+
+  # Remove trailing whitespace
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: check-yaml
+        name: Check YAML syntax
+        exclude: mkdocs.yml  # MkDocs uses special tags
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=5000]
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-json
+        name: Check JSON syntax
+      - id: check-toml
+        name: Check TOML syntax
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        name: Lint Markdown files
+        args: [--fix]
+        exclude: ^(site/|\.github/|packages/.*/site/)
+
+  # Documentation validation (custom hooks)
+  - repo: local
+    hooks:
+      - id: validate-docs
+        name: Validate Documentation Coverage
+        entry: python scripts/validate_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mkdocs-build
+        name: Test MkDocs Build
+        entry: bash -c 'mkdocs build --strict --quiet'
+        language: system
+        pass_filenames: false
+        files: ^(docs/|mkdocs.yml|packages/.*/src/.*\.py)$

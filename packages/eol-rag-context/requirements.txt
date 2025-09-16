@@ -1,0 +1,42 @@
+# Production dependencies for eol-rag-context
+# Install with: pip install -r requirements.txt
+
+# Core Python utilities
+pydantic>=2.11.7
+pydantic-settings>=2.0.0
+typer>=0.15.2  # Required by fastmcp>=2.0.0
+rich>=13.9.4
+
+# Async support
+aiofiles>=23.0.0
+
+# Data processing
+numpy>=1.26.0  # Updated for Python 3.12/3.13 wheel compatibility
+pyyaml>=6.0
+
+# File monitoring
+watchdog>=3.0.0
+
+# Redis and vector search
+redis>=5.0.0
+
+# MCP server
+fastmcp[email]>=2.0.0
+
+# Document processing
+beautifulsoup4>=4.12.0
+markdown>=3.5.0
+python-magic>=0.4.27
+pypdf>=4.0.0
+python-docx>=1.0.0
+lxml>=4.9.0
+
+# Code parsing (optional)
+tree-sitter>=0.20.0
+tree-sitter-python>=0.20.0
+tree-sitter-javascript>=0.20.0
+
+# Graph and utilities
+networkx>=3.0
+gitignore-parser>=0.1.0
+# Trigger dependency optimization - czw 14 sie 16:10:10 2025 CEST

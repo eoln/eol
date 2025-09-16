@@ -97,17 +97,18 @@ class TestBatchOperationsIntegration:
             temp_file = Path(f.name)
 
         try:
-            # Create streaming processor
-            processor = StreamingProcessor(chunk_size=50)  # Process 50 lines at a time
+            # Create streaming processor with larger chunk size
+            processor = StreamingProcessor(chunk_size=1024)  # Process 1KB at a time
 
             # Process the large file with a simple processor function
             def simple_processor(chunk):
-                return chunk  # Just return the chunk as-is
+                return {"processed": chunk}  # Return processed chunk
 
-            results = await processor.process_large_file_stream(temp_file, simple_processor)
+            results = await processor.process_large_file_stream(str(temp_file), simple_processor)
 
             # Should have processed the file
             assert results is not None
+            # File is large enough to have multiple chunks
             assert len(results) > 0
 
         finally:
@@ -206,7 +207,7 @@ class TestBatchOperationsIntegration:
             embeddings = await batch_manager.get_embeddings_batch(texts)
 
             documents = []
-            for i, (text, embedding) in enumerate(zip(texts, embeddings)):
+            for i, (text, embedding) in enumerate(zip(texts, embeddings, strict=False)):
                 doc = VectorDocument(
                     id=f"{prefix}_{i}",
                     content=text,
@@ -304,7 +305,7 @@ class TestBatchOperationsIntegration:
 
         # Create documents
         documents = []
-        for i, (text, embedding) in enumerate(zip(texts, embeddings)):
+        for i, (text, embedding) in enumerate(zip(texts, embeddings, strict=False)):
             doc = VectorDocument(
                 id=f"efficiency_test_{i}",
                 content=text,

@@ -75,9 +75,7 @@ class TestServerIntegration:
         query_embedding = await server_instance.embedding_manager.get_embedding(query)
 
         # Retrieve context from redis store
-        results = await server_instance.redis_store.hierarchical_search(
-            query_embedding, top_k=5
-        )
+        results = await server_instance.redis_store.hierarchical_search(query_embedding, k=5)
 
         # Should return results
         assert isinstance(results, dict)
@@ -90,8 +88,8 @@ class TestServerIntegration:
         # Test cache operations using semantic cache
         if server_instance.semantic_cache:
             # Clear the cache
-            cleared = await server_instance.semantic_cache.clear()
-            assert isinstance(cleared, int)  # Returns number of cleared entries
+            await server_instance.semantic_cache.clear()
+            # clear() returns None, just ensure it doesn't raise an exception
 
             # Get cache stats
             stats = server_instance.semantic_cache.get_stats()
@@ -138,4 +136,4 @@ class TestServerIntegration:
                 return
 
         # Should return cleanup stats or empty dict
-        assert isinstance(result, (dict, int))  # May return dict or count
+        assert isinstance(result, dict | int)  # May return dict or count

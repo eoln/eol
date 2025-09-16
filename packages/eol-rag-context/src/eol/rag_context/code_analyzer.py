@@ -150,16 +150,22 @@ class ASTCodeAnalyzer:
         """Recursively visit AST nodes to extract entities and relationships."""
         if isinstance(node, ast.Module):
             self._process_module(node, source, parent_id)
+            # Module processing handles its own children
+            return
         elif isinstance(node, ast.ClassDef):
             self._process_class(node, source, parent_id)
+            # Class processing handles its own children
+            return
         elif isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
             self._process_function(node, source, parent_id)
+            # Function processing handles its own children via _extract_function_calls
+            return
         elif isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
             self._process_import(node, source, parent_id)
         elif isinstance(node, ast.Assign):
             self._process_assignment(node, source, parent_id)
 
-        # Recursively process child nodes
+        # Recursively process child nodes (only for nodes not handled above)
         for child in ast.iter_child_nodes(node):
             self._visit_node(child, source, parent_id)
 

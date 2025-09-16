@@ -22,7 +22,7 @@ fastmcp==2.0.0
 beautifulsoup4==4.12.3
 markdown==3.5.2
 python-magic==0.4.27
-pypdf==4.0.1
+pypdf==6.0.0
 python-docx==1.1.0
 lxml==5.1.0
 

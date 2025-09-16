@@ -365,12 +365,13 @@ class TestDataExtractor:
                 {
                     "id": [1, 2, 3],
                     "user_id": [1, 2, 3],  # Foreign key reference
+                    "user_name": ["Alice", "Bob", "Charlie"],  # Related to user_id
                     "data": ["x", "y", "z"],
                 }
             )
 
             relations2 = extractor._detect_column_relationships(df2)
-            # Should detect user_id as potential foreign key
+            # Should detect user_id as potential foreign key to user_name
             fk_relations = [r for r in relations2 if r["type"] == "references"]
             assert len(fk_relations) > 0
 

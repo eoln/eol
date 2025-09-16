@@ -30,12 +30,14 @@ Implementation of an advanced multimodal knowledge graph system for discovering 
 ### Key Dependencies Identified
 
 **Core Dependencies (Already Present)**:
+
 - **Python Packages**: `networkx`, `tree-sitter`, `numpy`, `redis[vector]`
 - **Parsing Libraries**: `BeautifulSoup4`, `lxml`, `markdown`
 - **Redis Features**: Vector search, hash storage, persistent graph storage
 - **LLM Integration**: Embedding generation for semantic similarity
 
 **Additional Multimodal Dependencies (To Add)**:
+
 ```toml
 multimodal = [
     "pillow>=10.0.0",        # Image processing
@@ -734,6 +736,7 @@ pytest tests/integration/test_graph_fusion.py
 ### Performance Validation
 
 **Adjusted Realistic Targets**:
+
 - Graph building: 20-50 files/second (multimodal content)
 - Relationship discovery: < 100ms for 1000 entities
 - Query latency: < 100ms for 10k node graph (doubled for complexity)
@@ -770,6 +773,7 @@ pytest tests/integration/test_graph_fusion.py
 5. **Week 3**: Image processing (optional), integration, testing, and optimization
 
 **Feature Flags for Progressive Rollout**:
+
 - `enable_ocr`: False by default (requires pytesseract)
 - `enable_clustering`: False by default (requires scikit-learn)
 - `max_graph_size`: Configurable limit for memory management
